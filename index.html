@@ -25,26 +25,5 @@
         });
       }
     </script>
-    <script>
-  // Log whether the bundle loaded
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      const root = document.getElementById('root');
-      if (root && root.innerHTML.trim() === '') {
-        console.error('⚠️ React failed to render. The #root div is empty.');
-        
-        // Show a visible error message on screen
-        root.innerHTML = `
-          <div style="padding: 40px; font-family: sans-serif; color: #7a3a0e; text-align: center;">
-            <h1>Something went wrong</h1>
-            <p>The app failed to load. Check the browser console for errors.</p>
-          </div>
-        `;
-      } else {
-        console.log('✅ React rendered successfully.');
-      }
-    }, 3000); // Wait 3 seconds for React to mount
-  });
-</script>
   </body>
 </html>
