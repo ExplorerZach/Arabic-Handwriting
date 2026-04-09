@@ -15,7 +15,7 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   // Let API calls go through normally
-  if (e.request.url.includes('anthropic.com')) return;
+  if (e.request.url.includes('openrouter.ai')) return;
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
   );
