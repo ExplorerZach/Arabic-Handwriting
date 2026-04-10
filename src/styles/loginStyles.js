@@ -1,0 +1,73 @@
+const styles = {
+  root: {
+    minHeight: '100vh',
+    background: 'linear-gradient(160deg,#fdf0d0,#eedfa8)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '24px',
+    fontFamily: 'Georgia,serif',
+  },
+  card: {
+    background: 'rgba(255,255,255,.7)',
+    borderRadius: '20px',
+    border: '1.5px solid rgba(180,130,60,.3)',
+    padding: '32px 28px',
+    maxWidth: '400px',
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px',
+    boxShadow: '0 8px 32px rgba(100,60,0,.12)',
+  },
+  arabic: {
+    fontSize: '36px',
+    fontFamily: "'Amiri','Scheherazade New',serif",
+    color: '#5c2d00',
+    textAlign: 'center',
+  },
+  title: {
+    fontSize: '18px',
+    fontWeight: 'bold',
+    color: '#3d1800',
+    textAlign: 'center',
+  },
+  body: {
+    fontSize: '14px',
+    color: '#5c3010',
+    lineHeight: '1.6',
+  },
+  note: {
+    fontSize: '12px',
+    color: '#9b6a30',
+    fontStyle: 'italic',
+    lineHeight: '1.5',
+  },
+  link: {
+    color: '#8b4513',
+  },
+  input: {
+    padding: '12px 14px',
+    borderRadius: '10px',
+    border: '1.5px solid rgba(180,130,60,.4)',
+    fontSize: '14px',
+    fontFamily: 'monospace',
+    background: 'rgba(255,252,240,.9)',
+    outline: 'none',
+    width: '100%',
+  },
+  btn: {
+    padding: '14px',
+    borderRadius: '12px',
+    border: 'none',
+    background: 'linear-gradient(135deg,#8b4513,#c0703a)',
+    color: '#fff8ee',
+    fontSize: '16px',
+    fontWeight: 'bold',
+    fontFamily: 'Georgia,serif',
+    cursor: 'pointer',
+    boxShadow: '0 2px 12px rgba(139,69,19,.35)',
+  },
+};
+
+export default styles;
