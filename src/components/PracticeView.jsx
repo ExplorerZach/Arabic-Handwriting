@@ -1,15 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { LETTERS, FORM_NAMES, FORM_SHORT, FORM_DESCRIPTIONS } from '../data/letters';
 import { calcLineWidth, setBrushScale, STROKE_COLOR } from '../utils/drawing';
+import { getAIFeedback } from '../utils/api';
 import styles from '../styles/practiceStyles';
-
-/** Mapping from form key to a human-friendly description for the AI prompt */
-const FORM_LABELS = {
-  isolated: 'isolated (stand-alone)',
-  initial: 'initial (start of word)',
-  medial: 'medial (middle of word)',
-  final: 'final (end of word)',
-};
 
 export default function PracticeView({ apiKey, onClearKey }) {
   const canvasRef = useRef(null);
@@ -20,6 +13,7 @@ export default function PracticeView({ apiKey, onClearKey }) {
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   const letter = LETTERS[letterIndex];
   const formKeys = Object.keys(letter.forms);
@@ -108,6 +102,31 @@ export default function PracticeView({ apiKey, onClearKey }) {
     return () => observer.disconnect();
   }, [redraw]);
 
+  // ─── Online / offline detection ────────────────────────
+
+  useEffect(() => {
+    const onOnline = () => setIsOnline(true);
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, []);
+
+  // ─── Undo ──────────────────────────────────────────────
+
+  const undoStroke = useCallback(() => {
+    const strokes = strokesRef.current;
+    if (!strokes.length) return;
+    // Walk backwards to find the start of the last stroke (newStroke: true)
+    let i = strokes.length - 1;
+    while (i > 0 && !strokes[i].newStroke) i--;
+    strokesRef.current = strokes.slice(0, i);
+    redraw(strokesRef.current);
+  }, [redraw]);
+
   // ─── Pointer events ────────────────────────────────────
 
   const getPoint = (e) => {
@@ -169,6 +188,13 @@ export default function PracticeView({ apiKey, onClearKey }) {
 
   // ─── AI feedback ───────────────────────────────────────
 
+  const FORM_LABELS = {
+    isolated: 'isolated (stand-alone)',
+    initial: 'initial (start of word)',
+    medial: 'medial (middle of word)',
+    final: 'final (end of word)',
+  };
+
   const requestFeedback = async () => {
     if (strokesRef.current.length < 5) {
       setFeedback({ error: 'Draw the letter first!' });
@@ -178,61 +204,17 @@ export default function PracticeView({ apiKey, onClearKey }) {
     setLoading(true);
     setFeedback(null);
 
-    const formDescription = FORM_LABELS[activeForm];
-
     try {
       const imageBase64 = exportCanvas();
-
-      const response = await fetch(
-        'https://openrouter.ai/api/v1/chat/completions',
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model:
-              localStorage.getItem('openrouter_model') ||
-              'google/gemini-3-flash-preview',
-            max_tokens: 1000,
-            messages: [
-              {
-                role: 'system',
-                content:
-                  "You are an expert Arabic calligraphy instructor teaching beginners. The student's drawing is in dark ink; the faint watermark in the background is the correct reference stroke they are trying to copy. When giving feedback, compare the student's strokes directly against the reference shape — look at proportions, stroke curvature, entry/exit angles, dot placement (if applicable), and overall shape fidelity. Arabic is written right-to-left, so stroke direction and flow matter. Structure your response: (1) one specific thing they did well — be concrete, e.g. 'Your baseline is steady'; (2) one or two specific things to improve, e.g. 'The downward stroke should taper more at the tip'; (3) a short encouraging close. 3–5 sentences total, conversational not clinical, use the letter's name naturally.",
-              },
-              {
-                role: 'user',
-                content: [
-                  {
-                    type: 'image_url',
-                    image_url: {
-                      url: `data:image/png;base64,${imageBase64}`,
-                    },
-                  },
-                  {
-                    type: 'text',
-                    text: `The student is practicing the ${formDescription} form of the Arabic letter ${letter.name} (${letter.letter}), romanized as "${letter.roman}". Their attempt is in dark ink; the faint background is the correct reference. Please compare them and give structured feedback.`,
-                  },
-                ],
-              },
-            ],
-          }),
-        }
+      const text = await getAIFeedback(
+        apiKey,
+        imageBase64,
+        letter.name,
+        letter.letter,
+        letter.roman,
+        FORM_LABELS[activeForm]
       );
-
-      const data = await response.json();
-      if (data.error) throw new Error(data.error.message);
-
-      setFeedback({
-        text:
-          (data.choices &&
-            data.choices[0] &&
-            data.choices[0].message &&
-            data.choices[0].message.content) ||
-          'No feedback.',
-      });
+      setFeedback({ text });
     } catch (err) {
       setFeedback({ error: `Error: ${err.message}` });
     }
@@ -256,6 +238,13 @@ export default function PracticeView({ apiKey, onClearKey }) {
           ⚙
         </button>
       </div>
+
+      {/* Offline banner */}
+      {!isOnline && (
+        <div style={styles.offlineBanner}>
+          You are offline — AI feedback is unavailable
+        </div>
+      )}
 
       {/* Settings panel */}
       {showSettings && (
@@ -453,6 +442,12 @@ export default function PracticeView({ apiKey, onClearKey }) {
         </button>
         <button
           style={{ ...styles.btn, ...styles.btnClear }}
+          onClick={undoStroke}
+        >
+          Undo
+        </button>
+        <button
+          style={{ ...styles.btn, ...styles.btnClear }}
           onClick={clearCanvas}
         >
           Clear
@@ -461,16 +456,18 @@ export default function PracticeView({ apiKey, onClearKey }) {
           style={{
             ...styles.btn,
             ...styles.btnAI,
-            opacity: loading || apiKey === 'skip' ? 0.35 : 1,
+            opacity: loading || apiKey === 'skip' || !isOnline ? 0.35 : 1,
           }}
           onClick={requestFeedback}
-          disabled={loading || apiKey === 'skip'}
+          disabled={loading || apiKey === 'skip' || !isOnline}
         >
           {loading
             ? 'Analyzing…'
             : apiKey === 'skip'
               ? 'No API Key'
-              : '✦ AI Feedback'}
+              : !isOnline
+                ? 'Offline'
+                : '✦ AI Feedback'}
         </button>
         <button
           style={{ ...styles.btn, ...styles.btnNav }}

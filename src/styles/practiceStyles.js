@@ -344,6 +344,18 @@ const styles = {
     border: '1px solid #8b4513',
     boxShadow: '0 2px 8px rgba(139,69,19,.3)',
   },
+  offlineBanner: {
+    width: '100%',
+    maxWidth: '520px',
+    background: 'rgba(180,130,60,.2)',
+    border: '1px solid rgba(180,130,60,.5)',
+    borderRadius: '8px',
+    padding: '8px 14px',
+    fontSize: '12px',
+    color: '#6b3800',
+    textAlign: 'center',
+    boxSizing: 'border-box',
+  },
 };
 
 export default styles;
