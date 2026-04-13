@@ -1,0 +1,133 @@
+/* ─── Reset ──────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: #fdf0d0;
+}
+
+/* ─── Scrollbar (WebKit) ─────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 90, 43, 0.35);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 90, 43, 0.6);
+}
+
+/* ─── Button base interactions ───────────────────────── */
+button {
+  cursor: pointer;
+  transition: opacity 0.12s, transform 0.1s, box-shadow 0.12s, background 0.12s;
+}
+button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* ─── Nav buttons (Prev / Next) ──────────────────────── */
+.btn-nav:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 2px 8px rgba(139, 69, 19, 0.15);
+}
+.btn-nav:focus-visible {
+  outline: 2px solid #c0703a;
+  outline-offset: 2px;
+}
+
+/* ─── Clear / Undo buttons ───────────────────────────── */
+.btn-clear:hover:not(:disabled) {
+  background: rgba(220, 180, 120, 0.55) !important;
+}
+.btn-clear:focus-visible {
+  outline: 2px solid #c0703a;
+  outline-offset: 2px;
+}
+
+/* ─── AI Feedback button ─────────────────────────────── */
+.btn-ai:hover:not(:disabled) {
+  box-shadow: 0 4px 18px rgba(139, 69, 19, 0.55) !important;
+  filter: brightness(1.08);
+}
+.btn-ai:focus-visible {
+  outline: 2px solid #c0703a;
+  outline-offset: 2px;
+}
+
+/* ─── Form switcher buttons ──────────────────────────── */
+.btn-form:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(180, 130, 60, 0.6) !important;
+}
+.btn-form:focus-visible {
+  outline: 2px solid #c0703a;
+  outline-offset: 2px;
+}
+
+/* ─── Alphabet row buttons ───────────────────────────── */
+.btn-alpha:hover:not(:disabled) {
+  background: rgba(255, 248, 230, 0.95) !important;
+  border-color: rgba(180, 130, 60, 0.5) !important;
+  transform: scale(1.12);
+}
+.btn-alpha:focus-visible {
+  outline: 2px solid #c0703a;
+  outline-offset: 2px;
+}
+
+/* ─── Settings / gear button ─────────────────────────── */
+.btn-gear:hover {
+  color: #5c2d00 !important;
+}
+.btn-gear:focus-visible {
+  outline: 2px solid #c0703a;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Settings panel buttons ─────────────────────────── */
+.btn-panel:hover {
+  background: rgba(255, 255, 255, 0.5) !important;
+}
+.btn-panel:focus-visible {
+  outline: 2px solid #c0703a;
+  outline-offset: 2px;
+}
+
+/* ─── Select dropdown ────────────────────────────────── */
+select:focus-visible {
+  outline: 2px solid #c0703a;
+  outline-offset: 2px;
+}
+
+/* ─── Range slider ───────────────────────────────────── */
+input[type="range"] {
+  accent-color: #8b4513;
+}
+input[type="range"]:focus-visible {
+  outline: 2px solid #c0703a;
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ─── History toggle button ──────────────────────────── */
+.btn-history:hover {
+  color: #5c2d00 !important;
+}
+.btn-history:focus-visible {
+  outline: 2px solid #c0703a;
+  outline-offset: 2px;
+  border-radius: 4px;
+}

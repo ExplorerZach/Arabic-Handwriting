@@ -2,7 +2,7 @@
  * Send the canvas drawing to OpenRouter for AI calligraphy feedback.
  *
  * @param {string} apiKey      — OpenRouter API key
- * @param {string} imageBase64 — Base64-encoded PNG of the canvas (no data URI prefix)
+ * @param {string} imageBase64 — Base64-encoded JPEG of the canvas (no data URI prefix)
  * @param {string} letterName  — English name of the letter (e.g. "Ba")
  * @param {string} letterChar  — The Arabic character (e.g. "ب")
  * @param {string} romanName   — Romanized pronunciation (e.g. "b")
@@ -43,7 +43,7 @@ export async function getAIFeedback(
               {
                 type: 'image_url',
                 image_url: {
-                  url: `data:image/png;base64,${imageBase64}`,
+                  url: `data:image/jpeg;base64,${imageBase64}`,
                 },
               },
               {
@@ -60,7 +60,22 @@ export async function getAIFeedback(
   const data = await response.json();
 
   if (data.error) {
-    throw new Error(data.error.message);
+    const msg = data.error.message || '';
+    const code = data.error.code ?? response.status;
+
+    if (code === 401 || response.status === 401) {
+      throw new Error('Invalid API key. Go to Settings → Change key and enter a valid OpenRouter key.');
+    }
+    if (code === 402 || response.status === 402) {
+      throw new Error('Insufficient credits. Top up your OpenRouter balance at openrouter.ai/credits.');
+    }
+    if (code === 429 || response.status === 429) {
+      throw new Error('Rate limit reached. Wait a few seconds and try again.');
+    }
+    if (code === 503 || response.status === 503) {
+      throw new Error('The AI model is temporarily unavailable. Try switching models in Settings.');
+    }
+    throw new Error(msg || `Unexpected error (${response.status}).`);
   }
 
   return (

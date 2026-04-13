@@ -2,6 +2,8 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { LETTERS, FORM_NAMES, FORM_SHORT, FORM_DESCRIPTIONS } from '../data/letters';
 import { calcLineWidth, setBrushScale, STROKE_COLOR } from '../utils/drawing';
 import { getAIFeedback } from '../utils/api';
+import { markPracticed, getProgress, isLetterStarted, isLetterComplete, countCompleted } from '../utils/progress';
+import { addFeedbackEntry, getFeedbackHistory } from '../utils/history';
 import styles from '../styles/practiceStyles';
 
 export default function PracticeView({ apiKey, onClearKey }) {
@@ -14,11 +16,14 @@ export default function PracticeView({ apiKey, onClearKey }) {
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [progress, setProgress] = useState(() => getProgress());
+  const [showHistory, setShowHistory] = useState(false);
 
   const letter = LETTERS[letterIndex];
   const formKeys = Object.keys(letter.forms);
   const activeForm = formKeys.includes(formIndex) ? formIndex : 'isolated';
   const currentChar = letter.forms[activeForm];
+  const completedCount = countCompleted(LETTERS);
 
   // ─── Drawing ────────────────────────────────────────────
 
@@ -68,6 +73,7 @@ export default function PracticeView({ apiKey, onClearKey }) {
     (index) => {
       setLetterIndex(index);
       setFormIndex('isolated');
+      setShowHistory(false);
       clearCanvas();
     },
     [clearCanvas]
@@ -76,6 +82,7 @@ export default function PracticeView({ apiKey, onClearKey }) {
   const selectForm = useCallback(
     (form) => {
       setFormIndex(form);
+      setShowHistory(false);
       clearCanvas();
     },
     [clearCanvas]
@@ -162,6 +169,7 @@ export default function PracticeView({ apiKey, onClearKey }) {
     const dpr = devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
 
+    // Full-resolution offscreen canvas for compositing
     const offscreen = document.createElement('canvas');
     offscreen.width = rect.width * dpr;
     offscreen.height = rect.height * dpr;
@@ -183,7 +191,15 @@ export default function PracticeView({ apiKey, onClearKey }) {
     // Draw the student's strokes on top
     ctx.drawImage(canvas, 0, 0);
 
-    return offscreen.toDataURL('image/png').split(',')[1];
+    // Downscale to max 512px to reduce payload size before sending to AI
+    const MAX_SIZE = 512;
+    const scale = Math.min(1, MAX_SIZE / Math.max(offscreen.width, offscreen.height));
+    const compressed = document.createElement('canvas');
+    compressed.width = Math.round(offscreen.width * scale);
+    compressed.height = Math.round(offscreen.height * scale);
+    compressed.getContext('2d').drawImage(offscreen, 0, 0, compressed.width, compressed.height);
+
+    return compressed.toDataURL('image/jpeg', 0.85).split(',')[1];
   };
 
   // ─── AI feedback ───────────────────────────────────────
@@ -214,9 +230,13 @@ export default function PracticeView({ apiKey, onClearKey }) {
         letter.roman,
         FORM_LABELS[activeForm]
       );
+      // Mark as practiced, save to history, refresh progress state
+      const updated = markPracticed(letter.name, activeForm);
+      setProgress(updated);
+      addFeedbackEntry(letter.name, activeForm, text);
       setFeedback({ text });
     } catch (err) {
-      setFeedback({ error: `Error: ${err.message}` });
+      setFeedback({ error: err.message });
     }
 
     setLoading(false);
@@ -229,8 +249,16 @@ export default function PracticeView({ apiKey, onClearKey }) {
       {/* Header */}
       <div style={styles.header}>
         <span style={styles.appTitle}>مكتبة الخط</span>
-        <span style={styles.appSubtitle}>Arabic Script Practice</span>
+        <span style={styles.appSubtitle}>
+          Arabic Script Practice
+          {completedCount > 0 && (
+            <span style={styles.completedBadge}>
+              {completedCount}/{LETTERS.length} complete
+            </span>
+          )}
+        </span>
         <button
+          className="btn-gear"
           style={styles.keyBtn}
           onClick={() => setShowSettings((v) => !v)}
           title="API Key settings"
@@ -292,7 +320,7 @@ export default function PracticeView({ apiKey, onClearKey }) {
               <option value="openai/gpt-5.4-mini">GPT-5.4 mini</option>
             </select>
           </label>
-          <button style={styles.keyPanelBtn} onClick={onClearKey}>
+          <button className="btn-panel" style={styles.keyPanelBtn} onClick={onClearKey}>
             Change key
           </button>
         </div>
@@ -326,6 +354,7 @@ export default function PracticeView({ apiKey, onClearKey }) {
           return (
             <button
               key={key}
+              className="btn-form"
               style={{
                 ...styles.formBtn,
                 ...(isActive ? styles.formBtnActive : {}),
@@ -433,6 +462,7 @@ export default function PracticeView({ apiKey, onClearKey }) {
       {/* Controls */}
       <div style={styles.controls}>
         <button
+          className="btn-nav"
           style={{ ...styles.btn, ...styles.btnNav }}
           onClick={() =>
             selectLetter((letterIndex - 1 + LETTERS.length) % LETTERS.length)
@@ -441,18 +471,21 @@ export default function PracticeView({ apiKey, onClearKey }) {
           ‹ Prev
         </button>
         <button
+          className="btn-clear"
           style={{ ...styles.btn, ...styles.btnClear }}
           onClick={undoStroke}
         >
           Undo
         </button>
         <button
+          className="btn-clear"
           style={{ ...styles.btn, ...styles.btnClear }}
           onClick={clearCanvas}
         >
           Clear
         </button>
         <button
+          className="btn-ai"
           style={{
             ...styles.btn,
             ...styles.btnAI,
@@ -470,6 +503,7 @@ export default function PracticeView({ apiKey, onClearKey }) {
                 : '✦ AI Feedback'}
         </button>
         <button
+          className="btn-nav"
           style={{ ...styles.btn, ...styles.btnNav }}
           onClick={() =>
             selectLetter((letterIndex + 1) % LETTERS.length)
@@ -499,11 +533,43 @@ export default function PracticeView({ apiKey, onClearKey }) {
         </div>
       )}
 
+      {/* Feedback history */}
+      {(() => {
+        const history = getFeedbackHistory(letter.name, activeForm);
+        if (!history.length) return null;
+        return (
+          <div style={{ width: '100%', maxWidth: '520px' }}>
+            <button
+              className="btn-history"
+              style={styles.historyToggle}
+              onClick={() => setShowHistory((v) => !v)}
+            >
+              {showHistory ? '▾' : '▸'} Past feedback ({history.length})
+            </button>
+            {showHistory && (
+              <div style={styles.historyPanel}>
+                {history.map((entry, i) => (
+                  <div key={i} style={styles.historyEntry}>
+                    <div style={styles.historyDate}>
+                      {new Date(entry.date).toLocaleDateString(undefined, {
+                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
+                      })}
+                    </div>
+                    <p style={styles.historyText}>{entry.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Alphabet row */}
       <div style={styles.alphabetRow}>
         {LETTERS.map((l, idx) => (
           <button
             key={idx}
+            className="btn-alpha"
             style={{
               ...styles.alphaBtn,
               ...(idx === letterIndex ? styles.alphaBtnActive : {}),
@@ -513,6 +579,11 @@ export default function PracticeView({ apiKey, onClearKey }) {
             lang="ar"
           >
             {l.letter}
+            {isLetterComplete(l.name, Object.keys(l.forms)) ? (
+              <span style={styles.dotComplete} />
+            ) : isLetterStarted(l.name) ? (
+              <span style={styles.dotStarted} />
+            ) : null}
           </button>
         ))}
       </div>
