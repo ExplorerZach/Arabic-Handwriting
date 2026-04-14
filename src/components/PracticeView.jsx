@@ -199,9 +199,17 @@ export default function PracticeView({ apiKey, onClearKey }) {
     redraw(strokesRef.current);
   }, [redraw]);
 
-  // ─── Stroke order animation ────────────────────────────
+  // ─── Stroke order animation (progressive reveal) ───────
+  //
+  // Technique: render the perfect letter glyph (via fillText with Amiri font)
+  // onto an offscreen canvas, then progressively reveal it by painting a thick
+  // circular brush along our stroke-order paths.  The canvas compositing mode
+  // 'destination-in' is used so only the intersection of the glyph and the
+  // brush-trail remains visible.  This guarantees the final result is always
+  // the real font shape, regardless of how rough the stroke-order coordinates
+  // are.
 
-  const playStrokeAnimation = useCallback(() => {
+  const playStrokeAnimation = useCallback(async () => {
     const data = STROKE_DATA[letter.letter];
     if (!data || animating) return;
 
@@ -211,33 +219,133 @@ export default function PracticeView({ apiKey, onClearKey }) {
     const ctx = canvas.getContext('2d');
     const dpr = devicePixelRatio || 1;
 
-    // Clear canvas for animation
+    // Clear canvas & state
     strokesRef.current = [];
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     setAnimating(true);
     setFeedback(null);
     setShowComparison(false);
 
+    // Ensure Arabic font is loaded before rendering
+    try { await document.fonts.ready; } catch (_) { /* proceed anyway */ }
+
+    const W = canvas.width;   // physical (HiDPI) pixels
+    const H = canvas.height;
+
+    // ── 1. Render glyph onto an offscreen "glyph" canvas ───
+    const glyphCanvas = document.createElement('canvas');
+    glyphCanvas.width = W;
+    glyphCanvas.height = H;
+    const gCtx = glyphCanvas.getContext('2d');
+
+    // Choose font size: ~65% of canvas height gives good coverage
+    const fontSize = (rect.height * 0.65);
+    gCtx.save();
+    gCtx.scale(dpr, dpr);
+    gCtx.font = `${fontSize}px "Amiri", "Scheherazade New", serif`;
+    gCtx.fillStyle = '#8b4513';
+    gCtx.textAlign = 'center';
+    gCtx.textBaseline = 'middle';
+    gCtx.direction = 'rtl';
+    gCtx.fillText(currentChar, rect.width / 2, rect.height / 2);
+    gCtx.restore();
+
+    // ── 2. Create a "mask" canvas where the brush trail accumulates ─
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = W;
+    maskCanvas.height = H;
+    const mCtx = maskCanvas.getContext('2d');
+
+    // ── 3. Interpolate stroke points for smooth movement ────
+    // Take the rough stroke-order coords and create many intermediate points
     const scaleX = rect.width / 100;
     const scaleY = rect.height / 100;
 
-    // Build a flat list of draw operations: strokes first, then dots
+    const interpolatePoints = (pts, stepsPerSeg) => {
+      const result = [];
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i];
+        const b = pts[i + 1];
+        for (let s = 0; s < stepsPerSeg; s++) {
+          const t = s / stepsPerSeg;
+          result.push({
+            x: (a.x + (b.x - a.x) * t) * scaleX * dpr,
+            y: (a.y + (b.y - a.y) * t) * scaleY * dpr,
+          });
+        }
+      }
+      // Push the last point
+      const last = pts[pts.length - 1];
+      result.push({ x: last.x * scaleX * dpr, y: last.y * scaleY * dpr });
+      return result;
+    };
+
+    // Brush radius — generous enough to cover the glyph width
+    const BRUSH_RADIUS = Math.min(W, H) * 0.10;
+
+    // Build operations list with interpolated points
+    const STEPS_PER_SEG = 4;  // interpolation density
     const ops = [];
     for (const stroke of data.strokes) {
-      ops.push({ type: 'stroke', points: stroke });
+      const interp = interpolatePoints(stroke, STEPS_PER_SEG);
+      ops.push({ type: 'stroke', points: interp });
     }
     for (const dot of data.dots) {
-      ops.push({ type: 'dot', point: dot });
+      ops.push({
+        type: 'dot',
+        point: {
+          x: dot.x * scaleX * dpr,
+          y: dot.y * scaleY * dpr,
+        },
+      });
     }
 
     let opIdx = 0;
     let ptIdx = 0;
-    const POINTS_PER_FRAME = 1;
-    const PAUSE_FRAMES = 20;
+    const PAUSE_FRAMES = 18;
     let pauseCount = 0;
 
+    // ── 4. Compose a single frame onto the visible canvas ──
+    //
+    // We need a third offscreen canvas to composite the masked glyph,
+    // because 'destination-in' on the visible canvas would erase the ghost.
+    const compCanvas = document.createElement('canvas');
+    compCanvas.width = W;
+    compCanvas.height = H;
+    const cCtx = compCanvas.getContext('2d');
+
+    const drawFrame = () => {
+      // Build the masked (revealed) portion on compCanvas
+      cCtx.clearRect(0, 0, W, H);
+      cCtx.drawImage(glyphCanvas, 0, 0);
+      cCtx.globalCompositeOperation = 'destination-in';
+      cCtx.drawImage(maskCanvas, 0, 0);
+      cCtx.globalCompositeOperation = 'source-over';
+
+      // Draw onto visible canvas: ghost behind, revealed on top
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, W, H);
+
+      // Faint ghost of the whole letter
+      ctx.globalAlpha = 0.12;
+      ctx.drawImage(glyphCanvas, 0, 0);
+
+      // Fully opaque revealed portion
+      ctx.globalAlpha = 1;
+      ctx.drawImage(compCanvas, 0, 0);
+      ctx.restore();
+    };
+
+    // ── 5. Animation loop ───────────────────────────────────
     const animate = () => {
       if (opIdx >= ops.length) {
+        // Final frame: show the full glyph at full opacity
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        ctx.drawImage(glyphCanvas, 0, 0);
+        ctx.restore();
         setAnimating(false);
         return;
       }
@@ -246,80 +354,40 @@ export default function PracticeView({ apiKey, onClearKey }) {
 
       if (op.type === 'stroke') {
         const pts = op.points;
-        if (ptIdx === 0) {
-          // Start new stroke — draw number label
-          ctx.save();
-          ctx.font = `${14 * dpr}px Georgia, serif`;
-          ctx.fillStyle = 'rgba(192,112,58,.6)';
-          ctx.fillText(
-            `${opIdx + 1}`,
-            pts[0].x * scaleX * dpr - 10 * dpr,
-            pts[0].y * scaleY * dpr - 8 * dpr
-          );
-          ctx.restore();
-        }
 
         if (ptIdx < pts.length) {
+          // Paint brush circle on the mask canvas
           const pt = pts[ptIdx];
-          const x = pt.x * scaleX;
-          const y = pt.y * scaleY;
-
-          ctx.lineCap = 'round';
-          ctx.lineJoin = 'round';
-          ctx.strokeStyle = '#c0703a';
-          ctx.lineWidth = 3.5 * dpr;
-
-          if (ptIdx === 0) {
-            ctx.beginPath();
-            ctx.moveTo(x * dpr, y * dpr);
-          } else {
-            const prev = pts[ptIdx - 1];
-            const px = prev.x * scaleX * dpr;
-            const py = prev.y * scaleY * dpr;
-            const mx = (px + x * dpr) / 2;
-            const my = (py + y * dpr) / 2;
-            ctx.quadraticCurveTo(px, py, mx, my);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(mx, my);
-          }
-
-          // Draw arrowhead on the last point
-          if (ptIdx === pts.length - 1) {
-            ctx.stroke();
-            // Small filled circle at the end
-            ctx.beginPath();
-            ctx.arc(x * dpr, y * dpr, 4 * dpr, 0, Math.PI * 2);
-            ctx.fillStyle = '#c0703a';
-            ctx.fill();
-          }
-
+          mCtx.beginPath();
+          mCtx.arc(pt.x, pt.y, BRUSH_RADIUS, 0, Math.PI * 2);
+          mCtx.fillStyle = '#000';
+          mCtx.fill();
           ptIdx++;
+          drawFrame();
           animFrameRef.current = requestAnimationFrame(animate);
           return;
         }
 
-        // Stroke finished — pause before next
+        // Stroke done — pause
         if (pauseCount < PAUSE_FRAMES) {
           pauseCount++;
           animFrameRef.current = requestAnimationFrame(animate);
           return;
         }
 
-        // Move to next operation
         opIdx++;
         ptIdx = 0;
         pauseCount = 0;
         animFrameRef.current = requestAnimationFrame(animate);
       } else if (op.type === 'dot') {
-        // Draw dot
+        // Reveal dot area
         const dp = op.point;
-        ctx.beginPath();
-        ctx.arc(dp.x * scaleX * dpr, dp.y * scaleY * dpr, 5 * dpr, 0, Math.PI * 2);
-        ctx.fillStyle = '#c0703a';
-        ctx.fill();
+        mCtx.beginPath();
+        mCtx.arc(dp.x, dp.y, BRUSH_RADIUS * 0.8, 0, Math.PI * 2);
+        mCtx.fillStyle = '#000';
+        mCtx.fill();
+        drawFrame();
 
-        // Pause then next
         if (pauseCount < PAUSE_FRAMES) {
           pauseCount++;
           animFrameRef.current = requestAnimationFrame(animate);
@@ -332,8 +400,10 @@ export default function PracticeView({ apiKey, onClearKey }) {
       }
     };
 
+    // Draw initial ghost + start
+    drawFrame();
     animFrameRef.current = requestAnimationFrame(animate);
-  }, [letter.letter, animating]);
+  }, [letter.letter, currentChar, animating]);
 
   // Clean up animation on unmount or letter change
   useEffect(() => {
