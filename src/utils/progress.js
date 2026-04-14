@@ -66,3 +66,19 @@ export function countCompleted(letters) {
     isLetterComplete(l.name, Object.keys(l.forms))
   ).length;
 }
+
+/** Store an AI score (1–5) for a letter+form. Keeps the latest score. */
+export function setScore(letterName, formKey, score) {
+  const data = load();
+  if (!data[letterName]) data[letterName] = {};
+  if (!data[letterName][formKey]) data[letterName][formKey] = { practiced: false, practiceCount: 0 };
+  data[letterName][formKey].score = Math.max(1, Math.min(5, score));
+  save(data);
+  return data;
+}
+
+/** Get the stored score for a letter+form, or null if none. */
+export function getScore(letterName, formKey) {
+  const data = load();
+  return data[letterName]?.[formKey]?.score ?? null;
+}

@@ -34,9 +34,6 @@ const styles = {
     color: '#9b6a30',
   },
   keyBtn: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
     background: 'none',
     border: 'none',
     fontSize: '18px',
@@ -276,6 +273,13 @@ const styles = {
     border: '1px solid rgba(180,130,60,.4)',
     flex: '1',
   },
+  btnShowMe: {
+    background: 'rgba(139,69,19,.1)',
+    color: '#7a3a0e',
+    border: '1px solid rgba(180,130,60,.4)',
+    flex: '1',
+    minWidth: '90px',
+  },
   btnAI: {
     background: 'linear-gradient(135deg,#8b4513,#c0703a)',
     color: '#fff8ee',
@@ -424,6 +428,194 @@ const styles = {
     color: '#6b3800',
     textAlign: 'center',
     boxSizing: 'border-box',
+  },
+
+  /* ─── Header buttons row ─────────────────────────────── */
+  headerButtons: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    display: 'flex',
+    gap: '4px',
+    alignItems: 'center',
+  },
+
+  /* ─── Lesson mode toggle ─────────────────────────────── */
+  lessonToggle: {
+    background: 'none',
+    border: '1px solid transparent',
+    fontSize: '16px',
+    cursor: 'pointer',
+    padding: '3px 6px',
+    borderRadius: '6px',
+    transition: 'all .15s',
+  },
+  lessonToggleActive: {
+    background: 'rgba(139,69,19,.12)',
+    border: '1px solid rgba(180,130,60,.4)',
+  },
+  lessonBanner: {
+    width: '100%',
+    maxWidth: '520px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    padding: '6px 14px',
+    background: 'rgba(139,69,19,.08)',
+    borderRadius: '8px',
+    border: '1px solid rgba(180,130,60,.25)',
+    boxSizing: 'border-box',
+  },
+  lessonGroupName: {
+    fontSize: '13px',
+    fontWeight: '700',
+    color: '#5c2d00',
+  },
+  lessonGroupDesc: {
+    fontSize: '11px',
+    color: '#9b6a30',
+    fontStyle: 'italic',
+  },
+
+  /* ─── Comparison view ────────────────────────────────── */
+  comparisonWrap: {
+    width: '100%',
+    maxWidth: '520px',
+    display: 'flex',
+    gap: '10px',
+    boxSizing: 'border-box',
+  },
+  comparisonPane: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '6px',
+  },
+  comparisonLabel: {
+    fontSize: '10px',
+    textTransform: 'uppercase',
+    letterSpacing: '.15em',
+    color: '#9b6a30',
+  },
+  comparisonRef: {
+    width: '100%',
+    aspectRatio: '1/1',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'rgba(255,252,240,.85)',
+    borderRadius: '12px',
+    border: '2px solid rgba(180,130,60,.3)',
+    fontSize: '140px',
+    fontFamily: "'Amiri','Scheherazade New','Arial Unicode MS',serif",
+    color: '#5c2d00',
+    direction: 'rtl',
+    lineHeight: 1.2,
+  },
+  comparisonAttempt: {
+    width: '100%',
+    aspectRatio: '1/1',
+    borderRadius: '12px',
+    border: '2px solid rgba(180,130,60,.3)',
+    background: 'rgba(255,252,240,.85)',
+    objectFit: 'contain',
+  },
+  comparisonToggle: {
+    background: 'none',
+    border: '1px solid rgba(180,130,60,.3)',
+    borderRadius: '8px',
+    padding: '6px 14px',
+    fontSize: '12px',
+    color: '#6b3800',
+    cursor: 'pointer',
+    letterSpacing: '.03em',
+  },
+
+  /* ─── Mode tabs (Letters / Words) ──────────────────────── */
+  modeTabs: {
+    display: 'flex',
+    gap: '6px',
+    width: '100%',
+    maxWidth: '520px',
+  },
+  modeTab: {
+    flex: 1,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '8px 12px',
+    borderRadius: '10px',
+    border: '1.5px solid rgba(180,130,60,.25)',
+    background: 'rgba(255,255,255,.4)',
+    fontSize: '13px',
+    fontWeight: '600',
+    color: '#6b3800',
+    cursor: 'pointer',
+    letterSpacing: '.04em',
+    transition: 'all .15s',
+  },
+  modeTabActive: {
+    background: 'linear-gradient(150deg,#7a3a0e,#c0703a)',
+    border: '1.5px solid #8b4513',
+    color: '#fff8ee',
+    boxShadow: '0 2px 8px rgba(139,69,19,.25)',
+  },
+
+  /* ─── Ghost word (word practice mode) ────────────────── */
+  ghostWord: {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '100px',
+    fontFamily: "'Amiri','Scheherazade New','Arial Unicode MS',serif",
+    color: 'rgba(139,90,43,.18)',
+    pointerEvents: 'none',
+    lineHeight: 1.2,
+    direction: 'rtl',
+    userSelect: 'none',
+    padding: '0 20px',
+  },
+
+  /* ─── Word buttons in bottom row ─────────────────────── */
+  wordBtn: {
+    minWidth: '50px',
+    height: '34px',
+    border: '1px solid rgba(180,130,60,.25)',
+    borderRadius: '8px',
+    background: 'rgba(255,255,255,.5)',
+    fontSize: '16px',
+    cursor: 'pointer',
+    color: '#4a2000',
+    fontFamily: "'Amiri','Scheherazade New',serif",
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0 10px',
+    position: 'relative',
+  },
+
+  /* ─── Score stars ─────────────────────────────────────── */
+  scoreRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    marginBottom: '8px',
+  },
+  starFilled: {
+    fontSize: '20px',
+    color: '#c0703a',
+  },
+  starEmpty: {
+    fontSize: '20px',
+    color: 'rgba(180,130,60,.25)',
+  },
+  scoreLabel: {
+    fontSize: '11px',
+    color: '#9b6a30',
+    marginLeft: '6px',
   },
 };
 

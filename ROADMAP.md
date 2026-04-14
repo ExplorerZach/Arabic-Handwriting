@@ -24,8 +24,8 @@
 
 ---
 
-## Phase 3: Learning Experience
-> Not started
+## Phase 3: Learning Experience ✅
+> Completed
 
 ### Approach notes
 - **Guided lesson mode** — new `src/data/lessonOrder.js` grouping letters by shape family (ب/ت/ث, ج/ح/خ, etc.). A "Lesson Mode" toggle in the header follows this sequence instead of alphabetical order.
@@ -34,11 +34,11 @@
 - **Stroke order animation** — define stroke order data per letter (start/end points, direction). "Show me how" button animates drawing with `requestAnimationFrame`.
 - **Word/ligature practice** — new `src/data/words.js` with common letter combinations and words (بسم, الله, etc.). A "Words" tab alongside individual letter practice.
 
-- [ ] Guided lesson mode — `src/data/lessonOrder.js` + toggle in header
-- [ ] Side-by-side comparison view after drawing
-- [ ] AI scoring (1–5 stars) parsed from response, stored in progress
-- [ ] Stroke order animation — "Show me how" button per letter
-- [ ] Word/ligature practice tab
+- [x] Guided lesson mode — `src/data/lessonOrder.js` + toggle in header
+- [x] Side-by-side comparison view after drawing
+- [x] AI scoring (1–5 stars) parsed from response, stored in progress
+- [x] Stroke order animation — "Show me how" button per letter
+- [x] Word/ligature practice tab
 
 ---
 
