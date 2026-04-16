@@ -25,6 +25,7 @@ export const UI = {
     // Mode tabs
     tabLetters: 'Letters',
     tabWords: 'Words',
+    tabReview: 'Review',
 
     // Form names
     formIsolated: 'isolated',
@@ -113,7 +114,21 @@ export const UI = {
     ariaOfflineBanner: 'You are currently offline',
     ariaCompletedBadge: 'letters completed',
     ariaProgressBadge: 'current position',
+
+    // Export / Share
+    btnSave: 'Save',
+    btnShare: 'Share',
+    ariaSaveBtn: 'Save drawing as image',
+    ariaShareBtn: 'Share drawing',
+
+    // Spaced repetition
+    dashboardTitle: 'Due for Review',
+    dashboardEmpty: 'All caught up — no letters due for review.',
+    dashboardCount: 'letters due',
+    ariaDashboardTab: 'Review dashboard',
+    ariaLetterTab: 'Practice letters',
   },
+
 
   ar: {
     // App shell
@@ -140,6 +155,7 @@ export const UI = {
     // Mode tabs
     tabLetters: 'الحروف',
     tabWords: 'الكلمات',
+    tabReview: 'مراجعة',
 
     // Form names
     formIsolated: 'منفرد',
@@ -228,6 +244,19 @@ export const UI = {
     ariaOfflineBanner: 'أنت غير متصل حالياً',
     ariaCompletedBadge: 'حروف مكتملة',
     ariaProgressBadge: 'الموضع الحالي',
+
+    // Export / Share
+    btnSave: 'حفظ',
+    btnShare: 'مشاركة',
+    ariaSaveBtn: 'حفظ الرسم كصورة',
+    ariaShareBtn: 'مشاركة الرسم',
+
+    // Spaced repetition
+    dashboardTitle: 'مطلوب المراجعة',
+    dashboardEmpty: 'لا توجد حروف تحتاج مراجعة!',
+    dashboardCount: 'حروف مطلوبة',
+    ariaDashboardTab: 'لوحة المراجعة',
+    ariaLetterTab: 'تدريب الحروف',
   },
 };
 

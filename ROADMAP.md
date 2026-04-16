@@ -59,7 +59,7 @@
 ---
 
 ## Phase 5: Advanced Features
-> Not started
+> Completed (Phase 4 + 5 work)
 
 ### Approach notes
 - **Spaced repetition** — implement a simplified SM-2 algorithm using score history from Phase 3. Surface letters "due for review" on a home screen dashboard.
@@ -67,7 +67,7 @@
 - **Automate SW cache busting** — a Vite plugin or post-build Node script that reads `dist/assets/` filenames and patches `public/sw.js` automatically, removing the manual step.
 - **Cloud sync** — optional; requires a backend (e.g. Supabase or Firebase). Syncs progress + feedback history across devices. Major scope increase.
 
-- [ ] Spaced repetition — SM-2 algorithm using score history, "due for review" dashboard
-- [ ] Export/share — download canvas as PNG, Web Share API on mobile
-- [ ] Automate SW cache busting — post-build script patches `public/sw.js` automatically
+- [x] Spaced repetition — SM-2 algorithm in `progress.js`, "Review" tab with due-letter grid
+- [x] Export/share — Save (PNG download) + Share (Web Share API, download fallback) buttons
+- [x] Automate SW cache busting — `scripts/bust-sw.js` runs automatically after `npm run build`
 - [ ] Cloud sync (optional) — Supabase/Firebase backend for cross-device progress

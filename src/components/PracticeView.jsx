@@ -3,7 +3,7 @@ import { LETTERS, FORM_DESCRIPTIONS } from '../data/letters';
 import { LESSON_ORDER, getLessonGroup } from '../data/lessonOrder';
 import { calcLineWidth, setBrushScale } from '../utils/drawing';
 import { getAIFeedback } from '../utils/api';
-import { markPracticed, getProgress, isLetterStarted, isLetterComplete, countCompleted, setScore } from '../utils/progress';
+import { markPracticed, isLetterStarted, isLetterComplete, countCompleted, setScore, updateSR, getDueLetters } from '../utils/progress';
 import { addFeedbackEntry, getFeedbackHistory } from '../utils/history';
 import STROKE_DATA from '../data/strokeOrder';
 import { WORD_GROUPS } from '../data/words';
@@ -34,7 +34,6 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
   const [loading, setLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [progress, setProgress] = useState(() => getProgress());
   const [showHistory, setShowHistory] = useState(false);
   const [lessonMode, setLessonMode] = useState(
     () => localStorage.getItem('lessonMode') === 'true'
@@ -44,6 +43,7 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
   const [practiceMode, setPracticeMode] = useState('letters');
   const [wordGroupIndex, setWordGroupIndex] = useState(0);
   const [wordIndex, setWordIndex] = useState(0);
+  const [hasStrokes, setHasStrokes] = useState(false);
 
   const t = (key) => UI[locale][key] ?? key;
 
@@ -99,6 +99,7 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
   const clearCanvas = useCallback(() => {
     strokesRef.current = [];
     setFeedback(null);
+    setHasStrokes(false);
     const canvas = canvasRef.current;
     if (canvas) {
       canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
@@ -191,6 +192,7 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
     while (i > 0 && !strokes[i].newStroke) i--;
     strokesRef.current = strokes.slice(0, i);
     redraw(strokesRef.current);
+    if (!strokesRef.current.length) setHasStrokes(false);
   }, [redraw]);
 
   // ─── Stroke order animation ────────────────────────────
@@ -339,11 +341,98 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
     return { x: e.clientX - rect.left, y: e.clientY - rect.top, pressure: e.pressure ?? 0.5, pointerType: e.pointerType ?? 'touch' };
   };
 
-  const handlePointerDown = (e) => { e.preventDefault(); strokesRef.current.push({ ...getPoint(e), newStroke: true }); };
+  const handlePointerDown = (e) => { e.preventDefault(); strokesRef.current.push({ ...getPoint(e), newStroke: true }); if (!hasStrokes) setHasStrokes(true); };
   const handlePointerMove = (e) => { e.preventDefault(); if (e.buttons === 0) return; strokesRef.current.push({ ...getPoint(e), newStroke: false }); redraw(strokesRef.current); };
   const handlePointerUp = (e) => { e.preventDefault(); };
 
   // ─── Canvas export ────────────────────────────────
+
+  // ─── Export for save (full-res PNG) ─────────────────
+
+  const exportForSave = useCallback(() => {
+    const canvas = canvasRef.current;
+    const dpr = devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const offscreen = document.createElement('canvas');
+    offscreen.width = rect.width * dpr;
+    offscreen.height = rect.height * dpr;
+    const ctx = offscreen.getContext('2d');
+    ctx.fillStyle = darkMode ? '#1a1008' : '#fdf6e8';
+    ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+    const watermarkText = practiceMode === 'words' ? currentWord?.word : currentChar;
+    const fontSize = (practiceMode === 'words' ? 0.25 : 0.5) * Math.min(offscreen.width, offscreen.height);
+    ctx.save();
+    ctx.globalAlpha = 0.15;
+    ctx.fillStyle = '#8b4513';
+    ctx.font = `bold ${fontSize}px 'Amiri','Scheherazade New',serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.direction = 'rtl';
+    ctx.fillText(watermarkText, offscreen.width / 2, offscreen.height / 2);
+    ctx.restore();
+    ctx.drawImage(canvas, 0, 0);
+    return offscreen.toDataURL('image/png');
+  }, [darkMode, practiceMode, currentWord, currentChar]);
+
+  const saveDrawing = useCallback(() => {
+    if (!strokesRef.current.length) return;
+    const dataURL = exportForSave();
+    const name = practiceMode === 'words'
+      ? `arabic-${currentWord?.roman ?? 'word'}`
+      : `arabic-${letter.name.toLowerCase()}-${activeForm}`;
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = `${name}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, [exportForSave, practiceMode, currentWord, letter.name, activeForm]);
+
+  const shareDrawing = useCallback(async () => {
+    if (!strokesRef.current.length) return;
+    const dataURL = exportForSave();
+    const name = practiceMode === 'words'
+      ? `arabic-${currentWord?.roman ?? 'word'}`
+      : `arabic-${letter.name.toLowerCase()}-${activeForm}`;
+    if (navigator.share) {
+      try {
+        const res = await fetch(dataURL);
+        const blob = await res.blob();
+        const file = new File([blob], `${name}.png`, { type: 'image/png' });
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Arabic Handwriting Practice' });
+          return;
+        }
+      } catch (_) {}
+    }
+    const a = document.createElement('a');
+    a.href = dataURL;
+    a.download = `${name}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }, [exportForSave, practiceMode, currentWord, letter.name, activeForm]);
+
+  // ─── Navigate to letter from review dashboard ──────────
+
+  const goToReviewItem = useCallback((letterName, formKey) => {
+    const alphIdx = LETTERS.findIndex((l) => l.name === letterName);
+    if (alphIdx === -1) return;
+    if (lessonMode) {
+      const lessonIdx = lessonToAlpha.indexOf(alphIdx);
+      setLetterIndex(lessonIdx !== -1 ? lessonIdx : 0);
+    } else {
+      setLetterIndex(alphIdx);
+    }
+    setFormIndex(formKey);
+    setPracticeMode('letters');
+    setFeedback(null);
+    setShowComparison(false);
+    setShowHistory(false);
+    clearCanvas();
+  }, [lessonMode, lessonToAlpha, clearCanvas]);
+
+  // ─── Canvas export (AI, JPEG 512px) ──────────────────
 
   const exportCanvas = () => {
     const canvas = canvasRef.current;
@@ -405,9 +494,8 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
       const score = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
       const cleanText = text.replace(/\[SCORE:\s*\d\]\s*/g, '').trim();
       if (practiceMode === 'letters') {
-        const updated = markPracticed(letter.name, activeForm);
-        if (score) setScore(letter.name, activeForm, score);
-        setProgress(updated);
+        markPracticed(letter.name, activeForm);
+        if (score) { setScore(letter.name, activeForm, score); updateSR(letter.name, activeForm, score); }
         addFeedbackEntry(letter.name, activeForm, cleanText);
       }
       setFeedback({ text: cleanText, score });
@@ -540,30 +628,89 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
       )}
 
       {/* Mode tabs */}
-      <div style={styles.modeTabs} role="tablist" aria-label={locale === 'ar' ? 'وضع التدريب' : 'Practice mode'}>
-        <button
-          className="btn-form"
-          style={{ ...styles.modeTab, ...(practiceMode === 'letters' ? styles.modeTabActive : {}) }}
-          onClick={() => switchPracticeMode('letters')}
-          role="tab"
-          aria-selected={practiceMode === 'letters'}
-          aria-label={t('ariaModeTab') + ': ' + t('tabLetters')}
-          id="tab-letters"
-        >
-          {t('tabLetters')}
-        </button>
-        <button
-          className="btn-form"
-          style={{ ...styles.modeTab, ...(practiceMode === 'words' ? styles.modeTabActive : {}) }}
-          onClick={() => switchPracticeMode('words')}
-          role="tab"
-          aria-selected={practiceMode === 'words'}
-          aria-label={t('ariaModeTab') + ': ' + t('tabWords')}
-          id="tab-words"
-        >
-          {t('tabWords')}
-        </button>
-      </div>
+      {(() => {
+        const dueCount = getDueLetters(LETTERS).length;
+        return (
+          <div style={styles.modeTabs} role="tablist" aria-label={locale === 'ar' ? 'وضع التدريب' : 'Practice mode'}>
+            <button
+              className="btn-form"
+              style={{ ...styles.modeTab, ...(practiceMode === 'letters' ? styles.modeTabActive : {}) }}
+              onClick={() => switchPracticeMode('letters')}
+              role="tab"
+              aria-selected={practiceMode === 'letters'}
+              aria-label={t('ariaLetterTab')}
+              id="tab-letters"
+            >
+              {t('tabLetters')}
+            </button>
+            <button
+              className="btn-form"
+              style={{ ...styles.modeTab, ...(practiceMode === 'words' ? styles.modeTabActive : {}) }}
+              onClick={() => switchPracticeMode('words')}
+              role="tab"
+              aria-selected={practiceMode === 'words'}
+              aria-label={t('ariaModeTab') + ': ' + t('tabWords')}
+              id="tab-words"
+            >
+              {t('tabWords')}
+            </button>
+            <button
+              className="btn-form"
+              style={{ ...styles.modeTab, ...(practiceMode === 'review' ? styles.modeTabActive : {}), position: 'relative' }}
+              onClick={() => switchPracticeMode('review')}
+              role="tab"
+              aria-selected={practiceMode === 'review'}
+              aria-label={t('ariaDashboardTab')}
+              id="tab-review"
+            >
+              {t('tabReview')}
+              {dueCount > 0 && (
+                <span style={{ ...styles.reviewCount, position: 'absolute', top: '-6px', right: '-6px', fontSize: '10px', padding: '1px 5px' }}>
+                  {dueCount}
+                </span>
+              )}
+            </button>
+          </div>
+        );
+      })()}
+
+      {/* Review dashboard */}
+      {practiceMode === 'review' && (() => {
+        const dueItems = getDueLetters(LETTERS);
+        return (
+          <div style={styles.reviewDash}>
+            <div style={styles.reviewHeader}>
+              {t('dashboardTitle')}
+              {dueItems.length > 0 && (
+                <span style={styles.reviewCount}>{dueItems.length} {t('dashboardCount')}</span>
+              )}
+            </div>
+            {dueItems.length === 0 ? (
+              <div style={styles.reviewEmpty}>{t('dashboardEmpty')}</div>
+            ) : (
+              <div style={styles.reviewGrid}>
+                {dueItems.map(({ letterName, letterChar, formKey }) => (
+                  <button
+                    key={`${letterName}-${formKey}`}
+                    className="btn-alpha"
+                    style={styles.reviewTile}
+                    onClick={() => goToReviewItem(letterName, formKey)}
+                    aria-label={`${letterName} ${t(FORM_NAMES[formKey] ?? formKey)}`}
+                    title={`${letterName} — ${t(FORM_NAMES[formKey] ?? formKey)}`}
+                  >
+                    <span style={styles.reviewTileChar} lang="ar">{letterChar}</span>
+                    <span style={styles.reviewTileName}>{letterName}</span>
+                    <span style={styles.reviewTileForm}>{t(FORM_NAMES[formKey] ?? formKey)}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {/* Practice UI (hidden in review mode) */}
+      {practiceMode !== 'review' && <>
 
       {/* Info bar */}
       {practiceMode === 'letters' ? (
@@ -754,6 +901,24 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
         >
           {t('btnNext')}
         </button>
+        <button
+          className="btn-clear"
+          style={{ ...styles.btn, ...styles.btnSave, opacity: hasStrokes ? 1 : 0.35 }}
+          onClick={saveDrawing}
+          disabled={!hasStrokes}
+          aria-label={t('ariaSaveBtn')}
+        >
+          {t('btnSave')}
+        </button>
+        <button
+          className="btn-nav"
+          style={{ ...styles.btn, ...styles.btnShare, opacity: hasStrokes ? 1 : 0.35 }}
+          onClick={shareDrawing}
+          disabled={!hasStrokes}
+          aria-label={t('ariaShareBtn')}
+        >
+          {t('btnShare')}
+        </button>
       </div>
 
       {/* Feedback box */}
@@ -892,6 +1057,8 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
           ))}
         </div>
       )}
+
+      </>}
     </div>
   );
 }
