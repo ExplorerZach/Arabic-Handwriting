@@ -2,40 +2,17 @@
 
 ## Project Overview
 
-Arabic handwriting practice PWA built with React 19 + Vite 8. Users draw Arabic
-letters on a canvas (Apple Pencil / touch / mouse) and get AI feedback from an
-OpenRouter LLM via vision API. Deployed as a static site on Vercel — push to
-`main` triggers auto-deploy.
+Arabic handwriting practice PWA (React 19 + Vite 8). Users draw Arabic letters
+or words on an HTML canvas (Apple Pencil / touch / mouse) and receive AI
+calligraphy feedback via the OpenRouter vision API. Deployed as a static site on
+Vercel — push to `main` triggers auto-deploy.
 
-## Architecture
+The app has two practice modes: **Letters** (all 28 Arabic letters in up to 4
+positional forms each) and **Words** (common ligatures, vocabulary, and short
+phrases). A guided **Lesson Mode** reorders letters by shape family for
+structured learning.
 
-```
-index.html                 — Vite entry point (refs src/main.jsx)
-package.json               — Dependencies & scripts
-vite.config.js             — Vite + React plugin
-src/
-├── main.jsx               — createRoot + StrictMode
-├── App.jsx                — Root component, API key state
-├── components/
-│   ├── LoginScreen.jsx    — API key entry
-│   └── PracticeView.jsx   — Canvas + drawing + AI feedback
-├── data/
-│   └── letters.js         — 28 Arabic letters, form generation
-├── utils/
-│   ├── drawing.js         — Pressure calc, brush scale, stroke color
-│   └── api.js             — OpenRouter vision API call
-└── styles/
-    ├── loginStyles.js     — Login screen style object
-    └── practiceStyles.js  — Practice view style object (~40 keys)
-public/                    — Static assets copied to dist/ as-is
-├── sw.js                  — Service worker (cache-first)
-├── manifest.json          — PWA manifest
-├── vercel.json            — Vercel headers config
-├── icon-192.png           — PWA icon
-└── icon-512.png           — PWA icon
-```
-
-## Build & Development Commands
+## Commands
 
 ```bash
 npm run dev       # Vite dev server → localhost:5173
@@ -43,115 +20,161 @@ npm run build     # Production build → dist/
 npm run preview   # Preview production build locally
 ```
 
-There is **no test suite, no linter, no formatter** configured in this project.
-Verify changes by running `npm run build` (must succeed with zero errors) and by
-testing in the browser.
+No test suite, linter, or formatter exists. Verify changes with `npm run build`
+(must exit zero) and manual browser testing.
 
-## Service Worker — IMPORTANT
+## Architecture
 
-After **any JS/asset change that produces a new build**, you must:
-1. Run `npm run build` to get the new hashed filename (e.g. `index-XXXXXXXX.js`)
-2. Update `public/sw.js`: bump `CACHE` version string and update the asset path in `ASSETS`
-
-The root `sw.js` is a copy — the canonical version is `public/sw.js`.
-
-## Code Style
-
-### Language & Tooling
-
-- **JavaScript (JSX)**, ES2022+. No TypeScript.
-- Vite with `@vitejs/plugin-react` handles JSX transform automatically — no
-  manual `import React` needed.
-- `"type": "module"` in package.json — all files use ES module syntax.
-
-### Imports
-
-React hooks are imported individually from `'react'`:
-```js
-import { useState, useRef, useCallback, useEffect } from 'react';
 ```
-Local imports use relative paths with explicit file extensions omitted:
-```js
-import styles from '../styles/practiceStyles';
-import { LETTERS, FORM_NAMES } from '../data/letters';
+index.html                 — Vite entry; loads Google Fonts (Amiri, Scheherazade New), registers SW
+src/
+├── main.jsx               — createRoot + StrictMode, imports global.css
+├── App.jsx                — Root; manages API key state, gates Login vs Practice
+├── components/
+│   ├── LoginScreen.jsx    — API key entry + "Continue without AI" skip
+│   └── PracticeView.jsx   — Main UI: canvas, drawing, letter/word nav, AI feedback, animation
+├── data/
+│   ├── letters.js         — 28 letters with auto-generated positional forms (tatweel joins)
+│   ├── lessonOrder.js     — Shape-family groups for guided lesson mode
+│   ├── strokeOrder.js     — Stroke-order coordinates (0–100 space) for "Show me" animation
+│   └── words.js           — Word groups (ligatures, common words, phrases)
+├── utils/
+│   ├── api.js             — OpenRouter vision API call with structured error handling
+│   ├── drawing.js         — Pressure-aware line width calc, brush scale, stroke color
+│   ├── progress.js        — Per-letter/form practice tracking + AI scores in localStorage
+│   └── history.js         — Last-5 AI feedback entries per letter/form in localStorage
+└── styles/
+    ├── global.css         — Reset, scrollbar, hover/active/focus states (CSS classes)
+    ├── practiceStyles.js  — Inline style object for PracticeView (~60 keys)
+    └── loginStyles.js     — Inline style object for LoginScreen
+public/                    — Copied un-hashed to dist/
+├── sw.js                  — Service worker (cache-first, canonical copy)
+├── manifest.json          — PWA manifest
+├── vercel.json            — Vercel cache headers
+├── icon-192.png
+└── icon-512.png
 ```
 
-### Component Structure
+### Data flow
 
-- **Functional components only** — no class components.
-- One component per file, **default export**, filename matches component name.
-- Props are destructured in the function signature: `function App({ apiKey, onClearKey })`.
-- `useCallback` for functions passed as props or in dependency arrays.
-- `useRef` for mutable data that must not trigger re-renders (e.g. stroke data).
+1. `App.jsx` reads `openrouter_key` from localStorage → shows `LoginScreen` or
+   `PracticeView`.
+2. `PracticeView` owns all state: current letter/word/form index, feedback,
+   drawing mode, comparison view, animation state.
+3. Canvas pointer events → `strokesRef` (mutable `useRef` array, not React
+   state) → `redraw()` on every move.
+4. "AI Feedback" → `exportCanvas()` composites ghost watermark + user strokes,
+   downscales to 512px JPEG → `getAIFeedback()` sends to OpenRouter → response
+   parsed for `[SCORE:N]` tag → feedback + score displayed, progress updated.
+5. Progress and history utilities read/write localStorage independently.
 
-### Naming Conventions
+### Key architectural decisions
 
-| Element           | Convention          | Example                          |
-|-------------------|---------------------|----------------------------------|
-| Components        | PascalCase          | `App`, `LoginScreen`             |
-| Props/handlers    | camelCase, on/handle| `onSave`, `handlePointerDown`    |
-| State             | camelCase           | `apiKey`, `letterIndex`          |
-| State setters     | `set` + PascalCase  | `setApiKey`, `setLetterIndex`    |
-| Module constants  | UPPER_SNAKE_CASE    | `STROKE_COLOR`, `TATWEEL`        |
-| Style keys        | camelCase           | `styles.btnAI`, `styles.root`   |
-| Refs              | camelCase + `Ref`   | `canvasRef`, `strokesRef`        |
-| Utility functions | camelCase           | `calcLineWidth`, `setBrushScale` |
+- **PracticeView is a single ~1150-line component.** All practice UI lives here.
+  New features (buttons, panels, modes) go in this file unless they clearly
+  warrant extraction.
+- **Stroke data lives in a ref, not state.** Drawing performance depends on this.
+  Never move `strokesRef` to `useState`.
+- **No React Context or global state.** `apiKey` flows via props from `App`.
+  Everything else is local to `PracticeView` or in localStorage.
+- **Letter forms are auto-generated** from the base character using tatweel
+  (kashida `ـ`) joining in `letters.js`. Don't manually define positional form
+  characters.
 
-### Styling
+## Service Worker — Critical
 
-- **All styles are inline JS objects** — no CSS files, no CSS modules, no Tailwind.
-- Style objects live in `src/styles/` and export a single default object.
+After **any code change that produces a new build**:
+
+1. Run `npm run build` — note the hashed filenames in `dist/assets/` (e.g.
+   `index-XXXXXXXX.js`, `index-XXXXXXXX.css`).
+2. Update `public/sw.js`:
+   - Bump the `CACHE` version string (e.g. `'arabic-v8'` → `'arabic-v9'`).
+   - Replace the JS and CSS paths in the `ASSETS` array with the new hashes.
+3. Copy `public/sw.js` to the root `sw.js` (they must stay in sync).
+
+Forgetting this step means returning users get stale cached assets until their
+browser evicts the old service worker (~24h).
+
+## localStorage Keys — Do Not Rename
+
+| Key                        | Type   | Purpose                                 |
+|----------------------------|--------|-----------------------------------------|
+| `openrouter_key`           | string | API key                                 |
+| `openrouter_model`         | string | Selected model ID                       |
+| `brushScale`               | string | Brush size multiplier (float as string) |
+| `lessonMode`               | string | `"true"` / `"false"`                    |
+| `arabic_progress`          | JSON   | Per-letter practice state + scores      |
+| `arabic_feedback_history`  | JSON   | Last 5 AI feedback entries per slot     |
+
+These keys are used by deployed clients. Renaming them silently loses user data.
+
+## Styling
+
+- **Inline JS style objects** in `src/styles/` — no CSS modules, no Tailwind.
+- **One exception**: `src/styles/global.css` provides hover/active/focus states
+  using CSS classes (`.btn-nav`, `.btn-ai`, `.btn-form`, `.btn-alpha`, etc.)
+  because pseudo-classes can't be expressed in inline styles.
+- Buttons in JSX get a `className` for interactive states AND inline `style` for
+  layout/colors. Both must be kept in sync when changing button styling.
 - Compose styles with spread: `{ ...styles.btn, ...styles.btnClear }`.
-- Color palette (warm parchment theme):
-  - Backgrounds: `#fdf0d0`, `#fdf6e8`, `#eedfa8`
-  - Text: `#5c2d00`, `#3d1800`, `#6b3800`
-  - Accent: `#8b4513`, `#c0703a`, `#9b6a30`
+- Color palette: warm parchment browns (`#fdf0d0`, `#5c2d00`, `#8b4513`,
+  `#c0703a`). Keep new UI elements within this palette.
 
-### State Management
+## Arabic Text Rendering
 
-- **Local state only** — no Redux, no Context.
-- Canvas stroke data is in a `useRef` (mutable array), not React state.
-- Persisted settings use `localStorage` with these **stable keys** (do not rename):
-  - `openrouter_key` — API key
-  - `openrouter_model` — selected model ID
-  - `brushScale` — brush size multiplier
+- Always set `lang="ar"`, `direction: "rtl"`, and use Arabic font stacks
+  (`'Amiri','Scheherazade New',serif`) when rendering Arabic characters.
+- Fonts are loaded via Google Fonts in `index.html`. If adding new Arabic fonts,
+  update the `<link>` tag there.
+- The `TATWEEL` character (`ـ`, U+0640) is used to generate connected letter
+  forms. It's the standard Arabic joining glyph — don't substitute it.
 
-### Error Handling
+## Canvas & Drawing Details
 
-- API errors: try/catch around fetch, displayed in feedback box with error styling.
-- Guard: minimum 5 stroke points before allowing AI analysis.
-- Service worker: 503 "Offline" response when cache + network both fail;
-  navigation failures fall back to cached `/index.html`.
+- HiDPI: canvas physical pixels = CSS pixels × `devicePixelRatio`. Sizing is
+  done in a `ResizeObserver` effect. All coordinates must account for DPR.
+- Stroke-order animation uses a glyph-reveal technique: renders the real font
+  glyph on an offscreen canvas, then progressively reveals it with a brush mask
+  (`destination-in` compositing). Coordinates in `strokeOrder.js` are in a
+  normalized 0–100 space, scaled at animation time.
+- Canvas export for AI: composites a faint reference watermark behind user
+  strokes, downscales to max 512px, exports as JPEG quality 0.85. The AI prompt
+  explicitly references this watermark layout.
 
-### JavaScript Patterns
+## AI Integration
 
-- `??` (nullish coalescing) for defaults: `pressure ?? 0.5`
-- Optional chaining where appropriate
-- Arrow functions for callbacks and inline handlers
-- Template literals for dynamic strings
-- Destructuring for props, state, and event data
+- Single function in `api.js`: `getAIFeedback(apiKey, imageBase64, letterName, letterChar, romanName, formDescription)`.
+- Model selection stored in `openrouter_model` localStorage; defaults to
+  `google/gemini-3-flash-preview`.
+- The system prompt instructs the AI to return `[SCORE:N]` (1–5) which is parsed
+  via regex in `PracticeView`. If you change the scoring format, update both the
+  prompt in `api.js` and the parser in `PracticeView.requestFeedback`.
+- Error codes 401/402/429/503 from OpenRouter are mapped to human-friendly
+  messages. The user can skip the API key entirely (`apiKey === 'skip'`), which
+  disables the AI button.
+- Minimum 5 stroke points required before AI analysis is allowed.
 
-### Canvas & Drawing
+## Conventions
 
-- HiDPI: canvas scaled by `devicePixelRatio`, kept in sync via `ResizeObserver`.
-- Strokes: array of `{ x, y, pressure, pointerType, newStroke }` objects.
-- Smooth curves via `quadraticCurveTo` between midpoints.
-- Line width from pressure: pen → `sqrt(pressure) * 32 * scale`,
-  touch → `pressure * 28 * scale`.
+- **JavaScript (JSX)**, ES2022+. No TypeScript. `"type": "module"` in
+  package.json.
+- Functional components only, default exports, one per file.
+- `useCallback` for handler functions passed as props or in dependency arrays.
+- `useRef` for mutable non-rendering data (strokes, canvas snapshot, animation
+  frame ID).
+- Named exports for data/utility modules, default exports for components and
+  style objects.
+- Constants: `UPPER_SNAKE_CASE`. Components: `PascalCase`. Everything else:
+  `camelCase`.
+- Short imperative commit messages. No conventional-commit prefixes.
 
-### Git Conventions
+## MCP Tools
 
-- Short imperative commit messages: "Add brush size slider", "Fix manifest icons".
-- No conventional-commit prefixes (no `feat:`, `fix:`, etc.).
-- `node_modules/`, `dist/`, `.claude/`, `.kilo/` are gitignored.
+- Prefer built-in `fetch`/`agentic_fetch` for web research and reading pages.
+- Only use Playwright MCP for tasks requiring JS rendering, interaction (clicks/forms), or screenshots.
 
-## Critical Rules for Agents
+## Roadmap Context
 
-1. **Bump `public/sw.js`** after any build — update `CACHE` version + asset path.
-2. **Do not rename localStorage keys** — `openrouter_key`, `openrouter_model`,
-   `brushScale` are used by existing clients.
-3. **Arabic text is RTL** — use `direction: "rtl"` and Arabic fonts
-   (`Amiri`, `Scheherazade New`) for letter rendering.
-4. **API key is client-side in localStorage** — intentional for this personal tool.
-5. **No test suite exists** — verify via `npm run build` + manual browser testing.
-6. **Static assets go in `public/`** — they are copied un-hashed to `dist/` by Vite.
+Phases 1–3 are complete (see `ROADMAP.md`). Phase 4 (accessibility, responsive
+layout, dark mode, localization) and Phase 5 (spaced repetition, export/share,
+automated SW busting, cloud sync) are planned but not started.

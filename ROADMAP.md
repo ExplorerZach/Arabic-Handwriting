@@ -43,7 +43,7 @@
 ---
 
 ## Phase 4: Polish & Accessibility
-> Not started
+> Completed (`777fc1f` extended with Phase 4 work)
 
 ### Approach notes
 - **Accessibility** — add ARIA labels to all buttons, `role` attributes, arrow-key navigation for the alphabet row, skip-to-content link.
@@ -51,10 +51,10 @@
 - **Dark mode** — CSS custom properties for the full color palette in `global.css`. Toggle stored in localStorage. Keep the warm aesthetic but inverted.
 - **Localization** — extract all UI strings to `src/locales/`. Add a language toggle (EN/AR). Full RTL layout when Arabic is selected.
 
-- [ ] Accessibility pass — ARIA, keyboard nav, focus rings on all interactives
-- [ ] Responsive layout — breakpoints for phone, tablet landscape, desktop
-- [ ] Dark mode — CSS custom properties + toggle in settings
-- [ ] Localization — Arabic UI option with full RTL layout
+- [x] Accessibility pass — ARIA, keyboard nav, focus rings on all interactives
+- [x] Responsive layout — breakpoints for phone, tablet landscape, desktop
+- [x] Dark mode — CSS custom properties + toggle in settings
+- [x] Localization — Arabic UI option with full RTL layout
 
 ---
 

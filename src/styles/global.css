@@ -1,4 +1,100 @@
-/* ─── Reset ──────────────────────────────────────────── */
+/* ─── Light mode defaults ───────────────────────────────── */
+:root {
+  --color-bg: #fdf0d0;
+  --color-bg-alt: #f5e0b0;
+  --color-surface: rgba(255, 252, 240, 0.85);
+  --color-surface-solid: rgba(255, 255, 255, 0.6);
+  --color-surface-hover: rgba(255, 255, 255, 0.85);
+  --color-text: #3d1800;
+  --color-text-muted: #9b6a30;
+  --color-text-soft: #6b4010;
+  --color-primary: #5c2d00;
+  --color-accent: #8b4513;
+  --color-accent-light: #c0703a;
+  --color-accent-warm: #7a3a0e;
+  --color-border: rgba(180, 130, 60, 0.35);
+  --color-border-strong: rgba(180, 130, 60, 0.6);
+  --color-shadow: rgba(100, 60, 0, 0.12);
+  --color-shadow-deep: rgba(139, 69, 19, 0.3);
+  --color-canvas-bg: rgba(255, 252, 240, 0.85);
+  --color-canvas-border: rgba(180, 130, 60, 0.4);
+  --color-ghost: rgba(139, 90, 43, 0.18);
+  --color-btn-clear-bg: rgba(220, 180, 120, 0.3);
+  --color-btn-nav-bg: rgba(255, 255, 255, 0.6);
+  --color-btn-showme-bg: rgba(139, 69, 19, 0.1);
+  --color-btn-ai-bg: linear-gradient(135deg, #8b4513, #c0703a);
+  --color-btn-alpha-bg: rgba(255, 255, 255, 0.5);
+  --color-btn-alpha-hover: rgba(255, 248, 230, 0.95);
+  --color-dot-complete: #5a9e4e;
+  --color-dot-started: #c0703a;
+  --color-offline-bg: rgba(180, 130, 60, 0.2);
+  --color-feedback-error-bg: rgba(255, 235, 235, 0.9);
+  --color-feedback-error-border: rgba(200, 100, 100, 0.4);
+  --color-feedback-error-text: #8b2000;
+  --color-star-filled: #c0703a;
+  --color-star-empty: rgba(180, 130, 60, 0.25);
+  --color-form-active-bg: linear-gradient(150deg, #7a3a0e, #c0703a);
+  --color-input-bg: rgba(255, 252, 240, 0.9);
+  --color-progress-badge-bg: rgba(180, 130, 60, 0.15);
+  --color-scrollbar-thumb: rgba(139, 90, 43, 0.35);
+  --color-scrollbar-thumb-hover: rgba(139, 90, 43, 0.6);
+  --color-outline: #c0703a;
+  --color-gradient-start: #fdf0d0;
+  --color-gradient-mid: #f5e0b0;
+  --color-gradient-end: #eedfa8;
+  --color-link: #8b4513;
+  --color-card-bg: rgba(255, 255, 255, 0.7);
+}
+
+/* ─── Dark mode ──────────────────────────────────────────── */
+[data-theme="dark"] {
+  --color-bg: #1a0e05;
+  --color-bg-alt: #2b1508;
+  --color-surface: rgba(35, 18, 5, 0.88);
+  --color-surface-solid: rgba(35, 18, 5, 0.75);
+  --color-surface-hover: rgba(55, 28, 8, 0.88);
+  --color-text: #f5e0b0;
+  --color-text-muted: #c0905a;
+  --color-text-soft: #d4a870;
+  --color-primary: #e8c89a;
+  --color-accent: #c0703a;
+  --color-accent-light: #d4905a;
+  --color-accent-warm: #a0602a;
+  --color-border: rgba(192, 112, 58, 0.35);
+  --color-border-strong: rgba(192, 112, 58, 0.6);
+  --color-shadow: rgba(0, 0, 0, 0.4);
+  --color-shadow-deep: rgba(0, 0, 0, 0.5);
+  --color-canvas-bg: rgba(30, 15, 4, 0.9);
+  --color-canvas-border: rgba(192, 112, 58, 0.45);
+  --color-ghost: rgba(192, 112, 58, 0.15);
+  --color-btn-clear-bg: rgba(60, 30, 10, 0.5);
+  --color-btn-nav-bg: rgba(50, 25, 8, 0.6);
+  --color-btn-showme-bg: rgba(50, 25, 8, 0.4);
+  --color-btn-ai-bg: linear-gradient(135deg, #7a3a0e, #c0703a);
+  --color-btn-alpha-bg: rgba(50, 25, 8, 0.55);
+  --color-btn-alpha-hover: rgba(70, 35, 12, 0.9);
+  --color-dot-complete: #6abf5e;
+  --color-dot-started: #d4905a;
+  --color-offline-bg: rgba(60, 30, 10, 0.5);
+  --color-feedback-error-bg: rgba(50, 15, 15, 0.9);
+  --color-feedback-error-border: rgba(200, 80, 80, 0.4);
+  --color-feedback-error-text: #e88080;
+  --color-star-filled: #d4905a;
+  --color-star-empty: rgba(192, 112, 58, 0.3);
+  --color-form-active-bg: linear-gradient(150deg, #8b4513, #d4905a);
+  --color-input-bg: rgba(30, 15, 4, 0.9);
+  --color-progress-badge-bg: rgba(192, 112, 58, 0.2);
+  --color-scrollbar-thumb: rgba(192, 112, 58, 0.4);
+  --color-scrollbar-thumb-hover: rgba(192, 112, 58, 0.65);
+  --color-outline: #d4905a;
+  --color-gradient-start: #1a0e05;
+  --color-gradient-mid: #2b1508;
+  --color-gradient-end: #231008;
+  --color-link: #d4905a;
+  --color-card-bg: rgba(35, 18, 5, 0.8);
+}
+
+/* ─── Reset ─────────────────────────────────────────────── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -6,10 +102,39 @@
 }
 
 body {
-  background: #fdf0d0;
+  background: var(--color-bg);
+  transition: background 0.2s;
 }
 
-/* ─── Scrollbar (WebKit) ─────────────────────────────── */
+/* ─── RTL support ─────────────────────────────────────────── */
+html[lang="ar"] body,
+[data-locale="ar"] body {
+  direction: rtl;
+}
+
+/* ─── Skip-to-content link ─────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--color-accent);
+  color: #fff8ee;
+  padding: 8px 16px;
+  border-radius: 0 0 8px 8px;
+  z-index: 9999;
+  font-size: 14px;
+  font-family: Georgia, serif;
+  text-decoration: none;
+  transition: top 0.15s;
+}
+.skip-link:focus {
+  top: 0;
+  outline: 2px solid var(--color-outline);
+  outline-offset: 2px;
+}
+
+/* ─── Scrollbar (WebKit) ──────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -18,17 +143,17 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(139, 90, 43, 0.35);
+  background: var(--color-scrollbar-thumb);
   border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 90, 43, 0.6);
+  background: var(--color-scrollbar-thumb-hover);
 }
 
-/* ─── Button base interactions ───────────────────────── */
+/* ─── Button base interactions ────────────────────────── */
 button {
   cursor: pointer;
-  transition: opacity 0.12s, transform 0.1s, box-shadow 0.12s, background 0.12s;
+  transition: opacity 0.12s, transform 0.1s, box-shadow 0.12s, background 0.12s, color 0.15s;
 }
 button:active:not(:disabled) {
   transform: scale(0.96);
@@ -39,95 +164,155 @@ button:disabled {
 
 /* ─── Nav buttons (Prev / Next) ──────────────────────── */
 .btn-nav:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.85) !important;
-  box-shadow: 0 2px 8px rgba(139, 69, 19, 0.15);
+  background: var(--color-surface-hover) !important;
+  box-shadow: 0 2px 8px var(--color-shadow-deep);
 }
 .btn-nav:focus-visible {
-  outline: 2px solid #c0703a;
+  outline: 2px solid var(--color-outline);
   outline-offset: 2px;
 }
 
-/* ─── Clear / Undo buttons ───────────────────────────── */
+/* ─── Clear / Undo buttons ─────────────────────────────── */
 .btn-clear:hover:not(:disabled) {
-  background: rgba(220, 180, 120, 0.55) !important;
+  background: var(--color-btn-clear-bg) !important;
 }
 .btn-clear:focus-visible {
-  outline: 2px solid #c0703a;
+  outline: 2px solid var(--color-outline);
   outline-offset: 2px;
 }
 
 /* ─── AI Feedback button ─────────────────────────────── */
 .btn-ai:hover:not(:disabled) {
-  box-shadow: 0 4px 18px rgba(139, 69, 19, 0.55) !important;
+  box-shadow: 0 4px 18px var(--color-shadow-deep) !important;
   filter: brightness(1.08);
 }
 .btn-ai:focus-visible {
-  outline: 2px solid #c0703a;
+  outline: 2px solid var(--color-outline);
   outline-offset: 2px;
 }
 
 /* ─── Form switcher buttons ──────────────────────────── */
 .btn-form:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.8) !important;
-  border-color: rgba(180, 130, 60, 0.6) !important;
+  background: var(--color-surface-hover) !important;
+  border-color: var(--color-border-strong) !important;
 }
 .btn-form:focus-visible {
-  outline: 2px solid #c0703a;
+  outline: 2px solid var(--color-outline);
   outline-offset: 2px;
 }
 
-/* ─── Alphabet row buttons ───────────────────────────── */
+/* ─── Alphabet row buttons ────────────────────────────── */
 .btn-alpha:hover:not(:disabled) {
-  background: rgba(255, 248, 230, 0.95) !important;
-  border-color: rgba(180, 130, 60, 0.5) !important;
+  background: var(--color-btn-alpha-hover) !important;
+  border-color: var(--color-border-strong) !important;
   transform: scale(1.12);
 }
 .btn-alpha:focus-visible {
-  outline: 2px solid #c0703a;
+  outline: 2px solid var(--color-outline);
   outline-offset: 2px;
 }
 
-/* ─── Settings / gear button ─────────────────────────── */
+/* ─── Settings / gear button ──────────────────────────── */
 .btn-gear:hover {
-  color: #5c2d00 !important;
+  color: var(--color-primary) !important;
 }
 .btn-gear:focus-visible {
-  outline: 2px solid #c0703a;
+  outline: 2px solid var(--color-outline);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-/* ─── Settings panel buttons ─────────────────────────── */
+/* ─── Settings panel buttons ──────────────────────────── */
 .btn-panel:hover {
-  background: rgba(255, 255, 255, 0.5) !important;
+  background: var(--color-surface-hover) !important;
 }
 .btn-panel:focus-visible {
-  outline: 2px solid #c0703a;
+  outline: 2px solid var(--color-outline);
   outline-offset: 2px;
 }
 
-/* ─── Select dropdown ────────────────────────────────── */
+/* ─── Select dropdown ─────────────────────────────────── */
 select:focus-visible {
-  outline: 2px solid #c0703a;
+  outline: 2px solid var(--color-outline);
   outline-offset: 2px;
 }
 
 /* ─── Range slider ───────────────────────────────────── */
 input[type="range"] {
-  accent-color: #8b4513;
+  accent-color: var(--color-accent);
 }
 input[type="range"]:focus-visible {
-  outline: 2px solid #c0703a;
+  outline: 2px solid var(--color-outline);
   outline-offset: 3px;
   border-radius: 4px;
 }
 
 /* ─── History toggle button ──────────────────────────── */
 .btn-history:hover {
-  color: #5c2d00 !important;
+  color: var(--color-primary) !important;
 }
 .btn-history:focus-visible {
-  outline: 2px solid #c0703a;
+  outline: 2px solid var(--color-outline);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* ─── Responsive breakpoints ─────────────────────────── */
+
+/* Phone portrait — < 400px */
+@media (max-width: 399px) {
+  .practice-root {
+    padding: 10px 8px 24px !important;
+    gap: 6px !important;
+  }
+  .alpha-row-wrap {
+    overflow-x: auto;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    padding: 6px 4px !important;
+    max-width: 100% !important;
+  }
+  .alpha-row-wrap::-webkit-scrollbar {
+    height: 0;
+  }
+  .canvas-max {
+    max-width: 100% !important;
+  }
+  .btn {
+    padding: 8px 12px !important;
+    font-size: 13px !important;
+  }
+  .info-bar {
+    padding: 6px 10px !important;
+  }
+  .form-switcher {
+    gap: 6px !important;
+  }
+}
+
+/* Tablet portrait / small Android — 400–639px */
+@media (min-width: 400px) and (max-width: 639px) {
+  .practice-root {
+    padding: 14px 10px 28px !important;
+  }
+  .canvas-max {
+    max-width: 100% !important;
+  }
+}
+
+/* Tablet landscape — 640–899px */
+@media (min-width: 640px) and (max-width: 899px) {
+  .practice-root {
+    padding: 16px 20px 36px !important;
+  }
+  .canvas-max {
+    max-width: min(480px, 100%) !important;
+  }
+}
+
+/* Desktop — > 900px */
+@media (min-width: 900px) {
+  .practice-root {
+    padding: 20px 24px 48px !important;
+  }
 }
