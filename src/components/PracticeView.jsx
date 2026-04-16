@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { LETTERS, FORM_DESCRIPTIONS } from '../data/letters';
 import { LESSON_ORDER, getLessonGroup } from '../data/lessonOrder';
-import { calcLineWidth, setBrushScale, STROKE_COLOR } from '../utils/drawing';
+import { calcLineWidth, setBrushScale } from '../utils/drawing';
 import { getAIFeedback } from '../utils/api';
 import { markPracticed, getProgress, isLetterStarted, isLetterComplete, countCompleted, setScore } from '../utils/progress';
 import { addFeedbackEntry, getFeedbackHistory } from '../utils/history';
@@ -74,7 +74,7 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
     if (!points.length) return;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = STROKE_COLOR;
+    ctx.strokeStyle = darkMode ? '#ffffff' : '#1a0a00';
     for (let i = 0; i < points.length; i++) {
       const pt = points[i];
       const width = calcLineWidth(pt.pressure ?? 0.5, pt.pointerType ?? 'touch');

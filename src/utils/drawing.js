@@ -21,5 +21,3 @@ export function calcLineWidth(pressure, pointerType) {
   return Math.max(3, pressure * 28 * brushScale);
 }
 
-/** Stroke color — near-black brown ink */
-export const STROKE_COLOR = '#1a0a00';
