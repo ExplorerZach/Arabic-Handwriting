@@ -15,21 +15,59 @@
 const STORAGE_KEY = 'arabic_feedback_history';
 const MAX_PER_SLOT = 5;
 
+let cache = null;
+
 function load() {
+  if (cache !== null) return cache;
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    cache = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
   } catch {
-    return {};
+    cache = {};
   }
+  return cache;
 }
 
 function save(data) {
+  cache = data;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEY) cache = null;
+  });
 }
 
 function slotKey(letterName, formKey) {
   return `${letterName}_${formKey}`;
 }
+
+// ─── One-time migration for renamed letters ─────────────
+// Mirrors the migration in progress.js: ح (Hha) and ط (Tta) previously
+// collided with ه/ت under "Ha"/"Ta". Copy old slot entries onto the new
+// names so feedback history survives the rename.
+function migrate() {
+  const data = load();
+  let changed = false;
+  for (const key of Object.keys(data)) {
+    if (key.startsWith('Ha_')) {
+      const newKey = 'Hha_' + key.slice(3);
+      if (!data[newKey]) {
+        data[newKey] = data[key].slice();
+        changed = true;
+      }
+    }
+    if (key.startsWith('Ta_')) {
+      const newKey = 'Tta_' + key.slice(3);
+      if (!data[newKey]) {
+        data[newKey] = data[key].slice();
+        changed = true;
+      }
+    }
+  }
+  if (changed) save(data);
+}
+migrate();
 
 /** Add a feedback entry for a letter+form. Trims to MAX_PER_SLOT. */
 export function addFeedbackEntry(letterName, formKey, text) {
@@ -37,7 +75,6 @@ export function addFeedbackEntry(letterName, formKey, text) {
   const key = slotKey(letterName, formKey);
   const entries = data[key] || [];
   entries.push({ text, date: new Date().toISOString() });
-  // Keep only the most recent MAX_PER_SLOT entries
   data[key] = entries.slice(-MAX_PER_SLOT);
   save(data);
   return data[key];

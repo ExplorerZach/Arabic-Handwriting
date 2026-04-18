@@ -1,17 +1,19 @@
 import { useState } from 'react';
 import styles from '../styles/loginStyles';
+import { UI } from '../locales';
 
-export default function LoginScreen({ onSave, darkMode, onToggleDarkMode }) {
+export default function LoginScreen({ onSave, darkMode, onToggleDarkMode, locale = 'en' }) {
   const [key, setKey] = useState('');
+  const t = (k) => UI[locale][k] ?? k;
 
   return (
     <div style={styles.root}>
       <div style={styles.card}>
         <button
           onClick={onToggleDarkMode}
-          aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+          aria-label={darkMode ? t('ariaSwitchLight') : t('ariaSwitchDark')}
           aria-pressed={darkMode}
-          title={darkMode ? 'Light mode' : 'Dark mode'}
+          title={darkMode ? t('settingsLightMode') : t('settingsDarkMode')}
           style={{
             background: 'none',
             border: 'none',
@@ -26,32 +28,30 @@ export default function LoginScreen({ onSave, darkMode, onToggleDarkMode }) {
         >
           {darkMode ? '☀️' : '🌙'}
         </button>
-        <div style={styles.arabic}>مكتبة الخط</div>
-        <div style={styles.title}>Arabic Script Practice</div>
+        <div style={styles.arabic} lang="ar">{t('appTitle')}</div>
+        <div style={styles.title}>{t('appSubtitle')}</div>
 
         <p style={styles.body}>
-          This app uses AI for handwriting feedback. Paste your OpenRouter API
-          key below to get started. You can get one at{' '}
+          {t('loginIntroPrefix')}
           <a
             href="https://openrouter.ai/keys"
             target="_blank"
             rel="noreferrer"
             style={styles.link}
           >
-            openrouter.ai/keys
+            {t('loginIntroLink')}
           </a>
-          .
+          {t('loginIntroSuffix')}
         </p>
 
         <p style={styles.note}>
-          Your key is stored only on this device and never sent anywhere except
-          OpenRouter.
+          {t('loginNote')}
         </p>
 
         <input
           style={styles.input}
           type="password"
-          placeholder="sk-or-..."
+          placeholder={t('loginPlaceholder')}
           value={key}
           onChange={(e) => setKey(e.target.value)}
         />
@@ -64,7 +64,7 @@ export default function LoginScreen({ onSave, darkMode, onToggleDarkMode }) {
           disabled={!key.startsWith('sk-or-')}
           onClick={() => onSave(key.trim())}
         >
-          Start Practicing →
+          {t('loginStart')}
         </button>
 
         <button
@@ -78,7 +78,7 @@ export default function LoginScreen({ onSave, darkMode, onToggleDarkMode }) {
           }}
           onClick={() => onSave('skip')}
         >
-          Continue without AI
+          {t('loginSkip')}
         </button>
       </div>
     </div>

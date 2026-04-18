@@ -4,6 +4,7 @@ export const UI = {
     // App shell
     appTitle: 'مكتبة الخط',
     appSubtitle: 'Arabic Script Practice',
+    skipLink: 'Skip to canvas',
 
     // Header
     lessonToggleTitleOn: 'Switch to alphabetical order',
@@ -18,6 +19,7 @@ export const UI = {
     settingsModel: 'Model',
     settingsChangeKey: 'Change key',
     settingsDarkMode: 'Dark mode',
+    settingsLightMode: 'Light mode',
     settingsLanguage: 'Language',
     settingsLangEn: 'English',
     settingsLangAr: 'العربية',
@@ -40,6 +42,10 @@ export const UI = {
     formInitialShort: 'init',
     formMedialShort: 'med',
     formFinalShort: 'fin',
+    formIsolatedDesc: 'Stand-alone — used when the letter appears alone or after a non-joiner.',
+    formInitialDesc: 'Start of word — open on the right, connects left into the next letter.',
+    formMedialDesc: 'Middle of word — connects on both sides, usually the most compact form.',
+    formFinalDesc: 'End of word — connects on the right, tail closes off the word.',
 
     // Hint / progress
     hintRTL: '← Write right-to-left',
@@ -62,8 +68,41 @@ export const UI = {
 
     // Lesson mode
     lessonGroup: 'Lesson',
-    lessonGroupName: 'group:',
-    lessonGroupDesc: 'description:',
+    // Lesson group names + descriptions
+    lessonAlefName: 'Alef',
+    lessonAlefDesc: 'Single vertical stroke',
+    lessonBaName: 'Ba / Ta / Tha',
+    lessonBaDesc: 'Flat baseline, dots vary',
+    lessonJimName: 'Jim / Ha / Kha',
+    lessonJimDesc: 'Hooked bowl shape',
+    lessonDalName: 'Dal / Dhal',
+    lessonDalDesc: 'Angular wedge',
+    lessonRaName: 'Ra / Zay',
+    lessonRaDesc: 'Gentle descending curve',
+    lessonSinName: 'Sin / Shin',
+    lessonSinDesc: 'Three-wave baseline',
+    lessonSadName: 'Sad / Dad',
+    lessonSadDesc: 'Round head, long tail',
+    lessonTaEmphName: 'Ta / Dha',
+    lessonTaEmphDesc: 'Oval loop with upright stroke',
+    lessonAinName: 'Ain / Ghain',
+    lessonAinDesc: 'Open comma loop',
+    lessonFaName: 'Fa / Qaf',
+    lessonFaDesc: 'Circle with tail',
+    lessonKafName: 'Kaf',
+    lessonKafDesc: 'Tooth shape with accent',
+    lessonLamName: 'Lam',
+    lessonLamDesc: 'Tall hook',
+    lessonMimName: 'Mim',
+    lessonMimDesc: 'Tight circle with tail',
+    lessonNunName: 'Nun',
+    lessonNunDesc: 'Shallow bowl',
+    lessonHaSoftName: 'Ha',
+    lessonHaSoftDesc: 'Figure-eight loops',
+    lessonWawName: 'Waw',
+    lessonWawDesc: 'Circle with descending tail',
+    lessonYaName: 'Ya',
+    lessonYaDesc: 'Two humps with hook',
 
     // Feedback
     feedbackLabel: "Teacher's Notes",
@@ -84,11 +123,9 @@ export const UI = {
     historyShow: '▸ Past',
     historyHide: '▾ Past',
     historyOf: 'feedback',
-    historyCount: '(',
 
     // Words
     wordsLabel: 'words',
-    wordMeaning: '—',
 
     // Progress
     progressComplete: 'complete',
@@ -114,6 +151,12 @@ export const UI = {
     ariaOfflineBanner: 'You are currently offline',
     ariaCompletedBadge: 'letters completed',
     ariaProgressBadge: 'current position',
+    ariaPracticeMode: 'Practice mode',
+    ariaLetterForm: 'Letter form',
+    ariaWordGroup: 'Word group',
+    ariaTeacherFeedback: "Teacher's feedback",
+    ariaSelectLetter: 'Select a letter',
+    ariaSelectWord: 'Select a word',
 
     // Export / Share
     btnSave: 'Save',
@@ -127,6 +170,17 @@ export const UI = {
     dashboardCount: 'letters due',
     ariaDashboardTab: 'Review dashboard',
     ariaLetterTab: 'Practice letters',
+
+    // Login screen
+    loginIntroPrefix: 'This app uses AI for handwriting feedback. Paste your OpenRouter API key below to get started. You can get one at ',
+    loginIntroLink: 'openrouter.ai/keys',
+    loginIntroSuffix: '.',
+    loginNote: 'Your key is stored only on this device and never sent anywhere except OpenRouter.',
+    loginPlaceholder: 'sk-or-...',
+    loginStart: 'Start Practicing →',
+    loginSkip: 'Continue without AI',
+    ariaSwitchLight: 'Switch to light mode',
+    ariaSwitchDark: 'Switch to dark mode',
   },
 
 
@@ -134,6 +188,7 @@ export const UI = {
     // App shell
     appTitle: 'مكتبة الخط',
     appSubtitle: 'تدريب الخط العربي',
+    skipLink: 'تخطي إلى اللوحة',
 
     // Header
     lessonToggleTitleOn: 'الرجوع للترتيب الأبجدي',
@@ -148,6 +203,7 @@ export const UI = {
     settingsModel: 'النموذج',
     settingsChangeKey: 'تغيير المفتاح',
     settingsDarkMode: 'الوضع الداكن',
+    settingsLightMode: 'وضع فاتح',
     settingsLanguage: 'اللغة',
     settingsLangEn: 'English',
     settingsLangAr: 'العربية',
@@ -170,6 +226,10 @@ export const UI = {
     formInitialShort: 'مبت',
     formMedialShort: 'وس',
     formFinalShort: 'آخ',
+    formIsolatedDesc: 'مستقل — يُستخدم حين يظهر الحرف منفرداً أو بعد حرف غير متصل.',
+    formInitialDesc: 'أول الكلمة — مفتوح من اليمين، يتصل يساراً بالحرف التالي.',
+    formMedialDesc: 'وسط الكلمة — متصل من الجانبين، وهو عادةً أكثر الأشكال اختصاراً.',
+    formFinalDesc: 'آخر الكلمة — متصل من اليمين، وذيله يُغلق الكلمة.',
 
     // Hint / progress
     hintRTL: '← اكتب من اليمين إلى اليسار',
@@ -192,8 +252,41 @@ export const UI = {
 
     // Lesson mode
     lessonGroup: 'الدرس',
-    lessonGroupName: 'المجموعة:',
-    lessonGroupDesc: 'الوصف:',
+    // Lesson group names + descriptions
+    lessonAlefName: 'الألف',
+    lessonAlefDesc: 'خط عمودي واحد',
+    lessonBaName: 'باء / تاء / ثاء',
+    lessonBaDesc: 'قاعدة مستوية، النقاط تتغير',
+    lessonJimName: 'جيم / حاء / خاء',
+    lessonJimDesc: 'شكل الوعاء المعقوف',
+    lessonDalName: 'دال / ذال',
+    lessonDalDesc: 'إسفين زاوي',
+    lessonRaName: 'راء / زاي',
+    lessonRaDesc: 'منحنى هابط لطيف',
+    lessonSinName: 'سين / شين',
+    lessonSinDesc: 'ثلاث موجات على السطر',
+    lessonSadName: 'صاد / ضاد',
+    lessonSadDesc: 'رأس دائري وذيل طويل',
+    lessonTaEmphName: 'طاء / ظاء',
+    lessonTaEmphDesc: 'حلقة بيضاوية مع خط قائم',
+    lessonAinName: 'عين / غين',
+    lessonAinDesc: 'حلقة فاصلة مفتوحة',
+    lessonFaName: 'فاء / قاف',
+    lessonFaDesc: 'دائرة مع ذيل',
+    lessonKafName: 'كاف',
+    lessonKafDesc: 'شكل السن مع اللمسة',
+    lessonLamName: 'لام',
+    lessonLamDesc: 'خطاف طويل',
+    lessonMimName: 'ميم',
+    lessonMimDesc: 'دائرة ضيقة مع ذيل',
+    lessonNunName: 'نون',
+    lessonNunDesc: 'وعاء ضحل',
+    lessonHaSoftName: 'هاء',
+    lessonHaSoftDesc: 'حلقات شبيهة بالرقم ثمانية',
+    lessonWawName: 'واو',
+    lessonWawDesc: 'دائرة مع ذيل هابط',
+    lessonYaName: 'ياء',
+    lessonYaDesc: 'حدبتان مع خطاف',
 
     // Feedback
     feedbackLabel: 'ملاحظات المعلم',
@@ -214,11 +307,9 @@ export const UI = {
     historyShow: '▸ ملاحظات سابقة',
     historyHide: '▾ ملاحظات سابقة',
     historyOf: 'ملاحظة',
-    historyCount: '(',
 
     // Words
     wordsLabel: 'كلمات',
-    wordMeaning: '—',
 
     // Progress
     progressComplete: 'مكتمل',
@@ -244,6 +335,12 @@ export const UI = {
     ariaOfflineBanner: 'أنت غير متصل حالياً',
     ariaCompletedBadge: 'حروف مكتملة',
     ariaProgressBadge: 'الموضع الحالي',
+    ariaPracticeMode: 'وضع التدريب',
+    ariaLetterForm: 'شكل الحرف',
+    ariaWordGroup: 'مجموعة كلمات',
+    ariaTeacherFeedback: 'تعليقات المعلم',
+    ariaSelectLetter: 'اختيار الحرف',
+    ariaSelectWord: 'اختيار كلمة',
 
     // Export / Share
     btnSave: 'حفظ',
@@ -257,6 +354,17 @@ export const UI = {
     dashboardCount: 'حروف مطلوبة',
     ariaDashboardTab: 'لوحة المراجعة',
     ariaLetterTab: 'تدريب الحروف',
+
+    // Login screen
+    loginIntroPrefix: 'يستخدم هذا التطبيق الذكاء الاصطناعي لتقديم ملاحظات على خطك. الصق مفتاح OpenRouter API أدناه للبدء. يمكنك الحصول على مفتاح من ',
+    loginIntroLink: 'openrouter.ai/keys',
+    loginIntroSuffix: '.',
+    loginNote: 'المفتاح محفوظ فقط على هذا الجهاز ولا يُرسَل إلى أي جهة عدا OpenRouter.',
+    loginPlaceholder: 'sk-or-...',
+    loginStart: 'ابدأ التدريب →',
+    loginSkip: 'المتابعة بدون الذكاء الاصطناعي',
+    ariaSwitchLight: 'التبديل إلى الوضع الفاتح',
+    ariaSwitchDark: 'التبديل إلى الوضع الداكن',
   },
 };
 
@@ -274,9 +382,16 @@ export const FORM_SHORT = {
   final: 'formFinalShort',
 };
 
-export const FORM_DESCRIPTIONS = {
+export const FORM_FULL = {
   isolated: 'formIsolatedFull',
   initial: 'formInitialFull',
   medial: 'formMedialFull',
   final: 'formFinalFull',
+};
+
+export const FORM_DESCRIPTIONS = {
+  isolated: 'formIsolatedDesc',
+  initial: 'formInitialDesc',
+  medial: 'formMedialDesc',
+  final: 'formFinalDesc',
 };

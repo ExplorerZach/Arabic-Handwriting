@@ -20,41 +20,23 @@ function generateForms(letter) {
   };
 }
 
-/** Full positional form names */
-export const FORM_NAMES = {
-  isolated: 'Isolated',
-  initial: 'Initial',
-  medial: 'Medial',
-  final: 'Final',
-};
-
-/** Short human labels for each form */
-export const FORM_SHORT = {
-  isolated: 'alone',
-  initial: 'word start',
-  medial: 'word middle',
-  final: 'word end',
-};
-
-/** Longer descriptions for each positional form */
-export const FORM_DESCRIPTIONS = {
-  isolated:
-    'Stand-alone — used when the letter appears alone or after a non-joiner.',
-  initial:
-    'Start of word — open on the right, connects left into the next letter.',
-  medial:
-    'Middle of word — connects on both sides, usually the most compact form.',
-  final: 'End of word — connects on the right, tail closes off the word.',
-};
-
-/** The 28 Arabic letters with metadata and generated positional forms */
+/**
+ * The 28 Arabic letters with metadata and generated positional forms.
+ *
+ * NOTE on names: four letters share romanizations that would collide in
+ * progress/history storage (keyed by `name`). To prevent data corruption we
+ * use distinct English names for the collided pairs:
+ *   ح (ḥāʾ, pharyngeal)  → "Hha"   ≠   ه (hāʾ)      → "Ha"
+ *   ط (ṭāʾ, emphatic)    → "Tta"   ≠   ت (tāʾ)      → "Ta"
+ * progress.js migrates pre-existing "Ha"/"Ta" data to the new names.
+ */
 export const LETTERS = [
   { letter: 'ا', name: 'Alef', roman: 'a / ā', hint: 'One tall vertical stroke, slightly slanted right.', nonJoiner: true },
   { letter: 'ب', name: 'Ba', roman: 'b', hint: 'Flat horizontal base, one dot below center.' },
   { letter: 'ت', name: 'Ta', roman: 't', hint: 'Same base as Ba — two dots above.' },
   { letter: 'ث', name: 'Tha', roman: 'th', hint: 'Same base — three dots above in a triangle.' },
   { letter: 'ج', name: 'Jim', roman: 'j', hint: 'Hook curves right then sweeps under, one dot below.' },
-  { letter: 'ح', name: 'Ha', roman: 'ḥ', hint: 'Same hook shape as Jim — no dots.' },
+  { letter: 'ح', name: 'Hha', roman: 'ḥ', hint: 'Same hook shape as Jim — no dots.' },
   { letter: 'خ', name: 'Kha', roman: 'kh', hint: 'Same hook — one dot above.' },
   { letter: 'د', name: 'Dal', roman: 'd', hint: 'Angular wedge, like a right-angled hook.', nonJoiner: true },
   { letter: 'ذ', name: 'Dhal', roman: 'dh', hint: 'Same as Dal with one dot above.', nonJoiner: true },
@@ -64,7 +46,7 @@ export const LETTERS = [
   { letter: 'ش', name: 'Shin', roman: 'sh', hint: 'Same three waves — three dots above.' },
   { letter: 'ص', name: 'Sad', roman: 'ṣ', hint: 'Round head on the left, long tail sweeping right.' },
   { letter: 'ض', name: 'Dad', roman: 'ḍ', hint: 'Same as Sad — one dot above the head.' },
-  { letter: 'ط', name: 'Ta', roman: 'ṭ', hint: 'Oval loop with a tall vertical stroke inside.' },
+  { letter: 'ط', name: 'Tta', roman: 'ṭ', hint: 'Oval loop with a tall vertical stroke inside.' },
   { letter: 'ظ', name: 'Dha', roman: 'ẓ', hint: 'Same oval + stroke — one dot above.' },
   { letter: 'ع', name: 'Ain', roman: 'ʿ', hint: 'Open comma-like loop, tail curves down.' },
   { letter: 'غ', name: 'Ghain', roman: 'gh', hint: 'Same as Ain — one dot above.' },

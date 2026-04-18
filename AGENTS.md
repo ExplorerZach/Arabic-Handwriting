@@ -25,6 +25,24 @@ npm run preview   # Preview production build locally
 No test suite, linter, or formatter exists. Verify changes with `npm run build`
 (must exit zero) and manual browser testing.
 
+### LSP (for Crush / editor diagnostics)
+
+`typescript-language-server` is pinned to **`4.3.4`** in `devDependencies`. Do
+not upgrade to v5.x — it crashes under Crush with `no handler for method:
+window/workDoneProgress/create` because Crush's LSP client doesn't implement
+that capability. If you see `Language server stderr ... ResponseError: no
+handler for method: window/workDoneProgress/create` in `crush_logs`, you've
+been upgraded; revert to 4.3.4.
+
+`crush.json` launches it via `node node_modules/typescript-language-server/lib/cli.mjs --stdio`
+(direct script path, not the `.cmd` shim — mvdan/sh on Windows chokes on
+`./node_modules/.bin/...` invocations).
+
+`jsconfig.json` at the project root teaches tsserver about `jsx: "react-jsx"`
+and `moduleResolution: "bundler"`. `checkJs` is off by design (no TypeScript
+in this project); tsserver still surfaces real syntax errors and unused
+imports.
+
 ## Architecture
 
 ```
@@ -37,16 +55,16 @@ src/
 │   └── PracticeView.jsx   — Main UI: canvas, drawing, letter/word/review nav, AI feedback, animation
 ├── data/
 │   ├── letters.js         — 28 letters with auto-generated positional forms (tatweel joins)
-│   ├── lessonOrder.js     — Shape-family groups for guided lesson mode
+│   ├── lessonOrder.js     — Shape-family groups (with nameKey/descKey locale refs)
 │   ├── strokeOrder.js     — Stroke-order coordinates (0–100 space) for "Show me" animation
 │   └── words.js           — Word groups (ligatures, common words, phrases)
 ├── locales/
-│   └── index.js           — UI string map: { en: {...}, ar: {...} }; also exports FORM_NAMES etc.
+│   └── index.js           — UI string map + sole source of truth for FORM_NAMES / FORM_SHORT / FORM_FULL / FORM_DESCRIPTIONS
 ├── utils/
 │   ├── api.js             — OpenRouter vision API call with structured error handling
-│   ├── drawing.js         — Pressure-aware line width calc, brush scale, stroke color
-│   ├── progress.js        — Per-letter/form practice tracking, AI scores, SM-2 SR in localStorage
-│   └── history.js         — Last-5 AI feedback entries per letter/form in localStorage
+│   ├── drawing.js         — Pressure-aware line width calc (pressure=0 falls back to 0.5), brush scale
+│   ├── progress.js        — Practice tracking + SM-2 (cached parse, local dates, renamed-letter migration)
+│   └── history.js         — Last-5 AI feedback entries per letter/form (cached, with same migration)
 └── styles/
     ├── global.css         — CSS custom properties (light + dark), reset, responsive breakpoints,
     │                        hover/active/focus states (CSS classes)
@@ -66,27 +84,45 @@ scripts/
 
 1. `App.jsx` reads `openrouter_key` from localStorage → shows `LoginScreen` or `PracticeView`.
    Also manages `locale` (`'en'`/`'ar'`) and `darkMode` (boolean), passes them down as props.
+   `LoginScreen` also takes `locale` so its copy + aria-labels are translated.
 2. `PracticeView` owns all practice state: current letter/word/form index, feedback, drawing
-   mode, comparison view, animation state, etc.
-3. Canvas pointer events → `strokesRef` (mutable `useRef` array, not React state) →
-   `redraw()` on every move.
+   mode, comparison view, animation state, etc. A `progressVersion` counter state bumps
+   on every successful AI write; `useMemo` hooks keyed to it recompute `progressSummary`,
+   `completedCount`, and `dueItems` in a single pass instead of 56+ `load()` calls.
+3. Canvas pointer events → `strokesRef` (mutable `useRef` array, not React state; points
+   stored as **normalized 0–1 coords** so window resize / orientation doesn't mis-place
+   them) → `redraw()` on every move.
 4. "AI Feedback" → `exportCanvas()` composites ghost watermark + user strokes, downscales to
    512px JPEG → `getAIFeedback()` sends to OpenRouter → response parsed for `[SCORE:N]` tag
-   → feedback + score displayed, progress + SM-2 state updated.
-5. Progress and history utilities read/write localStorage independently.
+   (regex: `/\[SCORE:\s*([1-5])\s*\]/i`) → feedback + score displayed, progress + SM-2
+   state updated, `progressVersion` bumped.
+5. Progress and history utilities cache parsed JSON in module-level memory; writes go
+   through `save()` which updates both the cache and localStorage. Cross-tab edits are
+   handled via a `storage` event listener that invalidates the cache.
 
 ### Key architectural decisions
 
-- **PracticeView is a single ~1060-line component.** All practice UI lives here.
+- **PracticeView is a single ~1100-line component.** All practice UI lives here.
   New features (buttons, panels, modes) go in this file unless they clearly
   warrant extraction.
 - **Stroke data lives in a ref, not state.** Drawing performance depends on this.
-  Never move `strokesRef` to `useState`.
+  Never move `strokesRef` to `useState`. Coordinates are **normalized 0–1**
+  relative to the canvas rect and scaled to CSS pixels inside `redraw`; don't
+  push absolute coords into `strokesRef`.
 - **No React Context or global state.** `apiKey`, `locale`, `darkMode` flow via
   props from `App`. Everything else is local to `PracticeView` or in localStorage.
 - **Letter forms are auto-generated** from the base character using tatweel
   (kashida `ـ`) joining in `letters.js`. Don't manually define positional form
   characters.
+- **FORM_NAMES / FORM_SHORT / FORM_FULL / FORM_DESCRIPTIONS live only in
+  `src/locales/index.js`.** `data/letters.js` no longer exports these. Import
+  from `../locales` when you need them; they resolve to locale keys, so pass
+  them through `t()` at the call site.
+- **Progress/history reads are cached.** `progress.js` and `history.js` each
+  keep an in-memory `cache` of the parsed JSON; every render can safely call
+  `getProgressSummary(LETTERS)` / `getDueLetters(LETTERS)` without re-parsing.
+  Always go through the exported helpers — never call `localStorage.getItem`
+  directly for these keys.
 
 ## Service Worker — Automated
 
@@ -115,17 +151,44 @@ would edit it by hand is if you add new files to the `ASSETS` precache list.
 
 These keys are used by deployed clients. Renaming them silently loses user data.
 
+### Letter-name keys inside `arabic_progress` / `arabic_feedback_history`
+
+Two letter pairs share Arabic-to-Latin romanizations, so their `name` fields
+**must stay distinct** to avoid progress collisions:
+
+| Char | `name` (key)  | Roman  | Notes                           |
+|------|---------------|--------|----------------------------------|
+| ح    | `Hha`         | `ḥ`    | pharyngeal Hāʾ (dotless hook)   |
+| ه    | `Ha`          | `h`    | plain Hāʾ (figure-eight loops)  |
+| ط    | `Tta`         | `ṭ`    | emphatic Ṭāʾ (oval + stroke)    |
+| ت    | `Ta`          | `t`    | plain Tāʾ (flat base, 2 dots)   |
+
+Before the audit, both pairs shared `Ha`/`Ta`, silently merging progress.
+`progress.js` and `history.js` each contain a `migrate()` function that runs
+once on module load and copies any old `Ha`/`Ta` entries onto `Hha`/`Tta` so
+no user data is lost. **Never rename these fields or remove the migration**
+without providing a forward migration for deployed clients.
+
 ## Localization
 
 All UI strings live in `src/locales/index.js` as `UI = { en: {...}, ar: {...} }`.
 
-- `PracticeView` receives a `locale` prop (`'en'` or `'ar'`) and creates a
-  translation helper: `const t = (key) => UI[locale][key] ?? key;`
-- Every visible string goes through `t()` — never hardcode English in JSX.
+- `PracticeView` and `LoginScreen` both receive a `locale` prop (`'en'` or
+  `'ar'`) and create a translation helper: `const t = (key) => UI[locale][key] ?? key;`
+- Every visible string goes through `t()` — never hardcode English in JSX,
+  never inline `locale === 'ar' ? '…' : '…'` ternaries.
 - When adding UI text: add the key to **both** `en` and `ar` objects in `locales/index.js`.
 - `App.jsx` toggles locale, persists to `app_locale`, and sets
-  `<html lang>` / `<html dir>` so CSS RTL rules fire automatically.
+  `<html lang>` / `<html dir>` so CSS RTL rules fire automatically. It also
+  renders the skip-link text (`t('skipLink')`) — pass `locale` to any new
+  top-level component that renders user-visible text.
 - `global.css` applies `direction: rtl` via `html[lang="ar"]`.
+- `LESSON_GROUPS` in `data/lessonOrder.js` stores `{ nameKey, descKey, letters }`;
+  the name + description are always looked up via `t(group.nameKey)` at render
+  time so lesson banners translate correctly.
+- `FORM_NAMES` / `FORM_SHORT` / `FORM_FULL` / `FORM_DESCRIPTIONS` exported from
+  `locales/index.js` map form keys (`isolated`/`initial`/`medial`/`final`) to
+  locale keys — always call `t(FORM_NAMES[key])`, never use the map value raw.
 
 ## Styling
 
@@ -156,20 +219,41 @@ All UI strings live in `src/locales/index.js` as `UI = { en: {...}, ar: {...} }`
 
 ## Canvas & Drawing Details
 
-- HiDPI: canvas physical pixels = CSS pixels × `devicePixelRatio`. Sizing is
-  done in a `ResizeObserver` effect. All coordinates must account for DPR.
+- HiDPI: canvas bitmap = CSS pixels × `devicePixelRatio`. The resize effect
+  uses `ctx.setTransform(dpr, 0, 0, dpr, 0, 0)` (not `ctx.scale`) so repeated
+  resizes don't accumulate scale. Draw in CSS-pixel coordinates.
+- Stroke points are **normalized 0–1** (`pt.x = (clientX - rect.left) / rect.width`).
+  `redraw` multiplies by the current rect on every pass, so window resize /
+  orientation change re-places strokes correctly instead of anchoring them to
+  stale absolute coords. `getPoint` also null-guards `canvasRef.current` and
+  zero-size rects.
+- Pointer pressure: `e.pressure > 0 ? e.pressure : 0.5`. Nullish-coalesce is
+  wrong here — many touch devices legitimately report `0`, which would collapse
+  strokes to the 3 px minimum.
+- Pointer leave/re-enter mid-stroke: `strokeResumedRef` flips on `onPointerLeave`
+  when `buttons !== 0`, forcing the next recorded point to start a new stroke
+  (prevents a straight line drawn across the off-canvas gap). `setPointerCapture`
+  on down / `releasePointerCapture` on up/cancel are also wired.
 - Stroke-order animation uses a glyph-reveal technique: renders the real font
   glyph on an offscreen canvas, then progressively reveals it with a brush mask
   (`destination-in` compositing). Coordinates in `strokeOrder.js` are in a
   normalized 0–100 space, scaled at animation time.
+- Animation cleanup: the `useEffect(..., [letterIndex, formIndex, practiceMode])`
+  cleanup cancels the in-flight `requestAnimationFrame` AND calls
+  `setAnimating(false)` / clears `animatingRef` — so the "Show me" button never
+  stays disabled after navigating away mid-play. `playStrokeAnimation` guards
+  on `animatingRef.current` (not state) and is NOT in `useCallback` deps, or
+  the callback would be recreated every animation frame.
 - Canvas export for AI: composites a faint reference watermark behind user
   strokes, downscales to max 512px, exports as JPEG quality 0.85. The AI prompt
-  explicitly references this watermark layout.
-- **Dark mode gotcha**: `redraw` captures `darkMode` via closure but has an empty
-  `useCallback` dependency array (`[]`). This means strokes drawn before a dark
-  mode toggle retain the old color — they only repaint on the next input event.
-  Existing canvases won't auto-repaint when toggling. Don't add `darkMode` to the
-  deps without understanding the performance implication.
+  explicitly references this watermark layout. Uses a light background
+  unconditionally — the AI model is trained on the light-parchment look.
+- **Dark mode in `redraw`**: `redraw` has empty `useCallback` deps to stay
+  stable (ResizeObserver and undo both depend on it), so `darkMode` comes from
+  `darkModeRef.current`. A dedicated `useEffect([darkMode, redraw])` keeps the
+  ref in sync AND calls `redraw(strokesRef.current)` to repaint existing
+  strokes in the new color. If you change how colors are chosen, update the
+  ref at the same time or strokes drawn before a toggle will stay the old hue.
 
 ## AI Integration
 
@@ -191,13 +275,24 @@ All UI strings live in `src/locales/index.js` as `UI = { en: {...}, ar: {...} }`
 
 `progress.js` implements a simplified SM-2 algorithm:
 
-- `updateSR(letterName, formKey, quality)` — runs after every scored AI session.
-  Maps AI score 1–5 to SM-2 quality 0–5, updates `interval`, `easeFactor`, `lastReview`.
+- `updateSR(letterName, formKey, aiScore)` — runs after every scored AI session.
+  Takes the **raw AI score 1–5** and internally maps it to SM-2 quality: score
+  1 → quality 0 (so it actually counts as a fail in the EF formula), 2 → 2,
+  3 → 3, 4 → 4, 5 → 5. Callers should pass `score` as returned by the model,
+  not a pre-mapped quality. Updates `interval`, `easeFactor`, `lastReview`.
+- **Dates are local, not UTC.** `todayLocal()` / `addDaysLocal()` /
+  `parseLocalDate()` keep "due today" aligned with the user's wall-clock day
+  regardless of timezone. Don't reintroduce `.toISOString().split('T')[0]` for
+  scheduling — UTC shifts reviews for users east of UTC.
 - `getDueLetters(LETTERS)` — returns all letter+form combos where
   `lastReview + interval ≤ today`, or any practiced slot with no `lastReview` date.
 - The **Review** tab in PracticeView shows this list. Tapping a tile calls
   `goToReviewItem()` which navigates to that letter in the Letters tab.
 - The Review tab badge shows the count of due items.
+- `getProgressSummary(LETTERS)` — returns `{ [letterName]: { started, complete } }`
+  in one pass. Use this for any UI that shows per-letter state (e.g. the 28-
+  button alphabet row); do not loop `isLetterComplete`/`isLetterStarted`, each
+  of which does its own `load()`.
 
 ## Export / Share
 
@@ -226,9 +321,17 @@ All UI strings live in `src/locales/index.js` as `UI = { en: {...}, ar: {...} }`
 - **JavaScript (JSX)**, ES2022+. No TypeScript. `"type": "module"` in package.json.
 - Functional components only, default exports, one per file.
 - `useCallback` for handler functions passed as props or in dependency arrays.
-- `useRef` for mutable non-rendering data (strokes, canvas snapshot, animation frame ID).
+- `useRef` for mutable non-rendering data (strokes, canvas snapshot, animation
+  frame ID, darkMode mirror, strokeResumed flag, animatingRef).
 - Named exports for data/utility modules, default exports for components and style objects.
 - Constants: `UPPER_SNAKE_CASE`. Components: `PascalCase`. Everything else: `camelCase`.
+- **Form controls bind to state.** Both the model `<select>` and brush `<input
+  type="range">` are controlled (`value=`, not `defaultValue=`), and writes
+  flow `setX` → `localStorage.setItem` → any module-level side effect. Keeps
+  UI + storage + runtime behavior in sync after clear-key / tab-switch round-
+  trips.
+- After any progress/history write, bump `progressVersion` so memoized
+  summaries recompute.
 - Short imperative commit messages. No conventional-commit prefixes.
 
 ## MCP Tools
@@ -248,3 +351,59 @@ All phases complete except optional cloud sync:
 | 4 | ✅ | ARIA / keyboard nav, responsive layout, dark mode, EN/AR localization |
 | 5 | ✅ | SM-2 spaced repetition, Save/Share export, automated SW cache busting |
 | 5* | ☐ | Cloud sync (optional, not started — requires backend) |
+
+## Frontend Design Guidelines
+
+When building or modifying UI components, follow these guidelines to avoid
+generic "AI slop" aesthetics and create distinctive, polished interfaces.
+
+### Design Thinking
+
+Before coding UI, consider:
+
+- **Purpose**: What problem does this interface solve? Who uses it?
+- **Tone**: Pick a bold direction — brutally minimal, maximalist, retro-futuristic,
+  organic/natural, luxury/refined, playful/toy-like, editorial/magazine,
+  brutalist/raw, art deco/geometric, soft/pastel, industrial/utilitarian, etc.
+  Choose one that is true to the project's aesthetic.
+- **Differentiation**: What makes this UNFORGETTABLE? What's the one thing someone
+  will remember?
+
+### Aesthetics
+
+- **Typography**: Choose fonts that are beautiful, unique, and interesting. Avoid
+  generic fonts like Arial and Inter; opt for distinctive, characterful choices.
+  Pair a distinctive display font with a refined body font.
+- **Color & Theme**: Commit to a cohesive aesthetic. Use CSS variables for
+  consistency. Dominant colors with sharp accents outperform timid, evenly-distributed
+  palettes.
+- **Motion**: Use animations for effects and micro-interactions. Prioritize CSS-only
+  solutions. Focus on high-impact moments: one well-orchestrated page load with
+  staggered reveals (`animation-delay`) creates more delight than scattered
+  micro-interactions. Use scroll-triggering and hover states that surprise.
+- **Spatial Composition**: Unexpected layouts. Asymmetry. Overlap. Diagonal flow.
+  Grid-breaking elements. Generous negative space OR controlled density.
+- **Backgrounds & Visual Details**: Create atmosphere and depth rather than defaulting
+  to solid colors. Add contextual effects and textures that match the overall
+  aesthetic — gradient meshes, noise textures, geometric patterns, layered
+  transparencies, dramatic shadows, decorative borders, grain overlays.
+
+### Anti-patterns — Avoid These
+
+- Overused font families (Inter, Roboto, Arial, system fonts as primary choices)
+- Clichéd color schemes (purple gradients on white backgrounds)
+- Predictable layouts and component patterns
+- Cookie-cutter design that lacks context-specific character
+- Converging on common choices across generations
+
+### Execution
+
+Match implementation complexity to the aesthetic vision. Maximalist designs need
+elaborate code with extensive animations and effects. Minimalist or refined designs
+need restraint, precision, and careful attention to spacing, typography, and subtle
+details. Elegance comes from executing the vision well.
+
+Note: This project uses inline JS style objects (not Tailwind) and Arabic font
+stacks (`'Amiri','Scheherazade New',serif`). Apply these guidelines within those
+constraints — use CSS custom properties from `global.css`, maintain RTL support,
+and keep dark mode compatibility via `var(--color-*)` variables.

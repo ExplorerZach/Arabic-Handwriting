@@ -1,17 +1,21 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
-import { LETTERS, FORM_DESCRIPTIONS } from '../data/letters';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
+import { LETTERS } from '../data/letters';
 import { LESSON_ORDER, getLessonGroup } from '../data/lessonOrder';
 import { calcLineWidth, setBrushScale } from '../utils/drawing';
 import { getAIFeedback } from '../utils/api';
-import { markPracticed, isLetterStarted, isLetterComplete, countCompleted, setScore, updateSR, getDueLetters } from '../utils/progress';
+import {
+  markPracticed,
+  countCompleted,
+  setScore,
+  updateSR,
+  getDueLetters,
+  getProgressSummary,
+} from '../utils/progress';
 import { addFeedbackEntry, getFeedbackHistory } from '../utils/history';
 import STROKE_DATA from '../data/strokeOrder';
 import { WORD_GROUPS } from '../data/words';
-import { UI } from '../locales';
+import { UI, FORM_NAMES, FORM_SHORT, FORM_FULL, FORM_DESCRIPTIONS } from '../locales';
 import styles from '../styles/practiceStyles';
-
-const FORM_NAMES = { isolated: 'formIsolated', initial: 'formInitial', medial: 'formMedial', final: 'formFinal' };
-const FORM_SHORT  = { isolated: 'formIsolatedShort', initial: 'formInitialShort', medial: 'formMedialShort', final: 'formFinalShort' };
 
 const SCORE_LABELS = {
   5: 'feedbackScoreExcellent',
@@ -21,12 +25,34 @@ const SCORE_LABELS = {
   1: 'feedbackScoreStart',
 };
 
-export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onToggleDarkMode, onToggleLocale }) {
+const DEFAULT_MODEL = 'google/gemini-3-flash-preview';
+
+export default function PracticeView({
+  apiKey,
+  onClearKey,
+  locale,
+  darkMode,
+  onToggleDarkMode,
+  onToggleLocale,
+}) {
   const canvasRef = useRef(null);
+  // Strokes are stored as { x, y, pressure, pointerType, newStroke } where x,y
+  // are normalized 0–1 relative to the canvas rect. They get scaled to CSS
+  // pixels at draw time, so window resize / orientation change re-places them
+  // correctly instead of leaving them anchored to stale absolute coords.
   const strokesRef = useRef([]);
   const canvasSnapshotRef = useRef(null);
   const animFrameRef = useRef(null);
+  const animatingRef = useRef(false);
   const alphaBtnRefs = useRef([]);
+  // Captures darkMode for redraw() without forcing redraw to change identity
+  // (which would also change the ResizeObserver's callback). Kept in sync via
+  // an effect below.
+  const darkModeRef = useRef(darkMode);
+  // When the pointer leaves the canvas mid-stroke and re-enters without a
+  // lift, the next pointermove would otherwise draw a straight line across
+  // the gap. This flag forces the next recorded point to start a new stroke.
+  const strokeResumedRef = useRef(false);
 
   const [letterIndex, setLetterIndex] = useState(0);
   const [formIndex, setFormIndex] = useState('isolated');
@@ -44,12 +70,24 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
   const [wordGroupIndex, setWordGroupIndex] = useState(0);
   const [wordIndex, setWordIndex] = useState(0);
   const [hasStrokes, setHasStrokes] = useState(false);
+  const [model, setModel] = useState(
+    () => localStorage.getItem('openrouter_model') || DEFAULT_MODEL
+  );
+  const [brushValue, setBrushValue] = useState(() => {
+    const v = parseFloat(localStorage.getItem('brushScale') || '1');
+    return Number.isFinite(v) ? v : 1;
+  });
+  // Bumps on every write to progress/history so derived summaries recompute
+  // without us having to pipe state through every helper.
+  const [progressVersion, setProgressVersion] = useState(0);
 
   const t = (key) => UI[locale][key] ?? key;
 
-  // Build lesson→alpha mapping
-  const lessonToAlpha = LESSON_ORDER.map(
-    (ch) => LETTERS.findIndex((l) => l.letter === ch)
+  // Static mapping from lesson index → alphabetical index; both inputs are
+  // frozen imports, so compute once.
+  const lessonToAlpha = useMemo(
+    () => LESSON_ORDER.map((ch) => LETTERS.findIndex((l) => l.letter === ch)),
+    []
   );
 
   const actualLetterIndex = lessonMode ? (lessonToAlpha[letterIndex] ?? 0) : letterIndex;
@@ -57,12 +95,28 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
   const formKeys = Object.keys(letter.forms);
   const activeForm = formKeys.includes(formIndex) ? formIndex : 'isolated';
   const currentChar = letter.forms[activeForm];
-  const completedCount = countCompleted(LETTERS);
   const totalCount = lessonMode ? LESSON_ORDER.length : LETTERS.length;
   const lessonGroupInfo = lessonMode ? getLessonGroup(letterIndex) : null;
 
   const currentWordGroup = WORD_GROUPS[wordGroupIndex];
   const currentWord = currentWordGroup?.words[wordIndex];
+
+  // Batched progress reads: one load() per render instead of 56+.
+  const progressSummary = useMemo(
+    () => getProgressSummary(LETTERS),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [progressVersion]
+  );
+  const completedCount = useMemo(
+    () => countCompleted(LETTERS),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [progressVersion]
+  );
+  const dueItems = useMemo(
+    () => getDueLetters(LETTERS),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [progressVersion]
+  );
 
   // ─── Drawing ─────────────────────────────────────────────
 
@@ -70,24 +124,36 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    // Clear full bitmap (ctx is DPR-scaled, so draw in CSS pixel space).
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
     if (!points.length) return;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = darkMode ? '#ffffff' : '#1a0a00';
+    ctx.strokeStyle = darkModeRef.current ? '#ffffff' : '#1a0a00';
+    const W = rect.width;
+    const H = rect.height;
     for (let i = 0; i < points.length; i++) {
       const pt = points[i];
+      const x = pt.x * W;
+      const y = pt.y * H;
       const width = calcLineWidth(pt.pressure ?? 0.5, pt.pointerType ?? 'touch');
       if (pt.newStroke || i === 0) {
         ctx.beginPath();
-        ctx.moveTo(pt.x, pt.y);
+        ctx.moveTo(x, y);
         ctx.lineWidth = width;
       } else {
         const prev = points[i - 1];
-        const mx = (prev.x + pt.x) / 2;
-        const my = (prev.y + pt.y) / 2;
+        const px = prev.x * W;
+        const py = prev.y * H;
+        const mx = (px + x) / 2;
+        const my = (py + y) / 2;
         ctx.lineWidth = width;
-        ctx.quadraticCurveTo(prev.x, prev.y, mx, my);
+        ctx.quadraticCurveTo(px, py, mx, my);
         ctx.stroke();
         ctx.beginPath();
         ctx.moveTo(mx, my);
@@ -102,7 +168,11 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
     setHasStrokes(false);
     const canvas = canvasRef.current;
     if (canvas) {
-      canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+      const ctx = canvas.getContext('2d');
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
     }
   }, []);
 
@@ -126,6 +196,7 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
     setFeedback(null);
     setShowComparison(false);
     setShowHistory(false);
+    alphaBtnRefs.current = [];
     clearCanvas();
   }, [clearCanvas]);
 
@@ -146,6 +217,7 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
       setFormIndex('isolated');
       setShowHistory(false);
       setShowComparison(false);
+      alphaBtnRefs.current = [];
       clearCanvas();
       return next;
     });
@@ -158,10 +230,12 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
     if (!canvas) return;
     const resize = () => {
       const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
       const dpr = devicePixelRatio || 1;
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
-      canvas.getContext('2d').scale(dpr, dpr);
+      // setTransform (not scale — cumulative) so repeated resizes stay sane.
+      canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
       redraw(strokesRef.current);
     };
     resize();
@@ -169,6 +243,13 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
     observer.observe(canvas);
     return () => observer.disconnect();
   }, [redraw]);
+
+  // ─── Dark mode → repaint existing strokes ──────────────
+
+  useEffect(() => {
+    darkModeRef.current = darkMode;
+    redraw(strokesRef.current);
+  }, [darkMode, redraw]);
 
   // ─── Online / offline detection ───────────────────────
 
@@ -199,18 +280,22 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
 
   const playStrokeAnimation = useCallback(async () => {
     const data = STROKE_DATA[letter.letter];
-    if (!data || animating) return;
+    if (!data || animatingRef.current) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
     const dpr = devicePixelRatio || 1;
     strokesRef.current = [];
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    animatingRef.current = true;
     setAnimating(true);
     setFeedback(null);
     setShowComparison(false);
-    try { await document.fonts.ready; } catch (_) {}
+    try { await document.fonts.ready; } catch (_) { /* ignore */ }
 
     const W = canvas.width;
     const H = canvas.height;
@@ -243,8 +328,8 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
         const a = pts[i];
         const b = pts[i + 1];
         for (let s = 0; s < stepsPerSeg; s++) {
-          const t = s / stepsPerSeg;
-          result.push({ x: (a.x + (b.x - a.x) * t) * scaleX * dpr, y: (a.y + (b.y - a.y) * t) * scaleY * dpr });
+          const tt = s / stepsPerSeg;
+          result.push({ x: (a.x + (b.x - a.x) * tt) * scaleX * dpr, y: (a.y + (b.y - a.y) * tt) * scaleY * dpr });
         }
       }
       const last = pts[pts.length - 1];
@@ -287,14 +372,21 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
       ctx.restore();
     };
 
+    const finish = () => {
+      animatingRef.current = false;
+      animFrameRef.current = null;
+      setAnimating(false);
+    };
+
     const animate = () => {
+      if (!animatingRef.current) return; // cancelled from outside
       if (opIdx >= ops.length) {
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0, 0, W, H);
         ctx.drawImage(glyphCanvas, 0, 0);
         ctx.restore();
-        setAnimating(false);
+        finish();
         return;
       }
       const op = ops[opIdx];
@@ -328,24 +420,70 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
 
     drawFrame();
     animFrameRef.current = requestAnimationFrame(animate);
-  }, [letter.letter, currentChar, animating]);
+  }, [letter.letter, currentChar]);
 
+  // Cancel in-flight animation when the user navigates away (letter, form,
+  // or practice mode change) and on unmount. Resets the button state so it
+  // doesn't stay disabled.
   useEffect(() => {
-    return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
-  }, [letterIndex]);
+    return () => {
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
+      animatingRef.current = false;
+      setAnimating(false);
+    };
+  }, [letterIndex, formIndex, practiceMode]);
 
   // ─── Pointer events ────────────────────────────────
 
   const getPoint = (e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top, pressure: e.pressure ?? 0.5, pointerType: e.pointerType ?? 'touch' };
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    return {
+      x: (e.clientX - rect.left) / rect.width,
+      y: (e.clientY - rect.top) / rect.height,
+      pressure: e.pressure > 0 ? e.pressure : 0.5,
+      pointerType: e.pointerType || 'touch',
+    };
   };
 
-  const handlePointerDown = (e) => { e.preventDefault(); strokesRef.current.push({ ...getPoint(e), newStroke: true }); if (!hasStrokes) setHasStrokes(true); };
-  const handlePointerMove = (e) => { e.preventDefault(); if (e.buttons === 0) return; strokesRef.current.push({ ...getPoint(e), newStroke: false }); redraw(strokesRef.current); };
-  const handlePointerUp = (e) => { e.preventDefault(); };
+  const handlePointerDown = (e) => {
+    e.preventDefault();
+    const p = getPoint(e);
+    if (!p) return;
+    strokeResumedRef.current = false;
+    strokesRef.current.push({ ...p, newStroke: true });
+    try { canvasRef.current?.setPointerCapture?.(e.pointerId); } catch (_) { /* ignore */ }
+    if (!hasStrokes) setHasStrokes(true);
+  };
 
-  // ─── Canvas export ────────────────────────────────
+  const handlePointerMove = (e) => {
+    e.preventDefault();
+    if (e.buttons === 0) return;
+    const p = getPoint(e);
+    if (!p) return;
+    const startNew = strokeResumedRef.current;
+    strokeResumedRef.current = false;
+    strokesRef.current.push({ ...p, newStroke: startNew });
+    redraw(strokesRef.current);
+  };
+
+  const handlePointerUp = (e) => {
+    e.preventDefault();
+    try { canvasRef.current?.releasePointerCapture?.(e.pointerId); } catch (_) { /* ignore */ }
+    strokeResumedRef.current = false;
+  };
+
+  const handlePointerLeave = (e) => {
+    e.preventDefault();
+    // If the pointer is still pressed, treat the next move as a fresh
+    // stroke so we don't connect across the gap.
+    if (e.buttons !== 0) strokeResumedRef.current = true;
+  };
 
   // ─── Export for save (full-res PNG) ─────────────────
 
@@ -403,7 +541,7 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
           await navigator.share({ files: [file], title: 'Arabic Handwriting Practice' });
           return;
         }
-      } catch (_) {}
+      } catch (_) { /* fall through to download */ }
     }
     const a = document.createElement('a');
     a.href = dataURL;
@@ -429,6 +567,7 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
     setFeedback(null);
     setShowComparison(false);
     setShowHistory(false);
+    alphaBtnRefs.current = [];
     clearCanvas();
   }, [lessonMode, lessonToAlpha, clearCanvas]);
 
@@ -445,7 +584,9 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
     ctx.fillStyle = '#fdf6e8';
     ctx.fillRect(0, 0, offscreen.width, offscreen.height);
     const watermarkText = practiceMode === 'words' ? currentWord?.word : currentChar;
-    const fontSize = practiceMode === 'words' ? Math.min(offscreen.width, offscreen.height) * 0.25 : Math.min(offscreen.width, offscreen.height) * 0.5;
+    const fontSize = practiceMode === 'words'
+      ? Math.min(offscreen.width, offscreen.height) * 0.25
+      : Math.min(offscreen.width, offscreen.height) * 0.5;
     ctx.save();
     ctx.globalAlpha = 0.15;
     ctx.fillStyle = '#8b4513';
@@ -467,13 +608,6 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
 
   // ─── AI feedback ────────────────────────────────
 
-  const FORM_LABELS = {
-    isolated: 'formIsolatedFull',
-    initial: 'formInitialFull',
-    medial: 'formMedialFull',
-    final: 'formFinalFull',
-  };
-
   const requestFeedback = async () => {
     if (strokesRef.current.length < 5) {
       setFeedback({ error: practiceMode === 'words' ? t('hintDrawWordFirst') : t('hintDrawFirst') });
@@ -488,22 +622,39 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
       if (practiceMode === 'words' && currentWord) {
         text = await getAIFeedback(apiKey, imageBase64, currentWord.word, currentWord.word, currentWord.roman, `word "${currentWord.meaning}"`);
       } else {
-        text = await getAIFeedback(apiKey, imageBase64, letter.name, letter.letter, letter.roman, t(FORM_LABELS[activeForm]));
+        text = await getAIFeedback(apiKey, imageBase64, letter.name, letter.letter, letter.roman, t(FORM_FULL[activeForm]));
       }
-      const scoreMatch = text.match(/\[SCORE:\s*(\d)\]/);
+      const scoreMatch = text.match(/\[SCORE:\s*([1-5])\s*\]/i);
       const score = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
-      const cleanText = text.replace(/\[SCORE:\s*\d\]\s*/g, '').trim();
+      const cleanText = text.replace(/\[SCORE:\s*[1-5]\s*\]\s*/gi, '').trim();
       if (practiceMode === 'letters') {
         markPracticed(letter.name, activeForm);
         if (score) { setScore(letter.name, activeForm, score); updateSR(letter.name, activeForm, score); }
         addFeedbackEntry(letter.name, activeForm, cleanText);
+        setProgressVersion((v) => v + 1);
       }
       setFeedback({ text: cleanText, score });
       setShowComparison(true);
     } catch (err) {
       setFeedback({ error: err.message });
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  // ─── Model / brush slider handlers (controlled) ─────
+
+  const handleModelChange = (ev) => {
+    const v = ev.target.value;
+    setModel(v);
+    localStorage.setItem('openrouter_model', v);
+  };
+
+  const handleBrushChange = (ev) => {
+    const v = parseFloat(ev.target.value);
+    const safe = Number.isFinite(v) ? v : 1;
+    setBrushValue(safe);
+    setBrushScale(safe);
   };
 
   // ─── Keyboard nav for alphabet row ───────────────────
@@ -513,7 +664,6 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
       const dir = e.key === 'ArrowRight' ? 1 : -1;
-      // In RTL, right arrow = previous, left = next
       const adjustedDir = locale === 'ar' ? -dir : dir;
       const next = (idx + adjustedDir + total) % total;
       selectLetter(next);
@@ -522,6 +672,9 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
     if (e.key === 'Home') { e.preventDefault(); selectLetter(0); setTimeout(() => alphaBtnRefs.current[0]?.focus(), 0); }
     if (e.key === 'End') { e.preventDefault(); selectLetter(total - 1); setTimeout(() => alphaBtnRefs.current[total - 1]?.focus(), 0); }
   }, [totalCount, locale, selectLetter]);
+
+  const dueCount = dueItems.length;
+  const history = getFeedbackHistory(letter.name, activeForm);
 
   // ─── Render ───────────────────────────────────────
 
@@ -566,9 +719,9 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
       {lessonMode && lessonGroupInfo && (
         <div style={styles.lessonBanner}>
           <span style={styles.lessonGroupName}>
-            {t('lessonGroup')} {lessonGroupInfo.groupIndex + 1}{locale === 'ar' ? ' ' + t('lessonGroupName') : ': ' + lessonGroupInfo.group.name}
+            {t('lessonGroup')} {lessonGroupInfo.groupIndex + 1}: {t(lessonGroupInfo.group.nameKey)}
           </span>
-          <span style={styles.lessonGroupDesc}>{lessonGroupInfo.group.description}</span>
+          <span style={styles.lessonGroupDesc}>{t(lessonGroupInfo.group.descKey)}</span>
         </div>
       )}
 
@@ -592,7 +745,7 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
             aria-pressed={darkMode}
             aria-label={t('ariaDarkModeBtn')}
           >
-            {darkMode ? '☀ ' + (locale === 'ar' ? 'وضع فاتح' : 'Light mode') : '🌙 ' + t('settingsDarkMode')}
+            {darkMode ? '☀ ' + t('settingsLightMode') : '🌙 ' + t('settingsDarkMode')}
           </button>
 
           {/* Language toggle */}
@@ -609,8 +762,8 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
           <label style={{ fontSize: '12px', color: 'var(--color-text-soft)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {t('settingsModel')}
             <select
-              defaultValue={localStorage.getItem('openrouter_model') || 'google/gemini-3-flash-preview'}
-              onChange={(ev) => localStorage.setItem('openrouter_model', ev.target.value)}
+              value={model}
+              onChange={handleModelChange}
               style={{ padding: '6px 8px', borderRadius: '8px', border: '1.5px solid var(--color-border)', background: 'var(--color-input-bg)', fontSize: '13px', fontFamily: 'Georgia,serif', color: 'var(--color-text)' }}
               aria-label={t('ariaModelSelect')}
             >
@@ -628,86 +781,78 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
       )}
 
       {/* Mode tabs */}
-      {(() => {
-        const dueCount = getDueLetters(LETTERS).length;
-        return (
-          <div style={styles.modeTabs} role="tablist" aria-label={locale === 'ar' ? 'وضع التدريب' : 'Practice mode'}>
-            <button
-              className="btn-form"
-              style={{ ...styles.modeTab, ...(practiceMode === 'letters' ? styles.modeTabActive : {}) }}
-              onClick={() => switchPracticeMode('letters')}
-              role="tab"
-              aria-selected={practiceMode === 'letters'}
-              aria-label={t('ariaLetterTab')}
-              id="tab-letters"
-            >
-              {t('tabLetters')}
-            </button>
-            <button
-              className="btn-form"
-              style={{ ...styles.modeTab, ...(practiceMode === 'words' ? styles.modeTabActive : {}) }}
-              onClick={() => switchPracticeMode('words')}
-              role="tab"
-              aria-selected={practiceMode === 'words'}
-              aria-label={t('ariaModeTab') + ': ' + t('tabWords')}
-              id="tab-words"
-            >
-              {t('tabWords')}
-            </button>
-            <button
-              className="btn-form"
-              style={{ ...styles.modeTab, ...(practiceMode === 'review' ? styles.modeTabActive : {}), position: 'relative' }}
-              onClick={() => switchPracticeMode('review')}
-              role="tab"
-              aria-selected={practiceMode === 'review'}
-              aria-label={t('ariaDashboardTab')}
-              id="tab-review"
-            >
-              {t('tabReview')}
-              {dueCount > 0 && (
-                <span style={{ ...styles.reviewCount, position: 'absolute', top: '-6px', right: '-6px', fontSize: '10px', padding: '1px 5px' }}>
-                  {dueCount}
-                </span>
-              )}
-            </button>
-          </div>
-        );
-      })()}
+      <div style={styles.modeTabs} role="tablist" aria-label={t('ariaPracticeMode')}>
+        <button
+          className="btn-form"
+          style={{ ...styles.modeTab, ...(practiceMode === 'letters' ? styles.modeTabActive : {}) }}
+          onClick={() => switchPracticeMode('letters')}
+          role="tab"
+          aria-selected={practiceMode === 'letters'}
+          aria-label={t('ariaLetterTab')}
+          id="tab-letters"
+        >
+          {t('tabLetters')}
+        </button>
+        <button
+          className="btn-form"
+          style={{ ...styles.modeTab, ...(practiceMode === 'words' ? styles.modeTabActive : {}) }}
+          onClick={() => switchPracticeMode('words')}
+          role="tab"
+          aria-selected={practiceMode === 'words'}
+          aria-label={t('ariaModeTab') + ': ' + t('tabWords')}
+          id="tab-words"
+        >
+          {t('tabWords')}
+        </button>
+        <button
+          className="btn-form"
+          style={{ ...styles.modeTab, ...(practiceMode === 'review' ? styles.modeTabActive : {}), position: 'relative' }}
+          onClick={() => switchPracticeMode('review')}
+          role="tab"
+          aria-selected={practiceMode === 'review'}
+          aria-label={t('ariaDashboardTab')}
+          id="tab-review"
+        >
+          {t('tabReview')}
+          {dueCount > 0 && (
+            <span style={{ ...styles.reviewCount, position: 'absolute', top: '-6px', right: '-6px', fontSize: '10px', padding: '1px 5px' }}>
+              {dueCount}
+            </span>
+          )}
+        </button>
+      </div>
 
       {/* Review dashboard */}
-      {practiceMode === 'review' && (() => {
-        const dueItems = getDueLetters(LETTERS);
-        return (
-          <div style={styles.reviewDash}>
-            <div style={styles.reviewHeader}>
-              {t('dashboardTitle')}
-              {dueItems.length > 0 && (
-                <span style={styles.reviewCount}>{dueItems.length} {t('dashboardCount')}</span>
-              )}
-            </div>
-            {dueItems.length === 0 ? (
-              <div style={styles.reviewEmpty}>{t('dashboardEmpty')}</div>
-            ) : (
-              <div style={styles.reviewGrid}>
-                {dueItems.map(({ letterName, letterChar, formKey }) => (
-                  <button
-                    key={`${letterName}-${formKey}`}
-                    className="btn-alpha"
-                    style={styles.reviewTile}
-                    onClick={() => goToReviewItem(letterName, formKey)}
-                    aria-label={`${letterName} ${t(FORM_NAMES[formKey] ?? formKey)}`}
-                    title={`${letterName} — ${t(FORM_NAMES[formKey] ?? formKey)}`}
-                  >
-                    <span style={styles.reviewTileChar} lang="ar">{letterChar}</span>
-                    <span style={styles.reviewTileName}>{letterName}</span>
-                    <span style={styles.reviewTileForm}>{t(FORM_NAMES[formKey] ?? formKey)}</span>
-                  </button>
-                ))}
-              </div>
+      {practiceMode === 'review' && (
+        <div style={styles.reviewDash}>
+          <div style={styles.reviewHeader}>
+            {t('dashboardTitle')}
+            {dueItems.length > 0 && (
+              <span style={styles.reviewCount}>{dueItems.length} {t('dashboardCount')}</span>
             )}
           </div>
-        );
-      })()}
+          {dueItems.length === 0 ? (
+            <div style={styles.reviewEmpty}>{t('dashboardEmpty')}</div>
+          ) : (
+            <div style={styles.reviewGrid}>
+              {dueItems.map(({ letterName, letterChar, formKey }) => (
+                <button
+                  key={`${letterName}-${formKey}`}
+                  className="btn-alpha"
+                  style={styles.reviewTile}
+                  onClick={() => goToReviewItem(letterName, formKey)}
+                  aria-label={`${letterName} ${t(FORM_NAMES[formKey] ?? formKey)}`}
+                  title={`${letterName} — ${t(FORM_NAMES[formKey] ?? formKey)}`}
+                >
+                  <span style={styles.reviewTileChar} lang="ar">{letterChar}</span>
+                  <span style={styles.reviewTileName}>{letterName}</span>
+                  <span style={styles.reviewTileForm}>{t(FORM_NAMES[formKey] ?? formKey)}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Practice UI (hidden in review mode) */}
       {practiceMode !== 'review' && <>
@@ -743,7 +888,7 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
 
       {/* Form switcher */}
       {practiceMode === 'letters' && (
-        <div style={styles.formSwitcher} role="group" aria-label={locale === 'ar' ? 'شكل الحرف' : 'Letter form'}>
+        <div style={styles.formSwitcher} role="group" aria-label={t('ariaLetterForm')}>
           {formKeys.map((key) => {
             const isActive = key === activeForm;
             return (
@@ -767,7 +912,7 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
 
       {/* Word group selector */}
       {practiceMode === 'words' && (
-        <div style={styles.formSwitcher} role="group" aria-label={locale === 'ar' ? 'مجموعة كلمات' : 'Word group'}>
+        <div style={styles.formSwitcher} role="group" aria-label={t('ariaWordGroup')}>
           {WORD_GROUPS.map((g, gIdx) => {
             const isActive = gIdx === wordGroupIndex;
             return (
@@ -811,12 +956,13 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
           id="main-canvas"
           style={styles.canvas}
           tabIndex={0}
-          role="img"
+          role="application"
           aria-label={t('ariaCanvas')}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
-          onPointerLeave={handlePointerUp}
+          onPointerCancel={handlePointerUp}
+          onPointerLeave={handlePointerLeave}
         />
         <div style={styles.rtlGuide} aria-hidden="true">{t('hintRTL')}</div>
       </div>
@@ -829,9 +975,9 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
           min={0.2}
           max={2}
           step={0.1}
-          defaultValue={parseFloat(localStorage.getItem('brushScale') || '1')}
+          value={brushValue}
           style={{ flex: 1, accentColor: 'var(--color-accent)' }}
-          onChange={(e) => setBrushScale(parseFloat(e.target.value))}
+          onChange={handleBrushChange}
           aria-label={t('ariaBrushSlider')}
         />
       </div>
@@ -926,7 +1072,7 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
         <div
           style={feedback.error ? { ...styles.feedbackBox, ...styles.feedbackError } : styles.feedbackBox}
           role="region"
-          aria-label={locale === 'ar' ? 'تعليقات المعلم' : "Teacher's feedback"}
+          aria-label={t('ariaTeacherFeedback')}
         >
           {feedback.error ? (
             <span>{feedback.error}</span>
@@ -976,34 +1122,30 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
       )}
 
       {/* Feedback history */}
-      {(() => {
-        const history = getFeedbackHistory(letter.name, activeForm);
-        if (!history.length) return null;
-        return (
-          <div style={{ width: '100%', maxWidth: '520px' }}>
-            <button
-              className="btn-history"
-              style={styles.historyToggle}
-              onClick={() => setShowHistory((v) => !v)}
-              aria-expanded={showHistory}
-            >
-              {showHistory ? t('historyHide') : t('historyShow')} {t('historyOf')} ({history.length})
-            </button>
-            {showHistory && (
-              <div style={styles.historyPanel}>
-                {history.map((entry, i) => (
-                  <div key={i} style={styles.historyEntry}>
-                    <div style={styles.historyDate}>
-                      {new Date(entry.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                    <p style={styles.historyText}>{entry.text}</p>
+      {history.length > 0 && (
+        <div style={{ width: '100%', maxWidth: '520px' }}>
+          <button
+            className="btn-history"
+            style={styles.historyToggle}
+            onClick={() => setShowHistory((v) => !v)}
+            aria-expanded={showHistory}
+          >
+            {showHistory ? t('historyHide') : t('historyShow')} {t('historyOf')} ({history.length})
+          </button>
+          {showHistory && (
+            <div style={styles.historyPanel}>
+              {history.map((entry, i) => (
+                <div key={i} style={styles.historyEntry}>
+                  <div style={styles.historyDate}>
+                    {new Date(entry.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        );
-      })()}
+                  <p style={styles.historyText}>{entry.text}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Alphabet / lesson / word row */}
       {practiceMode === 'letters' ? (
@@ -1011,11 +1153,12 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
           style={styles.alphabetRow}
           className="alpha-row-wrap"
           role="listbox"
-          aria-label={locale === 'ar' ? 'اختيار الحرف' : 'Select a letter'}
+          aria-label={t('ariaSelectLetter')}
           aria-activedescendant={`letter-btn-${letterIndex}`}
         >
           {(lessonMode ? LESSON_ORDER : LETTERS).map((item, idx) => {
             const l = lessonMode ? LETTERS[lessonToAlpha[idx]] : item;
+            const status = progressSummary[l.name];
             return (
               <button
                 key={idx}
@@ -1031,14 +1174,14 @@ export default function PracticeView({ apiKey, onClearKey, locale, darkMode, onT
                 aria-selected={idx === letterIndex}
                 aria-label={t('ariaLetterBtn') + ': ' + l.name}
               >
-                {lessonMode ? l.letter : l.letter}
-                {isLetterComplete(l.name, Object.keys(l.forms)) ? <span style={styles.dotComplete} /> : isLetterStarted(l.name) ? <span style={styles.dotStarted} /> : null}
+                {l.letter}
+                {status?.complete ? <span style={styles.dotComplete} /> : status?.started ? <span style={styles.dotStarted} /> : null}
               </button>
             );
           })}
         </div>
       ) : (
-        <div style={styles.alphabetRow} className="alpha-row-wrap" role="listbox" aria-label={locale === 'ar' ? 'اختيار كلمة' : 'Select a word'}>
+        <div style={styles.alphabetRow} className="alpha-row-wrap" role="listbox" aria-label={t('ariaSelectWord')}>
           {currentWordGroup?.words.map((w, idx) => (
             <button
               key={idx}

@@ -2,8 +2,10 @@
   "$schema": "https://charm.land/crush.json",
   "lsp": {
     "typescript": {
-      "command": "typescript-language-server",
-      "args": ["--stdio"]
+      "command": "node",
+      "args": ["node_modules/typescript-language-server/lib/cli.mjs", "--stdio"],
+      "filetypes": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+      "root_markers": ["package.json", "jsconfig.json", "tsconfig.json"]
     }
   }
 }

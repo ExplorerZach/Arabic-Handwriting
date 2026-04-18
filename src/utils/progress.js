@@ -11,7 +11,7 @@
  *       // SM-2 spaced repetition fields:
  *       interval: 1,          // days until next review (1 = tomorrow)
  *       easeFactor: 2.5,     // SM-2 ease factor (min 1.3)
- *       lastReview: null,    // ISO date string of last review, or null
+ *       lastReview: null,    // YYYY-MM-DD (local date) of last review, or null
  *     }
  *   }
  * }
@@ -19,17 +19,83 @@
 
 const STORAGE_KEY = 'arabic_progress';
 
+// ─── In-memory cache ──────────────────────────────────────
+// localStorage.getItem + JSON.parse is cheap individually but called
+// dozens of times per render. Cache the parsed object and invalidate
+// on write; re-sync via the `storage` event for other-tab edits.
+
+let cache = null;
+
 function load() {
+  if (cache !== null) return cache;
   try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    cache = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
   } catch {
-    return {};
+    cache = {};
   }
+  return cache;
 }
 
 function save(data) {
+  cache = data;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === STORAGE_KEY) cache = null;
+  });
+}
+
+// ─── Date helpers ─────────────────────────────────────────
+// SM-2 scheduling uses local calendar dates (not UTC) so a review due
+// "today" always surfaces on the user's local Wall-clock day.
+
+function todayLocal() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function parseLocalDate(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function addDaysLocal(dateStr, days) {
+  const d = parseLocalDate(dateStr);
+  d.setDate(d.getDate() + days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// ─── One-time migration for renamed letters ──────────────
+// See src/data/letters.js: ح (pharyngeal Hāʾ) and ط (emphatic Ṭāʾ) used
+// to collide with ه and ت under `Ha`/`Ta`. Progress written before the
+// rename sits under the old names; copy it onto the new names so no
+// user progress is lost. Copy both directions since we can't tell from
+// storage which letter the practice belonged to — better to over-credit
+// than to zero anyone out.
+function migrate() {
+  const data = load();
+  let changed = false;
+  if (data.Ha && !data.Hha) {
+    data.Hha = JSON.parse(JSON.stringify(data.Ha));
+    changed = true;
+  }
+  if (data.Ta && !data.Tta) {
+    data.Tta = JSON.parse(JSON.stringify(data.Ta));
+    changed = true;
+  }
+  if (changed) save(data);
+}
+migrate();
+
+// ─── Public API ──────────────────────────────────────────
 
 /** Mark a letter+form as practiced and increment the count. */
 export function markPracticed(letterName, formKey) {
@@ -65,11 +131,30 @@ export function isLetterStarted(letterName) {
   return Object.values(letterData).some((v) => v?.practiced);
 }
 
-/** Count how many letters have been fully completed. */
+/** Count how many letters have been fully completed (batched — one load()). */
 export function countCompleted(letters) {
-  return letters.filter((l) =>
-    isLetterComplete(l.name, Object.keys(l.forms))
-  ).length;
+  const data = load();
+  return letters.filter((l) => {
+    const letterData = data[l.name] || {};
+    return Object.keys(l.forms).every((k) => letterData[k]?.practiced);
+  }).length;
+}
+
+/**
+ * Build a { [letterName]: { started, complete } } summary in one pass.
+ * Used by the 28-button alphabet row to avoid 56 individual load() calls.
+ */
+export function getProgressSummary(letters) {
+  const data = load();
+  const summary = {};
+  for (const l of letters) {
+    const letterData = data[l.name] || {};
+    const formKeys = Object.keys(l.forms);
+    const started = formKeys.some((k) => letterData[k]?.practiced);
+    const complete = formKeys.every((k) => letterData[k]?.practiced);
+    summary[l.name] = { started, complete };
+  }
+  return summary;
 }
 
 /** Store an AI score (1–5) for a letter+form. Keeps the latest score. */
@@ -90,11 +175,11 @@ export function getScore(letterName, formKey) {
 
 /**
  * SM-2 spaced repetition algorithm.
- * Updates interval, easeFactor, and lastReview for a letter+form entry.
- * quality: 0–5 (0–2 = fail/no credit, 3–5 = pass; map from AI score 1–5).
- * Returns the updated entry.
+ * Callers pass the raw AI score 1–5; we remap it to SM-2 quality 0–5 so
+ * a score of 1 (unrecognizable) counts as a genuine failure (q=0) with
+ * the harsher ease-factor penalty that implies. Returns the updated entry.
  */
-export function updateSR(letterName, formKey, quality) {
+export function updateSR(letterName, formKey, aiScore) {
   const data = load();
   if (!data[letterName]) data[letterName] = {};
   if (!data[letterName][formKey]) {
@@ -102,13 +187,11 @@ export function updateSR(letterName, formKey, quality) {
   }
   const entry = data[letterName][formKey];
 
-  // Map AI score 1–5 to SM-2 quality 0–5
-  // score 1 → quality 0 (complete fail)
-  // score 2 → quality 2 (marginal)
-  // score 3 → quality 3 (good pass)
-  // score 4 → quality 4 (good pass)
-  // score 5 → quality 5 (perfect)
-  const q = Math.max(0, Math.min(5, quality));
+  // Map AI score 1–5 to SM-2 quality 0–5:
+  //   1 → 0 (complete fail)    2 → 2 (marginal)
+  //   3 → 3 (pass)             4 → 4 (good)        5 → 5 (perfect)
+  const clamped = Math.max(1, Math.min(5, aiScore));
+  const q = clamped === 1 ? 0 : clamped;
 
   let { interval = 1, easeFactor = 2.5 } = entry;
 
@@ -124,41 +207,39 @@ export function updateSR(letterName, formKey, quality) {
     }
   }
 
-  // Update ease factor: EF' = EF + (0.1 - (5-q) * (0.08 + (5-q) * 0.02))
+  // EF' = EF + (0.1 - (5-q) * (0.08 + (5-q) * 0.02))
   easeFactor = easeFactor + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
   if (easeFactor < 1.3) easeFactor = 1.3;
 
   entry.interval = interval;
   entry.easeFactor = easeFactor;
-  entry.lastReview = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  entry.lastReview = todayLocal();
 
   save(data);
   return entry;
 }
 
 /**
- * Returns an array of { letterName, formKey, entry } for all letter+form combos
- * that are due for review today (lastReview + interval <= today, or never reviewed).
+ * Returns an array of { letterName, letterChar, formKey } for all letter+form
+ * combos that are due for review today (lastReview + interval <= today, or
+ * never reviewed). Dates are compared in local calendar days.
  */
 export function getDueLetters(LETTERS) {
   const data = load();
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocal();
   const due = [];
 
   for (const letter of LETTERS) {
     for (const [formKey] of Object.entries(letter.forms)) {
       const stored = data[letter.name]?.[formKey];
-      if (!stored?.practiced) continue; // skip never-practiced
+      if (!stored?.practiced) continue;
 
       if (!stored.lastReview) {
-        // Never reviewed — always due
         due.push({ letterName: letter.name, letterChar: letter.forms[formKey], formKey });
         continue;
       }
 
-      const nextDate = new Date(stored.lastReview);
-      nextDate.setDate(nextDate.getDate() + (stored.interval || 1));
-      const nextReview = nextDate.toISOString().split('T')[0];
+      const nextReview = addDaysLocal(stored.lastReview, Math.max(1, stored.interval || 1));
       if (nextReview <= today) {
         due.push({ letterName: letter.name, letterChar: letter.forms[formKey], formKey });
       }

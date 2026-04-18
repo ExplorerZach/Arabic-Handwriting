@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import PracticeView from './components/PracticeView';
 import LoginScreen from './components/LoginScreen';
+import { UI } from './locales';
 
 export default function App() {
   const [apiKey, setApiKey] = useState(
@@ -54,10 +55,12 @@ export default function App() {
     });
   };
 
+  const skipLinkText = UI[locale]?.skipLink ?? 'Skip to canvas';
+
   return (
     <>
       <a href="#main-canvas" className="skip-link">
-        Skip to canvas
+        {skipLinkText}
       </a>
       {apiKey ? (
         <PracticeView
@@ -69,7 +72,12 @@ export default function App() {
           onToggleLocale={toggleLocale}
         />
       ) : (
-        <LoginScreen onSave={handleSave} darkMode={darkMode} onToggleDarkMode={toggleDarkMode} />
+        <LoginScreen
+          onSave={handleSave}
+          darkMode={darkMode}
+          onToggleDarkMode={toggleDarkMode}
+          locale={locale}
+        />
       )}
     </>
   );

@@ -7,94 +7,29 @@
  *
  * The array order is the recommended teaching sequence: simple strokes first
  * (Alef, Ba-family) → hooks → loops → complex shapes.
+ *
+ * `nameKey` / `descKey` reference entries in `src/locales/index.js` so both
+ * the group title and its description are translated at render time.
  */
 
 export const LESSON_GROUPS = [
-  {
-    name: 'Alef',
-    description: 'Single vertical stroke',
-    letters: ['ا'],
-  },
-  {
-    name: 'Ba / Ta / Tha',
-    description: 'Flat baseline, dots vary',
-    letters: ['ب', 'ت', 'ث'],
-  },
-  {
-    name: 'Jim / Ha / Kha',
-    description: 'Hooked bowl shape',
-    letters: ['ج', 'ح', 'خ'],
-  },
-  {
-    name: 'Dal / Dhal',
-    description: 'Angular wedge',
-    letters: ['د', 'ذ'],
-  },
-  {
-    name: 'Ra / Zay',
-    description: 'Gentle descending curve',
-    letters: ['ر', 'ز'],
-  },
-  {
-    name: 'Sin / Shin',
-    description: 'Three-wave baseline',
-    letters: ['س', 'ش'],
-  },
-  {
-    name: 'Sad / Dad',
-    description: 'Round head, long tail',
-    letters: ['ص', 'ض'],
-  },
-  {
-    name: 'Ta / Dha',
-    description: 'Oval loop with upright stroke',
-    letters: ['ط', 'ظ'],
-  },
-  {
-    name: 'Ain / Ghain',
-    description: 'Open comma loop',
-    letters: ['ع', 'غ'],
-  },
-  {
-    name: 'Fa / Qaf',
-    description: 'Circle with tail',
-    letters: ['ف', 'ق'],
-  },
-  {
-    name: 'Kaf',
-    description: 'Tooth shape with accent',
-    letters: ['ك'],
-  },
-  {
-    name: 'Lam',
-    description: 'Tall hook',
-    letters: ['ل'],
-  },
-  {
-    name: 'Mim',
-    description: 'Tight circle with tail',
-    letters: ['م'],
-  },
-  {
-    name: 'Nun',
-    description: 'Shallow bowl',
-    letters: ['ن'],
-  },
-  {
-    name: 'Ha',
-    description: 'Figure-eight loops',
-    letters: ['ه'],
-  },
-  {
-    name: 'Waw',
-    description: 'Circle with descending tail',
-    letters: ['و'],
-  },
-  {
-    name: 'Ya',
-    description: 'Two humps with hook',
-    letters: ['ي'],
-  },
+  { nameKey: 'lessonAlefName',    descKey: 'lessonAlefDesc',    letters: ['ا'] },
+  { nameKey: 'lessonBaName',      descKey: 'lessonBaDesc',      letters: ['ب', 'ت', 'ث'] },
+  { nameKey: 'lessonJimName',     descKey: 'lessonJimDesc',     letters: ['ج', 'ح', 'خ'] },
+  { nameKey: 'lessonDalName',     descKey: 'lessonDalDesc',     letters: ['د', 'ذ'] },
+  { nameKey: 'lessonRaName',      descKey: 'lessonRaDesc',      letters: ['ر', 'ز'] },
+  { nameKey: 'lessonSinName',     descKey: 'lessonSinDesc',     letters: ['س', 'ش'] },
+  { nameKey: 'lessonSadName',     descKey: 'lessonSadDesc',     letters: ['ص', 'ض'] },
+  { nameKey: 'lessonTaEmphName',  descKey: 'lessonTaEmphDesc',  letters: ['ط', 'ظ'] },
+  { nameKey: 'lessonAinName',     descKey: 'lessonAinDesc',     letters: ['ع', 'غ'] },
+  { nameKey: 'lessonFaName',      descKey: 'lessonFaDesc',      letters: ['ف', 'ق'] },
+  { nameKey: 'lessonKafName',     descKey: 'lessonKafDesc',     letters: ['ك'] },
+  { nameKey: 'lessonLamName',     descKey: 'lessonLamDesc',     letters: ['ل'] },
+  { nameKey: 'lessonMimName',     descKey: 'lessonMimDesc',     letters: ['م'] },
+  { nameKey: 'lessonNunName',     descKey: 'lessonNunDesc',     letters: ['ن'] },
+  { nameKey: 'lessonHaSoftName',  descKey: 'lessonHaSoftDesc',  letters: ['ه'] },
+  { nameKey: 'lessonWawName',     descKey: 'lessonWawDesc',     letters: ['و'] },
+  { nameKey: 'lessonYaName',      descKey: 'lessonYaDesc',      letters: ['ي'] },
 ];
 
 /**
