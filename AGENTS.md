@@ -336,8 +336,78 @@ All UI strings live in `src/locales/index.js` as `UI = { en: {...}, ar: {...} }`
 
 ## MCP Tools
 
-- Prefer built-in `fetch`/`agentic_fetch` for web research and reading pages.
-- Only use Playwright MCP for tasks requiring JS rendering, interaction (clicks/forms), or screenshots.
+This project has three MCP servers available via the **Docker MCP gateway**
+(`docker-mcp-gateway_*` tool prefix). Prefer them over ad-hoc fetching or
+manual work when the task fits.
+
+### Context7 — up-to-date library docs
+
+Use for anything involving **React 19**, **Vite 8**, Pointer Events, Web Share
+API, Service Workers, or OpenRouter model APIs. A lot of training data
+predates these versions, so Context7 is the canonical source when you need to
+confirm a hook signature, build config option, or browser API.
+
+- `docker-mcp-gateway_resolve-library-id` → resolves a name like `"react"` or
+  `"vite"` to a Context7 ID (e.g. `/facebook/react`, `/vitejs/vite`).
+- `docker-mcp-gateway_get-library-docs` → fetches the docs. Pass a `topic` to
+  scope the response (e.g. `"hooks"`, `"pointer events"`, `"service worker"`).
+
+Skip Context7 for stable / well-known APIs (DOM canvas 2D, localStorage, basic
+CSS) — built-in knowledge is fine there.
+
+### Playwright — real browser testing
+
+The project has **no test suite**; verification is manual browser work. Use
+Playwright MCP to exercise the UI whenever a change could affect rendering,
+input handling, or layout. Typical scenarios:
+
+- Canvas pointer/touch behavior in `PracticeView.jsx` (pressure, leave/re-enter
+  mid-stroke, `setPointerCapture`)
+- Stroke-order "Show me" animation playback and cleanup on navigation
+- RTL layout flipping under `html[lang="ar"]` when toggling locale
+- Dark mode repaint of existing strokes (the `darkModeRef` path in `redraw`)
+- PWA install / service-worker cache-bust behavior after `npm run build`
+- Responsive breakpoints (`<400px`, `400–639px`, `640–899px`, `≥900px`)
+
+Standard flow:
+1. `npm run dev` in a terminal (or `npm run preview` after a build).
+2. `docker-mcp-gateway_browser_navigate` → `http://localhost:5173`.
+3. `docker-mcp-gateway_browser_snapshot` for accessibility-tree inspection
+   (prefer this over screenshots for taking actions — it returns element refs
+   you can feed to `browser_click` / `browser_type`).
+4. `docker-mcp-gateway_browser_take_screenshot` only when you need a visual
+   artifact (e.g. confirming dark-mode colors or Arabic glyph rendering).
+
+Prefer built-in `webfetch` for static page reads — Playwright is for tasks
+that require JS execution, interaction, or screenshots.
+
+### GitHub — repo, PRs, issues
+
+Deploy flow is "push to `main` → Vercel auto-deploys," so PR hygiene matters.
+Use the GitHub MCP instead of shelling out to `gh` when you need to:
+
+- Open / update / merge PRs (`create_pull_request`, `update_pull_request`,
+  `merge_pull_request`)
+- Read PR state, files, checks, reviews (`pull_request_read` with `method:
+  "get"` / `"get_files"` / `"get_check_runs"` / `"get_reviews"`)
+- Check Vercel deployment status via commit checks on the head SHA
+- Triage issues (`list_issues`, `issue_read`, `issue_write`)
+- Request a Copilot review before human review (`request_copilot_review`)
+
+For local-only operations (staging files, writing commits, inspecting working-
+tree diffs) keep using the `bash` tool with plain `git` — that's faster and
+doesn't round-trip through the API.
+
+### Selection guide
+
+| Task                                              | Tool                                  |
+|---------------------------------------------------|---------------------------------------|
+| Look up React 19 / Vite 8 / browser API docs      | Context7                              |
+| Verify canvas / RTL / dark-mode / PWA behavior    | Playwright                            |
+| Open / review / merge a PR, read CI status        | GitHub MCP                            |
+| Local git (status, diff, log, commit)             | `bash` + `git`                        |
+| Read arbitrary web page (OpenRouter docs, etc.)   | built-in `webfetch`                   |
+| Find files / search code in this repo             | built-in `glob` / `grep`              |
 
 ## Roadmap Status
 
