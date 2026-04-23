@@ -398,6 +398,44 @@ For local-only operations (staging files, writing commits, inspecting working-
 tree diffs) keep using the `bash` tool with plain `git` — that's faster and
 doesn't round-trip through the API.
 
+### Vercel — deployments, debugging
+
+Project: `prj_k4j5UyqgA3Zjab1YdwlYp7Y8SQ6k`, team: `team_pRfQNAB4Otffa8UYFOj1gxnY`.
+Production domain: `arabic-handwriting-zacharyziems-projects.vercel.app`.
+Legacy domain: `project-5kkcf.vercel.app`.
+
+All prior deployments were GitHub-initiated (push to `main` → auto-deploy). The
+Vercel MCP tools and Vercel CLI allow CLI-initiated deploys and production
+debugging without leaving the terminal.
+
+**CLI deploy workflow** (via `npx vercel deploy`):
+1. `npm run build` — ensure `dist/` is current.
+2. `npx vercel deploy --yes` — deploys from the project root.
+3. **Caveat (Hobby plan)**: without branch protection enabled, CLI deploys
+   from the default branch go to **production**, not preview. To get a true
+   preview, deploy from a non-default branch: `git checkout -b preview/test &&
+   npx vercel deploy --yes`. The Git-based auto-deploy flow is unaffected —
+   CLI deploys are additive.
+4. The `deploy_to_vercel` MCP tool requires a `.vercel` directory (created by
+   `npx vercel link`). If missing, it falls back to instructing manual CLI use.
+
+**Debug workflow** (when a push to `main` breaks production):
+1. `list_deployments(projectId, teamId)` → find the failed deployment ID.
+2. `get_deployment_build_logs(idOrUrl, teamId)` → check build output for errors.
+3. `get_runtime_logs(projectId, teamId)` → check runtime errors (filter by
+   `level: ["error"]`, `statusCode: "5xx"`, or `environment: "production"`).
+4. If needed, roll back via the Vercel dashboard's "Rollback" button (promotes
+   the previous good deployment identified by `isRollbackCandidate`), then fix
+   the code and push.
+
+**Accessing protected preview URLs**: if deployment protection is ever enabled
+on previews, use `get_access_to_vercel_url` (generates a temporary shareable
+link) or `web_fetch_vercel_url` (fetches the page content directly).
+
+**Searching Vercel docs**: `search_vercel_documentation(topic)` — use when you
+need to confirm Vercel platform behavior, build config, routing, or framework
+settings.
+
 ### Selection guide
 
 | Task                                              | Tool                                  |
@@ -405,6 +443,14 @@ doesn't round-trip through the API.
 | Look up React 19 / Vite 8 / browser API docs      | Context7                              |
 | Verify canvas / RTL / dark-mode / PWA behavior    | Playwright                            |
 | Open / review / merge a PR, read CI status        | GitHub MCP                            |
+| Debug failed Vercel build                         | Vercel `get_deployment_build_logs`    |
+| Check runtime errors in production                | Vercel `get_runtime_logs`             |
+| Deploy working tree (preview or prod)            | `bash` + `npx vercel deploy`           |
+| List / inspect deployments                        | Vercel `list_deployments`, `get_deployment` |
+| Get project config / domains                      | Vercel `get_project`                  |
+| Check domain availability                         | Vercel `check_domain_availability_and_price` |
+| Access protected preview URLs                    | Vercel `get_access_to_vercel_url`, `web_fetch_vercel_url` |
+| Search Vercel platform docs                       | Vercel `search_vercel_documentation`  |
 | Local git (status, diff, log, commit)             | `bash` + `git`                        |
 | Read arbitrary web page (OpenRouter docs, etc.)   | built-in `webfetch`                   |
 | Find files / search code in this repo             | built-in `glob` / `grep`              |

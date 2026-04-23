@@ -286,7 +286,10 @@ export default function PracticeView({
     const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
     const dpr = devicePixelRatio || 1;
+    // Snapshot the user's drawing so we can restore it after the animation.
+    const savedStrokes = strokesRef.current;
     strokesRef.current = [];
+    setHasStrokes(false);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -300,71 +303,48 @@ export default function PracticeView({
     const W = canvas.width;
     const H = canvas.height;
 
+    // ── Reference-square layout ─────────────────────────────
+    // Stroke data was authored against a 0–100 square. We render the glyph
+    // into that same square (centered on canvas, scaled to fit) so the
+    // authored paths align with the actual letter shape regardless of font
+    // metrics. This is far more robust than measureText bounding boxes.
+    const CSS_SIZE = Math.min(200, rect.height * 0.8);
+    const glyphSize = CSS_SIZE * dpr;
+    const centerX = (rect.width / 2) * dpr;
+    const centerY = (rect.height / 2) * dpr;
+    const glyphX = centerX - glyphSize / 2;
+    const glyphY = centerY - glyphSize / 2;
+
     const glyphCanvas = document.createElement('canvas');
     glyphCanvas.width = W;
     glyphCanvas.height = H;
     const gCtx = glyphCanvas.getContext('2d');
-    // Match the on-screen ghost letter (practiceStyles.ghostLetter: 200px) so the
-    // animated reveal lands exactly where the user sees the tracing reference.
-    // Clamp to the canvas so tiny viewports still show the full glyph.
-    const fontSize = Math.min(200, rect.height * 0.8);
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
     gCtx.save();
-    gCtx.scale(dpr, dpr);
-    gCtx.font = `${fontSize}px "Amiri", "Scheherazade New", serif`;
-    gCtx.fillStyle = '#8b4513';
+    gCtx.font = `${glyphSize}px "Amiri", "Scheherazade New", serif`;
+    gCtx.fillStyle = darkModeRef.current ? '#c0703a' : '#8b4513';
     gCtx.textAlign = 'center';
     gCtx.textBaseline = 'middle';
     gCtx.direction = 'rtl';
     gCtx.fillText(currentChar, centerX, centerY);
-    // Measure the glyph's actual bounding box so stroke paths map onto the
-    // real rendered letter rather than the full canvas. Some browsers report
-    // zero for bounding-box metrics on certain glyphs; guard against that too.
-    const metrics = gCtx.measureText(currentChar);
-    const hasBBox =
-      metrics.actualBoundingBoxLeft > 0 ||
-      metrics.actualBoundingBoxRight > 0 ||
-      metrics.actualBoundingBoxAscent > 0 ||
-      metrics.actualBoundingBoxDescent > 0;
-    const bbLeft = hasBBox ? metrics.actualBoundingBoxLeft : fontSize * 0.5;
-    const bbRight = hasBBox ? metrics.actualBoundingBoxRight : fontSize * 0.5;
-    const bbAscent = hasBBox ? metrics.actualBoundingBoxAscent : fontSize * 0.55;
-    const bbDescent = hasBBox ? metrics.actualBoundingBoxDescent : fontSize * 0.35;
     gCtx.restore();
-
-    // Glyph rect in CSS pixels — the box the stroke-path 0–100 space should map into.
-    const glyphX = centerX - bbLeft;
-    const glyphY = centerY - bbAscent;
-    const glyphW = bbLeft + bbRight;
-    const glyphH = bbAscent + bbDescent;
 
     const maskCanvas = document.createElement('canvas');
     maskCanvas.width = W;
     maskCanvas.height = H;
     const mCtx = maskCanvas.getContext('2d');
 
-    const scaleX = glyphW / 100;
-    const scaleY = glyphH / 100;
-    const mapX = (x) => (glyphX + x * scaleX) * dpr;
-    const mapY = (y) => (glyphY + y * scaleY) * dpr;
+    const scale = glyphSize / 100;
+    const mapX = (x) => glyphX + x * scale;
+    const mapY = (y) => glyphY + y * scale;
 
-    // Build a single polyline (in device pixels) per stroke. The animation
-    // walks this polyline at a constant pixel speed, so letters with few or
-    // many authored points play at the same visible pace.
     const buildPolyline = (pts) => pts.map((p) => ({ x: mapX(p.x), y: mapY(p.y) }));
 
-    // Brush radius proportional to the glyph. Thicker than before so the
-    // swept reveal covers the glyph without leaving gaps between dabs.
-    const BRUSH_RADIUS = Math.min(glyphW, glyphH) * dpr * 0.14;
-    // Pixels advanced per animation frame. ~60fps * SPEED px/frame should
-    // complete a typical stroke (~600 px at 2x dpr) in 1.5–2 seconds.
-    const SPEED = Math.max(4, Math.min(glyphW, glyphH) * dpr * 0.015);
+    const BRUSH_RADIUS = glyphSize * 0.08;
+    const SPEED = Math.max(3, glyphSize * 0.012);
 
     const ops = [];
     for (const stroke of data.strokes) {
       const poly = buildPolyline(stroke);
-      // Precompute cumulative length so we can position the brush by distance.
       const lens = [0];
       for (let i = 1; i < poly.length; i++) {
         const dx = poly[i].x - poly[i - 1].x;
@@ -377,9 +357,6 @@ export default function PracticeView({
       ops.push({ type: 'dot', point: { x: mapX(dot.x), y: mapY(dot.y) } });
     }
 
-    // Paint a thick line segment on the mask — equivalent to stamping the
-    // brush continuously from `from` to `to`, which fills the gaps a series
-    // of discrete arcs would leave behind.
     const paintSegment = (from, to, radius) => {
       mCtx.beginPath();
       mCtx.moveTo(from.x, from.y);
@@ -391,12 +368,10 @@ export default function PracticeView({
       mCtx.stroke();
     };
 
-    // Find the point along a polyline at cumulative distance `d`.
     const pointAt = (poly, lens, d) => {
       if (d <= 0) return poly[0];
       const total = lens[lens.length - 1];
       if (d >= total) return poly[poly.length - 1];
-      // Linear scan is fine — polylines are short (<60 pts).
       for (let i = 1; i < lens.length; i++) {
         if (lens[i] >= d) {
           const segLen = lens[i] - lens[i - 1];
@@ -410,8 +385,8 @@ export default function PracticeView({
     };
 
     let opIdx = 0;
-    let dist = 0; // distance along current stroke
-    let prevPoint = null; // last brush position in current stroke
+    let dist = 0;
+    let prevPoint = null;
     const PAUSE_FRAMES = 18;
     let pauseCount = 0;
 
@@ -440,22 +415,19 @@ export default function PracticeView({
       animatingRef.current = false;
       animFrameRef.current = null;
       setAnimating(false);
+      strokesRef.current = savedStrokes;
+      if (savedStrokes.length) setHasStrokes(true);
+      redraw(savedStrokes);
     };
 
     const animate = () => {
-      if (!animatingRef.current) return; // cancelled from outside
+      if (!animatingRef.current) return;
       if (opIdx >= ops.length) {
-        ctx.save();
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.clearRect(0, 0, W, H);
-        ctx.drawImage(glyphCanvas, 0, 0);
-        ctx.restore();
         finish();
         return;
       }
       const op = ops[opIdx];
       if (op.type === 'stroke') {
-        // First frame of this stroke: stamp the starting dab.
         if (prevPoint === null) {
           prevPoint = op.poly[0];
           mCtx.beginPath();
@@ -1086,7 +1058,7 @@ export default function PracticeView({
         >
           {t('btnClear')}
         </button>
-        {practiceMode === 'letters' && STROKE_DATA[letter.letter] && (
+        {practiceMode === 'letters' && formIndex === 'isolated' && STROKE_DATA[letter.letter] && (
           <button
             className="btn-nav"
             style={{ ...styles.btn, ...styles.btnShowMe, opacity: animating ? 0.35 : 1 }}
