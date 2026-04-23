@@ -1,11 +1,11 @@
 // Bump this version string every time you deploy changes
-const CACHE = 'arabic-v18';
+const CACHE = 'arabic-v19';
 
 // All critical assets needed for the app to work
 const ASSETS = [
   '/',
   '/index.html',
-  '/assets/index-gmr7Gmzc.js',
+  '/assets/index-CslZidJS.js',
   '/assets/index-COSumFjg.css',
   '/manifest.json',
   '/icon-192.png',
