@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import PracticeView from './components/PracticeView';
 import LoginScreen from './components/LoginScreen';
 import { UI } from './locales';
@@ -79,6 +80,7 @@ export default function App() {
           locale={locale}
         />
       )}
+      <Analytics />
     </>
   );
 }
