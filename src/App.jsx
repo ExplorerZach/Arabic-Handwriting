@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 import PracticeView from './components/PracticeView';
 import LoginScreen from './components/LoginScreen';
 import { UI } from './locales';
@@ -81,6 +82,7 @@ export default function App() {
         />
       )}
       <Analytics />
+      <SpeedInsights />
     </>
   );
 }
