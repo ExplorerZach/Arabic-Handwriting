@@ -401,8 +401,26 @@ doesn't round-trip through the API.
 ### Vercel — deployments, debugging
 
 Project: `prj_k4j5UyqgA3Zjab1YdwlYp7Y8SQ6k`, team: `team_pRfQNAB4Otffa8UYFOj1gxnY`.
-Production domain: `arabic-handwriting-zacharyziems-projects.vercel.app`.
-Legacy domain: `project-5kkcf.vercel.app`.
+
+**Domains** (all attached to the same project, all serve the latest production
+deployment):
+
+| Domain                                                    | Role          | Notes                                                        |
+|-----------------------------------------------------------|---------------|--------------------------------------------------------------|
+| `www.writearabic.app`                                     | Canonical     | Custom domain users actually see. Treat as the live URL.     |
+| `writearabic.app`                                         | Apex redirect | 307 → `https://www.writearabic.app/` (handled by Vercel).    |
+| `arabic-handwriting-zacharyziems-projects.vercel.app`     | Vercel-assigned | Project alias; still serves prod. Useful for debugging.    |
+| `arabic-handwriting-git-main-zacharyziems-projects.vercel.app` | Git branch alias | Tracks `main`. Same content as prod.                   |
+| `project-5kkcf.vercel.app`                                | Legacy        | Old alias kept for backwards compatibility.                  |
+
+DNS for `writearabic.app` is registered and managed at **Cloudflare**; Vercel
+holds the domain verification, serves traffic, and terminates TLS. If DNS needs
+to change (MX records, TXT verification, subdomains), the records live in the
+Cloudflare dashboard — not Vercel. Changes to the site itself still flow
+through Git/Vercel as usual.
+
+When writing docs, tip-jar links, or anything user-facing, use
+`https://www.writearabic.app` — not the `.vercel.app` hostnames.
 
 All prior deployments were GitHub-initiated (push to `main` → auto-deploy). The
 Vercel MCP tools and Vercel CLI allow CLI-initiated deploys and production
