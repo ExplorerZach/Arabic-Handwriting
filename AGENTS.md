@@ -73,9 +73,9 @@ src/
 public/                    — Copied un-hashed to dist/
 ├── sw.js                  — Service worker (cache-first; auto-updated by build script)
 ├── manifest.json          — PWA manifest
-├── vercel.json            — Vercel cache headers
 ├── icon-192.png
 └── icon-512.png
+vercel.json                — Security headers + Cache-Control rules (MUST be at repo root, not public/)
 scripts/
 └── bust-sw.js             — Post-build Node script; bumps SW CACHE version and patches asset hashes
 ```
