@@ -2,7 +2,7 @@ import { useState } from 'react';
 import styles from '../styles/loginStyles';
 import { UI } from '../locales';
 
-export default function LoginScreen({ onSave, darkMode, onToggleDarkMode, locale = 'en' }) {
+export default function LoginScreen({ onSave, onCancel, darkMode, onToggleDarkMode, locale = 'en' }) {
   const [key, setKey] = useState('');
   const t = (k) => UI[locale][k] ?? k;
 
@@ -67,19 +67,21 @@ export default function LoginScreen({ onSave, darkMode, onToggleDarkMode, locale
           {t('loginStart')}
         </button>
 
-        <button
-          style={{
-            ...styles.btn,
-            marginTop: '8px',
-            background: 'transparent',
-            color: 'var(--color-accent)',
-            border: '1px solid var(--color-border)',
-            boxShadow: 'none',
-          }}
-          onClick={() => onSave('skip')}
-        >
-          {t('loginSkip')}
-        </button>
+        {onCancel && (
+          <button
+            style={{
+              ...styles.btn,
+              marginTop: '8px',
+              background: 'transparent',
+              color: 'var(--color-accent)',
+              border: '1px solid var(--color-border)',
+              boxShadow: 'none',
+            }}
+            onClick={onCancel}
+          >
+            {t('loginCancel')}
+          </button>
+        )}
       </div>
     </div>
   );

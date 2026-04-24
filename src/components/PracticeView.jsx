@@ -10,12 +10,18 @@ import {
   updateSR,
   getDueLetters,
   getProgressSummary,
+  getProgress,
 } from '../utils/progress';
 import { addFeedbackEntry, getFeedbackHistory } from '../utils/history';
 import STROKE_DATA from '../data/strokeOrder';
 import { WORD_GROUPS } from '../data/words';
 import { UI, FORM_NAMES, FORM_SHORT, FORM_FULL, FORM_DESCRIPTIONS } from '../locales';
+import { PAPER_THEMES, BRUSH_PACKS, getPaperColors, getBrushColor, drawPaperPattern } from '../styles/themes';
 import styles from '../styles/practiceStyles';
+import AnalyticsPanel from './AnalyticsPanel';
+import TipJarBanner from './TipJarBanner';
+import AffiliateLinks from './AffiliateLinks';
+import LoginScreen from './LoginScreen';
 
 const SCORE_LABELS = {
   5: 'feedbackScoreExcellent',
@@ -29,6 +35,7 @@ const DEFAULT_MODEL = 'google/gemini-3-flash-preview';
 
 export default function PracticeView({
   apiKey,
+  onSetKey,
   onClearKey,
   locale,
   darkMode,
@@ -49,6 +56,12 @@ export default function PracticeView({
   // (which would also change the ResizeObserver's callback). Kept in sync via
   // an effect below.
   const darkModeRef = useRef(darkMode);
+  // Same pattern for brush color so redraw() can read it without being in deps.
+  // Use a lazy initializer so we don't reference brushPack state before it's
+  // declared below (TDZ). The effect further down keeps this ref in sync.
+  const brushColorRef = useRef(
+    getBrushColor(localStorage.getItem('brush_pack') || 'classic', darkMode)
+  );
   // When the pointer leaves the canvas mid-stroke and re-enters without a
   // lift, the next pointermove would otherwise draw a straight line across
   // the gap. This flag forces the next recorded point to start a new stroke.
@@ -77,9 +90,19 @@ export default function PracticeView({
     const v = parseFloat(localStorage.getItem('brushScale') || '1');
     return Number.isFinite(v) ? v : 1;
   });
+  const [paperTheme, setPaperTheme] = useState(
+    () => localStorage.getItem('app_theme') || 'parchment'
+  );
+  const [brushPack, setBrushPack] = useState(
+    () => localStorage.getItem('brush_pack') || 'classic'
+  );
   // Bumps on every write to progress/history so derived summaries recompute
   // without us having to pipe state through every helper.
   const [progressVersion, setProgressVersion] = useState(0);
+
+  // Controls the full-screen LoginScreen overlay that's launched from the
+  // Settings panel's "Set/Change key" button.
+  const [showKeyScreen, setShowKeyScreen] = useState(false);
 
   const t = (key) => UI[locale][key] ?? key;
 
@@ -126,17 +149,21 @@ export default function PracticeView({
     const ctx = canvas.getContext('2d');
     const rect = canvas.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
+    const W = rect.width;
+    const H = rect.height;
     // Clear full bitmap (ctx is DPR-scaled, so draw in CSS pixel space).
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
+    // Draw paper pattern first so strokes appear on top
+    if (paperTheme === 'ruled' || paperTheme === 'grid') {
+      drawPaperPattern(ctx, W, H, paperTheme, darkModeRef.current);
+    }
     if (!points.length) return;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = darkModeRef.current ? '#ffffff' : '#1a0a00';
-    const W = rect.width;
-    const H = rect.height;
+    ctx.strokeStyle = brushColorRef.current;
     for (let i = 0; i < points.length; i++) {
       const pt = points[i];
       const x = pt.x * W;
@@ -160,7 +187,7 @@ export default function PracticeView({
       }
     }
     ctx.stroke();
-  }, []);
+  }, [paperTheme]);
 
   const clearCanvas = useCallback(() => {
     strokesRef.current = [];
@@ -248,8 +275,9 @@ export default function PracticeView({
 
   useEffect(() => {
     darkModeRef.current = darkMode;
+    brushColorRef.current = getBrushColor(brushPack, darkMode);
     redraw(strokesRef.current);
-  }, [darkMode, redraw]);
+  }, [darkMode, brushPack, redraw]);
 
   // ─── Online / offline detection ───────────────────────
 
@@ -293,6 +321,10 @@ export default function PracticeView({
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const paperClear = getPaperColors(paperTheme, darkModeRef.current);
+    ctx.fillStyle = paperClear.bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    drawPaperPattern(ctx, canvas.width, canvas.height, paperTheme, darkModeRef.current);
     ctx.restore();
     animatingRef.current = true;
     setAnimating(true);
@@ -404,6 +436,11 @@ export default function PracticeView({
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, W, H);
+      // Paper background for animation
+      const paperAnim = getPaperColors(paperTheme, darkModeRef.current);
+      ctx.fillStyle = paperAnim.bg;
+      ctx.fillRect(0, 0, W, H);
+      drawPaperPattern(ctx, W, H, paperTheme, darkModeRef.current);
       ctx.globalAlpha = 0.12;
       ctx.drawImage(glyphCanvas, 0, 0);
       ctx.globalAlpha = 1;
@@ -540,8 +577,11 @@ export default function PracticeView({
     offscreen.width = rect.width * dpr;
     offscreen.height = rect.height * dpr;
     const ctx = offscreen.getContext('2d');
-    ctx.fillStyle = darkMode ? '#1a1008' : '#fdf6e8';
+    // Paper theme background
+    const paper = getPaperColors(paperTheme, darkMode);
+    ctx.fillStyle = paper.bg;
     ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+    drawPaperPattern(ctx, offscreen.width, offscreen.height, paperTheme, darkMode);
     const watermarkText = practiceMode === 'words' ? currentWord?.word : currentChar;
     const fontSize = (practiceMode === 'words' ? 0.25 : 0.5) * Math.min(offscreen.width, offscreen.height);
     ctx.save();
@@ -555,7 +595,7 @@ export default function PracticeView({
     ctx.restore();
     ctx.drawImage(canvas, 0, 0);
     return offscreen.toDataURL('image/png');
-  }, [darkMode, practiceMode, currentWord, currentChar]);
+  }, [darkMode, paperTheme, practiceMode, currentWord, currentChar]);
 
   const saveDrawing = useCallback(() => {
     if (!strokesRef.current.length) return;
@@ -616,6 +656,24 @@ export default function PracticeView({
     clearCanvas();
   }, [lessonMode, lessonToAlpha, clearCanvas]);
 
+  const goToAnalyticsItem = useCallback((letterName, formKey) => {
+    const alphIdx = LETTERS.findIndex((l) => l.name === letterName);
+    if (alphIdx === -1) return;
+    if (lessonMode) {
+      const lessonIdx = lessonToAlpha.indexOf(alphIdx);
+      setLetterIndex(lessonIdx !== -1 ? lessonIdx : 0);
+    } else {
+      setLetterIndex(alphIdx);
+    }
+    setFormIndex(formKey);
+    setPracticeMode('letters');
+    setFeedback(null);
+    setShowComparison(false);
+    setShowHistory(false);
+    alphaBtnRefs.current = [];
+    clearCanvas();
+  }, [lessonMode, lessonToAlpha, clearCanvas]);
+
   // ─── Canvas export (AI, JPEG 512px) ──────────────────
 
   const exportCanvas = () => {
@@ -626,8 +684,11 @@ export default function PracticeView({
     offscreen.width = rect.width * dpr;
     offscreen.height = rect.height * dpr;
     const ctx = offscreen.getContext('2d');
-    ctx.fillStyle = '#fdf6e8';
+    // Use user's paper theme for AI export (strokes are what the model analyzes)
+    const paper = getPaperColors(paperTheme, false);
+    ctx.fillStyle = paper.bg;
     ctx.fillRect(0, 0, offscreen.width, offscreen.height);
+    drawPaperPattern(ctx, offscreen.width, offscreen.height, paperTheme, false);
     const watermarkText = practiceMode === 'words' ? currentWord?.word : currentChar;
     const fontSize = practiceMode === 'words'
       ? Math.min(offscreen.width, offscreen.height) * 0.25
@@ -702,6 +763,19 @@ export default function PracticeView({
     setBrushScale(safe);
   };
 
+  const handleThemeChange = (themeId) => {
+    setPaperTheme(themeId);
+    localStorage.setItem('app_theme', themeId);
+    redraw(strokesRef.current);
+  };
+
+  const handleBrushPackChange = (packId) => {
+    setBrushPack(packId);
+    localStorage.setItem('brush_pack', packId);
+    brushColorRef.current = getBrushColor(packId, darkMode);
+    redraw(strokesRef.current);
+  };
+
   // ─── Keyboard nav for alphabet row ───────────────────
 
   const handleAlphaKeyDown = useCallback((e, idx) => {
@@ -722,6 +796,23 @@ export default function PracticeView({
   const history = getFeedbackHistory(letter.name, activeForm);
 
   // ─── Render ───────────────────────────────────────
+
+  // Full-screen key-entry overlay, launched from the Settings "Set/Change key"
+  // button. Save commits the key and closes; Cancel just closes.
+  if (showKeyScreen) {
+    return (
+      <LoginScreen
+        onSave={(key) => {
+          onSetKey(key);
+          setShowKeyScreen(false);
+        }}
+        onCancel={() => setShowKeyScreen(false)}
+        darkMode={darkMode}
+        onToggleDarkMode={onToggleDarkMode}
+        locale={locale}
+      />
+    );
+  }
 
   return (
     <div style={styles.root} className="practice-root">
@@ -780,8 +871,6 @@ export default function PracticeView({
       {/* Settings panel */}
       {showSettings && (
         <div id="settings-panel" style={styles.keyPanel}>
-          <span style={{ fontSize: '12px', color: 'var(--color-text-soft)' }}>{t('settingsNote')}</span>
-
           {/* Dark mode toggle */}
           <button
             className="btn-panel"
@@ -819,9 +908,92 @@ export default function PracticeView({
             </select>
           </label>
 
-          <button className="btn-panel" style={styles.keyPanelBtn} onClick={onClearKey}>
-            {t('settingsChangeKey')}
-          </button>
+          {/* Paper theme selector */}
+          <label style={{ fontSize: '12px', color: 'var(--color-text-soft)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {t('settingsTheme')}
+            <div style={styles.themeRow}>
+              {Object.values(PAPER_THEMES).map((theme) => {
+                const colors = getPaperColors(theme.id, darkMode);
+                const isActive = paperTheme === theme.id;
+                return (
+                  <button
+                    key={theme.id}
+                    className={`btn-theme ${isActive ? 'btn-theme-active' : ''}`}
+                    style={{ ...styles.themeBtn, ...(isActive ? styles.themeBtnActive : {}) }}
+                    onClick={() => handleThemeChange(theme.id)}
+                    aria-pressed={isActive}
+                    aria-label={t(theme.nameKey)}
+                  >
+                    <span style={{ ...styles.themeSwatch, background: colors.bg }} />
+                    <span>{t(theme.nameKey)}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </label>
+
+          {/* Brush pack selector */}
+          <label style={{ fontSize: '12px', color: 'var(--color-text-soft)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {t('settingsBrush')}
+            <div style={styles.brushRow}>
+              {Object.values(BRUSH_PACKS).map((pack) => {
+                const color = getBrushColor(pack.id, darkMode);
+                const isActive = brushPack === pack.id;
+                return (
+                  <button
+                    key={pack.id}
+                    className={`btn-swatch ${isActive ? 'btn-swatch-active' : ''}`}
+                    style={{
+                      ...styles.brushSwatch,
+                      background: color,
+                      ...(isActive ? styles.brushSwatchActive : {}),
+                    }}
+                    onClick={() => handleBrushPackChange(pack.id)}
+                    aria-pressed={isActive}
+                    aria-label={t(pack.nameKey)}
+                    title={t(pack.nameKey)}
+                  />
+                );
+              })}
+            </div>
+          </label>
+
+          {/* API key — opens full-screen LoginScreen overlay. Clear is only
+              offered when a real key is stored. */}
+          <span style={{ fontSize: '12px', color: 'var(--color-text-soft)' }}>{t('settingsNote')}</span>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button
+              className="btn-panel"
+              style={{ ...styles.keyPanelBtn, flex: 1 }}
+              onClick={() => {
+                setShowSettings(false);
+                setShowKeyScreen(true);
+              }}
+            >
+              {apiKey && apiKey !== 'skip' ? t('settingsChangeKey') : t('settingsSetKey')}
+            </button>
+            {apiKey && apiKey !== 'skip' && (
+              <button
+                className="btn-panel"
+                style={{
+                  ...styles.keyPanelBtn,
+                  flex: 1,
+                  background: 'transparent',
+                  color: 'var(--color-accent)',
+                  border: '1px solid var(--color-border)',
+                  boxShadow: 'none',
+                }}
+                onClick={onClearKey}
+              >
+                {t('settingsClearKey')}
+              </button>
+            )}
+          </div>
+
+          <div style={styles.settingsDivider} />
+          <TipJarBanner locale={locale} />
+          <div style={styles.settingsDivider} />
+          <AffiliateLinks locale={locale} />
         </div>
       )}
 
@@ -865,6 +1037,17 @@ export default function PracticeView({
             </span>
           )}
         </button>
+        <button
+          className="btn-form"
+          style={{ ...styles.modeTab, ...(practiceMode === 'stats' ? styles.modeTabActive : {}) }}
+          onClick={() => switchPracticeMode('stats')}
+          role="tab"
+          aria-selected={practiceMode === 'stats'}
+          aria-label={t('tabStats')}
+          id="tab-stats"
+        >
+          {t('tabStats')}
+        </button>
       </div>
 
       {/* Review dashboard */}
@@ -899,8 +1082,18 @@ export default function PracticeView({
         </div>
       )}
 
-      {/* Practice UI (hidden in review mode) */}
-      {practiceMode !== 'review' && <>
+      {/* Stats dashboard */}
+      {practiceMode === 'stats' && (
+        <AnalyticsPanel
+          locale={locale}
+          LETTERS={LETTERS}
+          progress={getProgress()}
+          onGoToItem={goToAnalyticsItem}
+        />
+      )}
+
+      {/* Practice UI (hidden in review/stats mode) */}
+      {practiceMode !== 'review' && practiceMode !== 'stats' && <>
 
       {/* Info bar */}
       {practiceMode === 'letters' ? (
@@ -990,7 +1183,13 @@ export default function PracticeView({
       </div>
 
       {/* Canvas */}
-      <div style={styles.canvasWrap} className="canvas-max">
+      <div
+        style={{
+          ...styles.canvasWrap,
+          background: getPaperColors(paperTheme, darkMode).bg,
+        }}
+        className="canvas-max"
+      >
         {practiceMode === 'letters' ? (
           <div style={styles.ghostLetter} lang="ar">{currentChar}</div>
         ) : (
@@ -1071,13 +1270,13 @@ export default function PracticeView({
         )}
         <button
           className="btn-ai"
-          style={{ ...styles.btn, ...styles.btnAI, opacity: loading || apiKey === 'skip' || !isOnline ? 0.35 : 1 }}
+          style={{ ...styles.btn, ...styles.btnAI, opacity: loading || !apiKey || apiKey === 'skip' || !isOnline ? 0.35 : 1 }}
           onClick={requestFeedback}
-          disabled={loading || apiKey === 'skip' || !isOnline}
+          disabled={loading || !apiKey || apiKey === 'skip' || !isOnline}
           aria-label={t('ariaAIFeedbackBtn')}
           aria-busy={loading}
         >
-          {loading ? t('btnAIFeedbackLoading') : apiKey === 'skip' ? t('btnAIFeedbackNoKey') : !isOnline ? t('btnAIFeedbackOffline') : t('btnAIFeedback')}
+          {loading ? t('btnAIFeedbackLoading') : !apiKey || apiKey === 'skip' ? t('btnAIFeedbackNoKey') : !isOnline ? t('btnAIFeedbackOffline') : t('btnAIFeedback')}
         </button>
         <button
           className="btn-nav"

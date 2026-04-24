@@ -257,6 +257,49 @@ input[type="range"]:focus-visible {
   border-radius: 4px;
 }
 
+/* ─── Theme selector buttons ─────────────────────────── */
+.btn-theme:hover {
+  border-color: var(--color-border-strong) !important;
+  background: var(--color-surface-hover) !important;
+}
+.btn-theme:focus-visible {
+  outline: 2px solid var(--color-outline);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ─── Brush swatch buttons ───────────────────────────── */
+.btn-swatch:hover {
+  transform: scale(1.15);
+}
+.btn-swatch:focus-visible {
+  outline: 2px solid var(--color-outline);
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+/* ─── Affiliate link cards ───────────────────────────── */
+.affiliate-link:hover {
+  background: var(--color-surface-hover) !important;
+  border-color: var(--color-border-strong) !important;
+}
+.affiliate-link:focus-visible {
+  outline: 2px solid var(--color-outline);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ─── Analytics heatmap / weakness buttons ───────────── */
+.analytics-heat-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px var(--color-shadow-deep);
+}
+.analytics-heat-btn:focus-visible {
+  outline: 2px solid var(--color-outline);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
 /* ─── Responsive breakpoints ─────────────────────────── */
 
 /* Phone portrait — < 400px */

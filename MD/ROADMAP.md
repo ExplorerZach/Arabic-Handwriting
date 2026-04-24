@@ -1,73 +1,190 @@
-# Arabic Script Practice — Roadmap
+# Arabic Handwriting Practice — Feature Roadmap
 
-## Phase 1: Cleanup & Quick Wins ✅
-> Completed — commit `6d6feff`
-
-- [x] Load Arabic web fonts (Amiri + Scheherazade New) via Google Fonts in `index.html`
-- [x] Wire up `src/utils/api.js` in PracticeView — remove duplicated inline API fetch logic
-- [x] Add Undo button — pops last stroke from `strokesRef` and redraws
-- [x] Delete root-level duplicate files (`sw.js`, `manifest.json`, `vercel.json`, icons, stale `assets/`)
-- [x] Add offline indicator — amber banner + disabled AI button when `navigator.onLine` is false
-- [x] Bump `public/sw.js` to `arabic-v5` with new asset hash
+> Last updated: 2026-04-22
+>
+> A free, open-source PWA for Arabic handwriting practice.  
+> All features listed here are free for all users.
 
 ---
 
-## Phase 2: Core Improvements ✅
-> Completed — commit `608212b`
+## Table of Contents
 
-- [x] Add `src/styles/global.css` — hover/active/focus states on all buttons, custom scrollbar, focus rings
-- [x] Compress canvas before AI send — downscale to 512px max, export as JPEG 0.85 (reduces payload ~60-80%)
-- [x] Better error messages — parse OpenRouter 401 (bad key), 402 (no credits), 429 (rate limit), 503 (model down) into plain English
-- [x] Progress tracking (`src/utils/progress.js`) — persist practiced letter+form combos; orange dot = started, green dot = all forms complete; "X/28 complete" in header
-- [x] Feedback history (`src/utils/history.js`) — store last 5 AI responses per letter+form; expandable "Past feedback" section below feedback box
-- [x] Bump `public/sw.js` to `arabic-v6` with new JS + CSS asset hashes
-
----
-
-## Phase 3: Learning Experience ✅
-> Completed
-
-### Approach notes
-- **Guided lesson mode** — new `src/data/lessonOrder.js` grouping letters by shape family (ب/ت/ث, ج/ح/خ, etc.). A "Lesson Mode" toggle in the header follows this sequence instead of alphabetical order.
-- **Side-by-side comparison** — after drawing, render a split view: reference letter (large, opaque) on the left, user's attempt on the right, at the same scale.
-- **Scoring system** — extend the AI prompt to return a 1–5 score in a parseable tag (e.g. `[SCORE:4]`). Display as stars. Feed score into progress tracking in `progress.js`.
-- **Stroke order animation** — define stroke order data per letter (start/end points, direction). "Show me how" button animates drawing with `requestAnimationFrame`.
-- **Word/ligature practice** — new `src/data/words.js` with common letter combinations and words (بسم, الله, etc.). A "Words" tab alongside individual letter practice.
-
-- [x] Guided lesson mode — `src/data/lessonOrder.js` + toggle in header
-- [x] Side-by-side comparison view after drawing
-- [x] AI scoring (1–5 stars) parsed from response, stored in progress
-- [x] Stroke order animation — "Show me how" button per letter
-- [x] Word/ligature practice tab
+1. [Guiding Principles](#guiding-principles)
+2. [Phase 1 — Foundation (Completed)](#phase-1--foundation-completed)
+3. [Phase 2 — Content & Customization](#phase-2--content--customization)
+4. [Phase 3 — Advanced Tools](#phase-3--advanced-tools)
+5. [Phase 4 — Community & Education](#phase-4--community--education)
+6. [Phase 5 — Printables & Portability (Last)](#phase-5--printables--portability-last)
+7. [Technical Notes](#technical-notes)
+8. [Success Metrics](#success-metrics)
 
 ---
 
-## Phase 4: Polish & Accessibility
-> Completed (`777fc1f` extended with Phase 4 work)
+## Guiding Principles
 
-### Approach notes
-- **Accessibility** — add ARIA labels to all buttons, `role` attributes, arrow-key navigation for the alphabet row, skip-to-content link.
-- **Responsive layout** — CSS media queries in `global.css` for phone (<400px), tablet landscape, and desktop (>900px). Adjust canvas size and flex layout.
-- **Dark mode** — CSS custom properties for the full color palette in `global.css`. Toggle stored in localStorage. Keep the warm aesthetic but inverted.
-- **Localization** — extract all UI strings to `src/locales/`. Add a language toggle (EN/AR). Full RTL layout when Arabic is selected.
-
-- [x] Accessibility pass — ARIA, keyboard nav, focus rings on all interactives
-- [x] Responsive layout — breakpoints for phone, tablet landscape, desktop
-- [x] Dark mode — CSS custom properties + toggle in settings
-- [x] Localization — Arabic UI option with full RTL layout
+- **Everything is free.** No paywalls, no subscriptions, no ads.
+- **AI feedback is core.** The OpenRouter vision analysis remains unlimited for all users.
+- **Privacy first.** All data stays in localStorage unless the user explicitly enables cloud sync.
+- **Offline-first.** Every feature must work without an internet connection after initial load.
+- **No accounts required.** Users can practice immediately; optional features may ask for minimal auth.
 
 ---
 
-## Phase 5: Advanced Features
-> Completed (Phase 4 + 5 work)
+## Phase 1 — Foundation (Completed)
 
-### Approach notes
-- **Spaced repetition** — implement a simplified SM-2 algorithm using score history from Phase 3. Surface letters "due for review" on a home screen dashboard.
-- **Export/share** — "Save" button exports the canvas as a downloadable PNG. Use the Web Share API on mobile for native sharing.
-- **Automate SW cache busting** — a Vite plugin or post-build Node script that reads `dist/assets/` filenames and patches `public/sw.js` automatically, removing the manual step.
-- **Cloud sync** — optional; requires a backend (e.g. Supabase or Firebase). Syncs progress + feedback history across devices. Major scope increase.
+**Goal:** Make the app delightful, insightful, and personalized.
 
-- [x] Spaced repetition — SM-2 algorithm in `progress.js`, "Review" tab with due-letter grid
-- [x] Export/share — Save (PNG download) + Share (Web Share API, download fallback) buttons
-- [x] Automate SW cache busting — `scripts/bust-sw.js` runs automatically after `npm run build`
-- [ ] Cloud sync (optional) — Supabase/Firebase backend for cross-device progress
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| 1.1 | **Paper Themes** | Completed | 6 canvas backgrounds: Parchment, Aged, Cream, Cool Gray, Notebook (ruled), Graph Paper. |
+| 1.2 | **Brush Packs** | Completed | 5 stroke colors: Classic, Crimson, Indigo, Forest, Copper. Light/dark adaptive. |
+| 1.3 | **Analytics Dashboard** | Completed | Stats tab with streaks, score distribution, practice heatmap, weakness analysis, 30-day timeline. |
+| 1.4 | **Tip Jar (Ko-fi)** | Completed | Optional support link for users who want to contribute. No gates, no prompts. |
+| 1.5 | **Recommended Gear** | Completed | Curated hardware & tutor links in Settings. Plain non-affiliate recommendations. |
+
+### Phase 1 Deliverables
+- [x] `src/styles/themes.js` — theme registry (paper + brush definitions)
+- [x] `src/utils/analytics.js` — streaks, score distribution, heatmap, weaknesses
+- [x] `src/components/AnalyticsPanel.jsx` — stats tab UI
+- [x] `src/components/TipJarBanner.jsx` — support prompt
+- [x] `src/components/AffiliateLinks.jsx` — curated resources in Settings
+
+---
+
+## Phase 2 — Content & Customization
+
+**Goal:** Expand what users can practice and how they can express themselves.
+
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| 2.1 | **Extended Content Packs** | Planned | Quranic phrases, Surah names, common Arabic names, Eastern Arabic numerals (٠١٢٣٤٥٦٧٨٩), advanced ligatures. Bundled into the app; no unlocking required. |
+| 2.2 | **Script Styles** | Planned | Naskh, Thuluth, Diwani, Ruqaa — swap ghost-letter font and stroke-order animation data. Each style requires new `strokeOrder.js` entries and curated font files. |
+| 2.3 | **Custom Word List Builder** | Planned | Users input their own words/phrases; app generates ghost letter + watermark. Free-form practice beyond bundled content. |
+
+### Phase 2 Deliverables
+- [ ] `src/data/extendedWords.js` — additional word groups
+- [ ] `src/data/scriptStyles.js` — font mappings + stroke-order overrides per style
+- [ ] `src/components/WordBuilder.jsx` — custom word input + preview
+
+---
+
+## Phase 3 — Advanced Tools
+
+**Goal:** Give power users deeper control and richer output.
+
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| 3.1 | **Advanced Script Styles** | Planned | Kufic, Maghribi, Nastaʿlīq — more complex stroke data, potentially new animation system. |
+| 3.2 | **Progress Export (CSV / JSON)** | Planned | Let users own their data. Export full progress, history, and settings for backup or analysis. |
+| 3.3 | **Import / Restore** | Planned | Import a previously exported JSON to restore progress on a new device. |
+| 3.4 | **Daily Challenges** | Planned | A random letter or word highlighted each day with a suggested practice goal (e.g., "Practice Jim 3 times"). |
+
+### Phase 3 Deliverables
+- [ ] `src/components/ImportExportPanel.jsx` — import/export UI
+- [ ] `src/utils/exportProgress.js` — CSV/JSON export of `arabic_progress`
+- [ ] `src/utils/challenge.js` — daily challenge picker and completion tracking
+- [ ] `src/components/ChallengeBanner.jsx` — daily prompt display
+
+---
+
+## Phase 4 — Community & Education
+
+**Goal:** Support teachers, classrooms, and collaborative learning.
+
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| 4.1 | **Classroom Mode** | Planned | Teacher creates a session code; students join. Teacher can see aggregate progress (anonymous) and assign specific letters/words. No student accounts required — just a session PIN. |
+| 4.2 | **Shareable Progress Cards** | Planned | Generate a stylized image/card of your streak or completed letters for social sharing. |
+| 4.3 | **LMS Integration** | Planned | LTI 1.3 plugin for Moodle, Canvas, Blackboard. Grade passback for practice completion. Target: small classrooms and tutoring centers. |
+| 4.4 | **Open Source Release** | Planned | Clean up repo, add contribution guidelines, publish on GitHub for community contributions (new content packs, translations, script styles). |
+
+### Phase 4 Deliverables
+- [ ] `src/components/ClassroomPanel.jsx` — teacher/student session UI
+- [ ] `src/utils/classroom.js` — session code generation, progress aggregation
+- [ ] `src/utils/shareCard.js` — stylized progress card renderer
+- [ ] `src/utils/lti.js` — LTI auth + grade passback
+- [ ] `CONTRIBUTING.md`, `LICENSE`, clean repo for public release
+
+---
+
+## Phase 5 — Printables & Portability (Last)
+
+**Goal:** Offline exports and optional cross-device sync. These sit last because they require the most backend complexity and are convenience features, not core to daily practice.
+
+| # | Feature | Status | Notes |
+|---|---------|--------|-------|
+| 5.1 | **Printable Practice Sheets** | Planned | PDF generation: grid-lined pages with faint ghost letters, dotted tracing guides, custom word lists. Generated client-side with `jsPDF`. |
+| 5.2 | **Bulk PDF Worksheet Generator** | Planned | Select any 5+ letters/words, generate a multi-page PDF practice book. |
+| 5.3 | **Progress Backup & Restore** | Planned | Automatic daily backup to a downloadable file. Manual restore from any device via file upload. |
+| 5.4 | **Cross-Device QR Sync** | Planned | Encode compressed progress data into a QR code; scan on another device to transfer. No server required. |
+| 5.5 | **Cloud Sync (Optional)** | Planned | Sync `arabic_progress`, `arabic_feedback_history`, brush/settings across devices. **Opt-in only.** Backend: lightweight self-hosted option (e.g., Vercel KV, Supabase free tier) or manual file-based sync. |
+
+### Why Last?
+PDF generation and cloud sync add significant complexity (client-side libraries or backend infrastructure). They are valuable but not essential to the core learning loop. By placing them last, the app solidifies its content, tools, and community features first.
+
+### Phase 5 Deliverables
+- [ ] `src/utils/pdfExport.js` — worksheet PDF generation
+- [ ] `src/utils/bulkPdf.js` — multi-page PDF assembly
+- [ ] `scripts/build-pdf-templates.js` — pre-render PDF assets at build time
+- [ ] `src/utils/qrSync.js` — QR encode/decode for progress data
+- [ ] `src/components/SyncPanel.jsx` — sync status, manual push/pull, QR display
+- [ ] `src/utils/offlineQueue.js` — queue mutations when offline, flush on reconnect
+- [ ] Optional backend: minimal auth (magic-link email, no passwords) + progress CRUD
+
+---
+
+## Technical Notes
+
+### localStorage Keys
+
+| Key | Type | Purpose |
+|-----|------|---------|
+| `app_theme` | string | Selected paper theme ID |
+| `brush_pack` | string | Selected brush pack ID |
+| `arabic_practice_dates` | JSON | Daily practice session counts for streak tracking |
+| `cloud_sync_token` | string | JWT from sync backend (only if user opts in) |
+| `analytics_opt_in` | string | `"true"` / `"false"` — stats tracking consent |
+
+> **Migration rule:** If renaming any existing key (`arabic_progress`, etc.), provide a forward migration in `progress.js` / `history.js` pattern.
+
+### Architecture Decisions
+
+- **All content ships in the main bundle.** No dynamic paywall gates. Extended content may use lazy `import()` only for size reasons, not access control.
+- **Script styles may use dynamic `import()`** if font files are large (>100 KB each). Cache aggressively in the service worker.
+- **PDF generation happens client-side** for single worksheets; serverless for bulk generation to avoid main-thread jank.
+- **Cloud sync backend is optional at build time.** The app must work 100% offline if `VITE_SYNC_API_URL` is unset.
+- **Classroom mode uses short-lived session codes**, not persistent accounts. Student privacy is preserved by default.
+
+### PWA / Offline Considerations
+
+- All content packs must be precached by the service worker for offline use.
+- Cloud sync should queue writes when offline and flush on `window.online`.
+- QR sync works entirely offline (encode → display → scan → decode).
+
+---
+
+## Success Metrics
+
+| Phase | Metric | Target |
+|-------|--------|--------|
+| 1 | DAU/MAU ratio | > 30% (habit formation) |
+| 1 | Settings adoption (themes + brushes) | > 20% of active users |
+| 2 | Content pack usage | > 40% of users try extended words |
+| 3 | Import/export usage | > 5% of users export data |
+| 4 | Classroom sessions | 10+ teachers in first 3 months |
+| 4 | GitHub contributors | 3+ external contributors |
+| 5 | PDF sheets generated | > 100/month |
+| 5 | Sync opt-in rate | > 10% of users with > 7 days progress |
+
+---
+
+## Next Steps
+
+1. **Phase 2.1:** Prepare extended content packs (Quranic phrases, names, numerals).
+2. **Phase 2.2:** Commission or curate Naskh/Thuluth stroke data; integrate font files.
+3. **Phase 2.3:** Build custom word list builder UI.
+4. **Phase 3.2 + 3.3:** Implement CSV/JSON export and import restore.
+5. **Phase 3.4:** Build daily challenge system.
+6. After Phase 3, evaluate whether classroom demand justifies Phase 4 work.
+7. After Phase 4, evaluate whether PDF/cloud demand justifies Phase 5 backend work.
+

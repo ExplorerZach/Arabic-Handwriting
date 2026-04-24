@@ -17,6 +17,8 @@
  * }
  */
 
+import { recordPracticeDate } from './analytics.js';
+
 const STORAGE_KEY = 'arabic_progress';
 
 // ─── In-memory cache ──────────────────────────────────────
@@ -106,6 +108,7 @@ export function markPracticed(letterName, formKey) {
   entry.practiceCount = (entry.practiceCount || 0) + 1;
   data[letterName][formKey] = entry;
   save(data);
+  recordPracticeDate();
   return data;
 }
 

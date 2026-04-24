@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import PracticeView from './components/PracticeView';
-import LoginScreen from './components/LoginScreen';
 import { UI } from './locales';
 
 export default function App() {
@@ -31,7 +30,7 @@ export default function App() {
     document.documentElement.setAttribute('dir', locale === 'ar' ? 'rtl' : 'ltr');
   }, [locale]);
 
-  const handleSave = (key) => {
+  const handleSetKey = (key) => {
     localStorage.setItem('openrouter_key', key);
     setApiKey(key);
   };
@@ -64,23 +63,15 @@ export default function App() {
       <a href="#main-canvas" className="skip-link">
         {skipLinkText}
       </a>
-      {apiKey ? (
-        <PracticeView
-          apiKey={apiKey}
-          onClearKey={handleClearKey}
-          locale={locale}
-          darkMode={darkMode}
-          onToggleDarkMode={toggleDarkMode}
-          onToggleLocale={toggleLocale}
-        />
-      ) : (
-        <LoginScreen
-          onSave={handleSave}
-          darkMode={darkMode}
-          onToggleDarkMode={toggleDarkMode}
-          locale={locale}
-        />
-      )}
+      <PracticeView
+        apiKey={apiKey}
+        onSetKey={handleSetKey}
+        onClearKey={handleClearKey}
+        locale={locale}
+        darkMode={darkMode}
+        onToggleDarkMode={toggleDarkMode}
+        onToggleLocale={toggleLocale}
+      />
       <Analytics />
       <SpeedInsights />
     </>

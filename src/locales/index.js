@@ -18,16 +18,22 @@ export const UI = {
     settingsNote: 'API key is saved on this device.',
     settingsModel: 'Model',
     settingsChangeKey: 'Change key',
+    settingsSetKey: 'Set key',
+    settingsSaveKey: 'Save key',
+    settingsClearKey: 'Clear key',
     settingsDarkMode: 'Dark mode',
     settingsLightMode: 'Light mode',
     settingsLanguage: 'Language',
     settingsLangEn: 'English',
     settingsLangAr: 'العربية',
+    settingsTheme: 'Paper',
+    settingsBrush: 'Ink color',
 
     // Mode tabs
     tabLetters: 'Letters',
     tabWords: 'Words',
     tabReview: 'Review',
+    tabStats: 'Stats',
 
     // Form names
     formIsolated: 'isolated',
@@ -171,6 +177,48 @@ export const UI = {
     ariaDashboardTab: 'Review dashboard',
     ariaLetterTab: 'Practice letters',
 
+    // Paper themes
+    themeParchment: 'Parchment',
+    themeAged: 'Aged Paper',
+    themeCream: 'Clean Cream',
+    themeCoolGray: 'Cool Gray',
+    themeRuled: 'Notebook',
+    themeGrid: 'Graph Paper',
+
+    // Brush packs
+    brushClassic: 'Classic Ink',
+    brushCrimson: 'Crimson',
+    brushIndigo: 'Indigo',
+    brushForest: 'Forest',
+    brushCopper: 'Copper',
+
+    // Analytics / Stats
+    statsStreakTitle: 'Practice Streak',
+    statsCurrentStreak: 'Current',
+    statsLongestStreak: 'Longest',
+    statsTotalSessions: 'Sessions',
+    statsAvgScore: 'Average Score',
+    statsScoreDist: 'Score Distribution',
+    statsHeatmap: 'Practice Heatmap',
+    statsSessions: 'sessions',
+    statsWeaknesses: 'Focus Areas',
+    statsTimeline: 'Progress (30 days)',
+
+    // Tip jar
+    tipJarMessage: 'If this app helps you learn, consider supporting its development.',
+    tipJarKofi: 'Support on Ko-fi',
+
+    // Recommended resources (non-affiliate)
+    affTitle: 'Recommended Gear',
+    affApplePencil: 'Apple Pencil',
+    affApplePencilDesc: 'Best stylus for iPad practice',
+    affGalaxyTab: 'Samsung Galaxy Tab',
+    affGalaxyTabDesc: 'Great Android tablet with S Pen',
+    affItalki: 'Italki Tutors',
+    affItalkiDesc: 'Practice with native speakers',
+    affPreply: 'Preply Tutors',
+    affPreplyDesc: '1-on-1 calligraphy coaching',
+
     // Login screen
     loginIntroPrefix: 'This app uses AI for handwriting feedback. Paste your OpenRouter API key below to get started. You can get one at ',
     loginIntroLink: 'openrouter.ai/keys',
@@ -179,6 +227,7 @@ export const UI = {
     loginPlaceholder: 'sk-or-...',
     loginStart: 'Start Practicing →',
     loginSkip: 'Continue without AI',
+    loginCancel: 'Cancel',
     ariaSwitchLight: 'Switch to light mode',
     ariaSwitchDark: 'Switch to dark mode',
   },
@@ -202,16 +251,22 @@ export const UI = {
     settingsNote: 'مفتاح API محفوظ على هذا الجهاز.',
     settingsModel: 'النموذج',
     settingsChangeKey: 'تغيير المفتاح',
+    settingsSetKey: 'تعيين المفتاح',
+    settingsSaveKey: 'حفظ المفتاح',
+    settingsClearKey: 'مسح المفتاح',
     settingsDarkMode: 'الوضع الداكن',
     settingsLightMode: 'وضع فاتح',
     settingsLanguage: 'اللغة',
     settingsLangEn: 'English',
     settingsLangAr: 'العربية',
+    settingsTheme: 'الورق',
+    settingsBrush: 'لون الحبر',
 
     // Mode tabs
     tabLetters: 'الحروف',
     tabWords: 'الكلمات',
     tabReview: 'مراجعة',
+    tabStats: 'إحصائيات',
 
     // Form names
     formIsolated: 'منفرد',
@@ -355,6 +410,48 @@ export const UI = {
     ariaDashboardTab: 'لوحة المراجعة',
     ariaLetterTab: 'تدريب الحروف',
 
+    // Paper themes
+    themeParchment: 'رَقّ',
+    themeAged: 'ورق قديم',
+    themeCream: 'كريمي',
+    themeCoolGray: 'رمادي بارد',
+    themeRuled: 'دفتر ملاحظات',
+    themeGrid: 'ورق مربعات',
+
+    // Brush packs
+    brushClassic: 'حبر كلاسيكي',
+    brushCrimson: 'قرمزي',
+    brushIndigo: 'نيلي',
+    brushForest: 'أخضر غابة',
+    brushCopper: 'نحاسي',
+
+    // Analytics / Stats
+    statsStreakTitle: 'سلسلة التدريب',
+    statsCurrentStreak: 'الحالية',
+    statsLongestStreak: 'الأطول',
+    statsTotalSessions: 'الجلسات',
+    statsAvgScore: 'متوسط النتيجة',
+    statsScoreDist: 'توزيع النتائج',
+    statsHeatmap: 'خريطة التدريب',
+    statsSessions: 'جلسات',
+    statsWeaknesses: 'مناطق التركيز',
+    statsTimeline: 'التقدم (30 يوم)',
+
+    // Tip jar
+    tipJarMessage: 'إذا كان هذا التطبيق يساعدك على التعلم، فكر في دعم تطويره.',
+    tipJarKofi: 'ادعم عبر Ko-fi',
+
+    // Recommended resources (non-affiliate)
+    affTitle: 'معدات موصى بها',
+    affApplePencil: 'Apple Pencil',
+    affApplePencilDesc: 'أفضل قلم للآيباد',
+    affGalaxyTab: 'Samsung Galaxy Tab',
+    affGalaxyTabDesc: 'جهاز أندرويد رائع مع قلم S Pen',
+    affItalki: 'مدرسو Italki',
+    affItalkiDesc: 'تدرب مع ناطقين أصليين',
+    affPreply: 'مدرسو Preply',
+    affPreplyDesc: 'تدريب خط فردي',
+
     // Login screen
     loginIntroPrefix: 'يستخدم هذا التطبيق الذكاء الاصطناعي لتقديم ملاحظات على خطك. الصق مفتاح OpenRouter API أدناه للبدء. يمكنك الحصول على مفتاح من ',
     loginIntroLink: 'openrouter.ai/keys',
@@ -363,6 +460,7 @@ export const UI = {
     loginPlaceholder: 'sk-or-...',
     loginStart: 'ابدأ التدريب →',
     loginSkip: 'المتابعة بدون الذكاء الاصطناعي',
+    loginCancel: 'إلغاء',
     ariaSwitchLight: 'التبديل إلى الوضع الفاتح',
     ariaSwitchDark: 'التبديل إلى الوضع الداكن',
   },
