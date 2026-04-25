@@ -181,6 +181,10 @@ export function getScore(letterName, formKey) {
  * Callers pass the raw AI score 1–5; we remap it to SM-2 quality 0–5 so
  * a score of 1 (unrecognizable) counts as a genuine failure (q=0) with
  * the harsher ease-factor penalty that implies. Returns the updated entry.
+ *
+ * On failure (q<3) we set a `failedSinceLastPass` flag so the item stays
+ * due within the same session — classic SM-2 re-shows failed cards until
+ * the user gets it right, rather than hiding them until tomorrow.
  */
 export function updateSR(letterName, formKey, aiScore) {
   const data = load();
@@ -199,8 +203,9 @@ export function updateSR(letterName, formKey, aiScore) {
   let { interval = 1, easeFactor = 2.5 } = entry;
 
   if (q < 3) {
-    // Failed review — reset to short interval
+    // Failed review — reset to short interval and flag for same-session retry
     interval = 1;
+    entry.failedSinceLastPass = true;
   } else {
     // SM-2: first correct → 6 days, then grow by easeFactor
     if (interval <= 1) {
@@ -208,6 +213,8 @@ export function updateSR(letterName, formKey, aiScore) {
     } else {
       interval = Math.round(interval * easeFactor);
     }
+    // Passed — clear any lingering failure flag from prior attempts today
+    if (entry.failedSinceLastPass) delete entry.failedSinceLastPass;
   }
 
   // EF' = EF + (0.1 - (5-q) * (0.08 + (5-q) * 0.02))
@@ -236,6 +243,13 @@ export function getDueLetters(LETTERS) {
     for (const [formKey] of Object.entries(letter.forms)) {
       const stored = data[letter.name]?.[formKey];
       if (!stored?.practiced) continue;
+
+      // Items the user failed earlier today stay due — classic SM-2
+      // re-shows them until they pass.
+      if (stored.failedSinceLastPass) {
+        due.push({ letterName: letter.name, letterChar: letter.forms[formKey], formKey });
+        continue;
+      }
 
       if (!stored.lastReview) {
         due.push({ letterName: letter.name, letterChar: letter.forms[formKey], formKey });

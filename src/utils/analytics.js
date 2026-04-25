@@ -3,23 +3,45 @@
  * weakness analysis, and progress-over-time computation.
  *
  * Reads from arabic_progress and arabic_practice_dates (new localStorage key).
+ *
+ * All date math uses LOCAL calendar days. `new Date("YYYY-MM-DD")` parses as
+ * UTC midnight, so mixing that with `.getFullYear()/getMonth()/getDate()`
+ * (which read local components) produces off-by-one days in every timezone
+ * west of UTC. Use `parseLocalDate()` / `addDaysLocal()` instead.
  */
 
 const DATES_KEY = 'arabic_practice_dates';
 
+// ─── In-memory cache ─────────────────────────────────────
+// The stats tab calls loadDates() 3+ times per render; cache the parsed
+// object and invalidate on same-tab writes and cross-tab `storage` events.
+
+let datesCache = null;
+
 // ─── localStorage helpers ─────────────────────────────────
 
 function loadDates() {
+  if (datesCache !== null) return datesCache;
   try {
-    return JSON.parse(localStorage.getItem(DATES_KEY) || '{}');
+    datesCache = JSON.parse(localStorage.getItem(DATES_KEY) || '{}');
   } catch {
-    return {};
+    datesCache = {};
   }
+  return datesCache;
 }
 
 function saveDates(data) {
+  datesCache = data;
   localStorage.setItem(DATES_KEY, JSON.stringify(data));
 }
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key === DATES_KEY) datesCache = null;
+  });
+}
+
+// ─── Local-date helpers ───────────────────────────────────
 
 function todayLocal() {
   const d = new Date();
@@ -29,9 +51,31 @@ function todayLocal() {
   return `${y}-${m}-${day}`;
 }
 
+function parseLocalDate(str) {
+  const [y, m, d] = str.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function formatLocal(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function addDaysLocal(dateStr, days) {
+  const d = parseLocalDate(dateStr);
+  d.setDate(d.getDate() + days);
+  return formatLocal(d);
+}
+
 // ─── Public API ──────────────────────────────────────────
 
-/** Record that the user practiced today (idempotent per date). */
+/**
+ * Record one completed AI-feedback session on today's date.
+ * Increments the per-day `sessions` counter.
+ * Called from progress.markPracticed (i.e. after a scored AI response).
+ */
 export function recordPracticeDate() {
   const data = loadDates();
   const today = todayLocal();
@@ -41,76 +85,62 @@ export function recordPracticeDate() {
   return data;
 }
 
-/** Get { current: number, longest: number } streaks. */
+/**
+ * Mark today as an active practice day (idempotent; no session increment).
+ * Called whenever the user actually draws, regardless of mode or AI key.
+ * This is what powers the streak counter — so words-mode and no-key users
+ * who never invoke AI feedback still accrue daily streaks.
+ * Returns true if today was newly added (caller can bump progressVersion
+ * to refresh Stats-tab memoized derivations).
+ */
+export function markDayActive() {
+  const data = loadDates();
+  const today = todayLocal();
+  if (data[today]) return false;
+  data[today] = { sessions: 0 };
+  saveDates(data);
+  return true;
+}
+
+/** Get { current: number, longest: number } streaks (both in local-calendar days). */
 export function getStreaks() {
   const data = loadDates();
-  const dates = Object.keys(data).sort();
-  if (!dates.length) return { current: 0, longest: 0 };
-
-  let current = 0;
-  let longest = 0;
-  let run = 0;
+  const dateSet = new Set(Object.keys(data));
+  if (dateSet.size === 0) return { current: 0, longest: 0 };
 
   const today = todayLocal();
-  const yesterday = (() => {
-    const d = new Date();
-    d.setDate(d.getDate() - 1);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  })();
+  const yesterday = addDaysLocal(today, -1);
 
-  // Count current streak from today backwards
-  let check = today;
-  while (data[check]) {
-    current++;
-    const d = new Date(check);
-    d.setDate(d.getDate() - 1);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    check = `${y}-${m}-${day}`;
-  }
+  // ── Current streak: walk backwards from today (or yesterday, if the
+  // user hasn't practiced yet today but did yesterday, so we don't
+  // penalize them for being mid-day).
+  let current = 0;
+  let anchor = null;
+  if (dateSet.has(today)) anchor = today;
+  else if (dateSet.has(yesterday)) anchor = yesterday;
 
-  // If no practice today, check if yesterday had practice
-  if (current === 0 && data[yesterday]) {
-    current = 1;
-    check = yesterday;
-    while (true) {
-      const d = new Date(check);
-      d.setDate(d.getDate() - 1);
-      const y = d.getFullYear();
-      const m = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      const prev = `${y}-${m}-${day}`;
-      if (data[prev]) {
-        current++;
-        check = prev;
-      } else {
-        break;
-      }
+  if (anchor) {
+    let cursor = anchor;
+    while (dateSet.has(cursor)) {
+      current++;
+      cursor = addDaysLocal(cursor, -1);
     }
   }
 
-  // Longest streak across all history
-  for (const date of dates) {
-    if (run === 0) {
+  // ── Longest streak: sort dates ascending, track runs.
+  const sorted = [...dateSet].sort();
+  let longest = 0;
+  let run = 0;
+  let prev = null;
+  for (const date of sorted) {
+    if (prev === null) {
       run = 1;
     } else {
-      const prev = new Date(date);
-      prev.setDate(prev.getDate() - 1);
-      const py = prev.getFullYear();
-      const pm = String(prev.getMonth() + 1).padStart(2, '0');
-      const pd = String(prev.getDate()).padStart(2, '0');
-      const prevStr = `${py}-${pm}-${pd}`;
-      if (dates.includes(prevStr)) {
-        run++;
-      } else {
-        run = 1;
-      }
+      const expected = addDaysLocal(prev, 1);
+      run = date === expected ? run + 1 : 1;
     }
     if (run > longest) longest = run;
+    prev = date;
   }
 
   return { current, longest };
@@ -169,29 +199,26 @@ export function getPracticeHeatmap(LETTERS, progress) {
 }
 
 /**
- * Get cumulative completion over last N days.
- * Returns array of { date, cumulativeCompleted }.
+ * Practice activity over the last N local-calendar days.
+ * Returns [{ date: 'YYYY-MM-DD', label: 'MM-DD', sessions: n, practiced: bool }].
+ *
+ * This reports real historical practice (from arabic_practice_dates) rather
+ * than projecting today's completion count backwards.
  */
-export function getProgressOverTime(LETTERS, progress, days = 30) {
+export function getProgressOverTime(_LETTERS, _progress, days = 30) {
+  const data = loadDates();
+  const today = todayLocal();
   const result = [];
-  const today = new Date();
   for (let i = days - 1; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const dateStr = `${y}-${m}-${day}`;
-
-    let completed = 0;
-    for (const letter of LETTERS) {
-      const letterData = progress[letter.name] || {};
-      const allPracticed = Object.keys(letter.forms).every(
-        (k) => letterData[k]?.practiced
-      );
-      if (allPracticed) completed++;
-    }
-    result.push({ date: dateStr, label: `${m}-${day}`, completed });
+    const dateStr = addDaysLocal(today, -i);
+    const [, m, d] = dateStr.split('-');
+    const entry = data[dateStr];
+    result.push({
+      date: dateStr,
+      label: `${m}-${d}`,
+      sessions: entry?.sessions || 0,
+      practiced: !!entry,
+    });
   }
   return result;
 }

@@ -39,8 +39,6 @@
 | 1.1 | **Paper Themes** | Completed | 6 canvas backgrounds: Parchment, Aged, Cream, Cool Gray, Notebook (ruled), Graph Paper. |
 | 1.2 | **Brush Packs** | Completed | 5 stroke colors: Classic, Crimson, Indigo, Forest, Copper. Light/dark adaptive. |
 | 1.3 | **Analytics Dashboard** | Completed | Stats tab with streaks, score distribution, practice heatmap, weakness analysis, 30-day timeline. |
-| 1.4 | **Tip Jar (Ko-fi)** | Completed | Optional support link for users who want to contribute. No gates, no prompts. |
-| 1.5 | **Recommended Gear** | Completed | Curated hardware & tutor links in Settings. Plain non-affiliate recommendations. |
 
 ### Phase 1 Deliverables
 - [x] `src/styles/themes.js` — theme registry (paper + brush definitions)

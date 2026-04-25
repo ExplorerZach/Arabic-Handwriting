@@ -13,14 +13,13 @@ import {
   getProgress,
 } from '../utils/progress';
 import { addFeedbackEntry, getFeedbackHistory } from '../utils/history';
+import { markDayActive } from '../utils/analytics';
 import STROKE_DATA from '../data/strokeOrder';
 import { WORD_GROUPS } from '../data/words';
 import { UI, FORM_NAMES, FORM_SHORT, FORM_FULL, FORM_DESCRIPTIONS } from '../locales';
 import { PAPER_THEMES, BRUSH_PACKS, getPaperColors, getBrushColor, drawPaperPattern } from '../styles/themes';
 import styles from '../styles/practiceStyles';
 import AnalyticsPanel from './AnalyticsPanel';
-import TipJarBanner from './TipJarBanner';
-import AffiliateLinks from './AffiliateLinks';
 import LoginScreen from './LoginScreen';
 
 const SCORE_LABELS = {
@@ -62,6 +61,10 @@ export default function PracticeView({
   const brushColorRef = useRef(
     getBrushColor(localStorage.getItem('brush_pack') || 'classic', darkMode)
   );
+  // Mirrors paperTheme so redraw() can read the current theme without taking
+  // it as a dep (which would invalidate the ResizeObserver on every theme
+  // change). Kept in sync by the effect below.
+  const paperThemeRef = useRef(localStorage.getItem('app_theme') || 'parchment');
   // When the pointer leaves the canvas mid-stroke and re-enters without a
   // lift, the next pointermove would otherwise draw a straight line across
   // the gap. This flag forces the next recorded point to start a new stroke.
@@ -143,27 +146,15 @@ export default function PracticeView({
 
   // ─── Drawing ─────────────────────────────────────────────
 
-  const redraw = useCallback((points) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const rect = canvas.getBoundingClientRect();
-    if (!rect.width || !rect.height) return;
-    const W = rect.width;
-    const H = rect.height;
-    // Clear full bitmap (ctx is DPR-scaled, so draw in CSS pixel space).
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
-    // Draw paper pattern first so strokes appear on top
-    if (paperTheme === 'ruled' || paperTheme === 'grid') {
-      drawPaperPattern(ctx, W, H, paperTheme, darkModeRef.current);
-    }
+  // Strokes stored in normalized 0–1 coords → pixel-space path rendering.
+  // Extracted so exportCanvas() can re-stroke onto an offscreen canvas with
+  // a forced brush color (needed so dark-mode white strokes don't disappear
+  // on the light-paper AI export).
+  const drawStrokes = (ctx, points, W, H, brushColor) => {
     if (!points.length) return;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = brushColorRef.current;
+    ctx.strokeStyle = brushColor;
     for (let i = 0; i < points.length; i++) {
       const pt = points[i];
       const x = pt.x * W;
@@ -187,7 +178,32 @@ export default function PracticeView({
       }
     }
     ctx.stroke();
-  }, [paperTheme]);
+  };
+
+  // redraw() must have STABLE identity — the ResizeObserver effect and undo
+  // both depend on it, and changing it on every theme toggle would tear down
+  // and rebuild the observer. darkMode, brushPack, and paperTheme are read
+  // through refs that the effect below keeps in sync. Empty deps, always.
+  const redraw = useCallback((points) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const W = rect.width;
+    const H = rect.height;
+    // Clear full bitmap (ctx is DPR-scaled, so draw in CSS pixel space).
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    const theme = paperThemeRef.current;
+    // Draw paper pattern first so strokes appear on top
+    if (theme === 'ruled' || theme === 'grid') {
+      drawPaperPattern(ctx, W, H, theme, darkModeRef.current);
+    }
+    drawStrokes(ctx, points, W, H, brushColorRef.current);
+  }, []);
 
   const clearCanvas = useCallback(() => {
     strokesRef.current = [];
@@ -271,13 +287,18 @@ export default function PracticeView({
     return () => observer.disconnect();
   }, [redraw]);
 
-  // ─── Dark mode → repaint existing strokes ──────────────
+  // ─── Theme/brush sync → repaint existing strokes ───────
+  // Keeps the refs that redraw() reads in step with state. Repaints so
+  // existing strokes pick up the new color/paper immediately, even though
+  // redraw itself has stable identity (so the ResizeObserver effect below
+  // does not tear down on theme changes).
 
   useEffect(() => {
     darkModeRef.current = darkMode;
     brushColorRef.current = getBrushColor(brushPack, darkMode);
+    paperThemeRef.current = paperTheme;
     redraw(strokesRef.current);
-  }, [darkMode, brushPack, redraw]);
+  }, [darkMode, brushPack, paperTheme, redraw]);
 
   // ─── Online / offline detection ───────────────────────
 
@@ -558,6 +579,12 @@ export default function PracticeView({
     e.preventDefault();
     try { canvasRef.current?.releasePointerCapture?.(e.pointerId); } catch (_) { /* ignore */ }
     strokeResumedRef.current = false;
+    // Mark today as active so streaks count for every practice session —
+    // including words mode, review mode, and users who skipped the API key
+    // and therefore never trigger the AI-feedback code path. Only bump
+    // progressVersion when today was newly added (once per day per tab)
+    // so we don't needlessly re-memoize on every stroke completion.
+    if (markDayActive()) setProgressVersion((v) => v + 1);
   };
 
   const handlePointerLeave = (e) => {
@@ -684,7 +711,8 @@ export default function PracticeView({
     offscreen.width = rect.width * dpr;
     offscreen.height = rect.height * dpr;
     const ctx = offscreen.getContext('2d');
-    // Use user's paper theme for AI export (strokes are what the model analyzes)
+    // Force light paper for AI export — the model is trained on the
+    // light-parchment look, and a dark background would tank scoring.
     const paper = getPaperColors(paperTheme, false);
     ctx.fillStyle = paper.bg;
     ctx.fillRect(0, 0, offscreen.width, offscreen.height);
@@ -702,7 +730,15 @@ export default function PracticeView({
     ctx.direction = 'rtl';
     ctx.fillText(watermarkText, offscreen.width / 2, offscreen.height / 2);
     ctx.restore();
-    ctx.drawImage(canvas, 0, 0);
+    // Re-stroke from strokesRef with the FORCED-LIGHT brush color rather
+    // than drawImage()ing the live canvas — a dark-mode user draws in
+    // white, and white strokes on light parchment are nearly invisible
+    // to the vision model.
+    ctx.save();
+    ctx.scale(dpr, dpr);
+    const exportBrush = getBrushColor(brushPack, false);
+    drawStrokes(ctx, strokesRef.current, rect.width, rect.height, exportBrush);
+    ctx.restore();
     const MAX_SIZE = 512;
     const scale = Math.min(1, MAX_SIZE / Math.max(offscreen.width, offscreen.height));
     const compressed = document.createElement('canvas');
@@ -990,10 +1026,6 @@ export default function PracticeView({
             )}
           </div>
 
-          <div style={styles.settingsDivider} />
-          <TipJarBanner locale={locale} />
-          <div style={styles.settingsDivider} />
-          <AffiliateLinks locale={locale} />
         </div>
       )}
 
@@ -1088,6 +1120,7 @@ export default function PracticeView({
           locale={locale}
           LETTERS={LETTERS}
           progress={getProgress()}
+          progressVersion={progressVersion}
           onGoToItem={goToAnalyticsItem}
         />
       )}

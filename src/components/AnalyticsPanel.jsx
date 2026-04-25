@@ -1,21 +1,33 @@
+import { useMemo } from 'react';
 import { UI } from '../locales';
 import { getStreaks, getScoreDistribution, getWeaknesses, getPracticeHeatmap, getProgressOverTime, getTotalSessions } from '../utils/analytics';
 import { FORM_NAMES } from '../locales';
 import styles from '../styles/practiceStyles';
 
-export default function AnalyticsPanel({ locale, LETTERS, progress, onGoToItem }) {
+export default function AnalyticsPanel({ locale, LETTERS, progress, progressVersion, onGoToItem }) {
   const t = (key) => UI[locale][key] ?? key;
 
-  const streaks = getStreaks();
-  const scoreDist = getScoreDistribution(progress);
-  const weaknesses = getWeaknesses(LETTERS, progress);
-  const { heatmap, max: heatMax } = getPracticeHeatmap(LETTERS, progress);
-  const timeline = getProgressOverTime(LETTERS, progress, 30);
-  const totalSessions = getTotalSessions();
+  // All of these re-derive real data from localStorage. Cheap individually
+  // but a handful of them are O(days × letters × forms) and the stats tab
+  // re-renders on every unrelated PracticeView state change (pointer moves,
+  // feedback flips, theme toggles). Memoize on progressVersion so they only
+  // re-run when the underlying data actually changes.
+  const streaks = useMemo(() => getStreaks(), [progressVersion]);
+  const scoreDist = useMemo(() => getScoreDistribution(progress), [progress, progressVersion]);
+  const weaknesses = useMemo(() => getWeaknesses(LETTERS, progress), [LETTERS, progress, progressVersion]);
+  const { heatmap, max: heatMax } = useMemo(() => getPracticeHeatmap(LETTERS, progress), [LETTERS, progress, progressVersion]);
+  const timeline = useMemo(() => getProgressOverTime(LETTERS, progress, 30), [LETTERS, progress, progressVersion]);
+  const totalSessions = useMemo(() => getTotalSessions(), [progressVersion]);
+
   const totalScoreCount = Object.values(scoreDist).reduce((a, b) => a + b, 0);
   const avgScore = totalScoreCount > 0
     ? Object.entries(scoreDist).reduce((sum, [k, v]) => sum + Number(k) * v, 0) / totalScoreCount
     : 0;
+
+  // Timeline Y-axis: scale to the busiest day in the window so a day with
+  // 3 sessions is visibly taller than a day with 1, without letting a
+  // single outlier flatten the rest.
+  const timelineMax = Math.max(1, ...timeline.map((pt) => pt.sessions));
 
   return (
     <div style={styles.analyticsPanel}>
@@ -123,16 +135,21 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, onGoToItem }
         </div>
       )}
 
-      {/* Progress Timeline */}
+      {/* Progress Timeline — real daily activity from arabic_practice_dates.
+          Bar height reflects sessions that day relative to the busiest day
+          in the 30-day window; days with no activity render as an empty
+          slot so gaps are visible. */}
       <div style={styles.analyticsCard}>
         <div style={styles.analyticsCardTitle}>{t('statsTimeline')}</div>
         <div style={styles.analyticsTimeline}>
           {timeline.map((pt, i) => {
-            const heightPct = LETTERS.length > 0 ? (pt.completed / LETTERS.length) * 100 : 0;
+            const heightPct = pt.sessions > 0 ? (pt.sessions / timelineMax) * 100 : 0;
             return (
-              <div key={i} style={styles.analyticsTimelineCol} title={`${pt.date}: ${pt.completed}/${LETTERS.length}`}>
+              <div key={pt.date} style={styles.analyticsTimelineCol} title={`${pt.date}: ${pt.sessions} ${t('statsSessions')}`}>
                 <div style={styles.analyticsTimelineBarWrap}>
-                  <div style={{ ...styles.analyticsTimelineBar, height: `${heightPct}%` }} />
+                  {pt.practiced && (
+                    <div style={{ ...styles.analyticsTimelineBar, height: `${Math.max(heightPct, 8)}%` }} />
+                  )}
                 </div>
                 {i % 5 === 0 && (
                   <span style={styles.analyticsTimelineLabel}>{pt.label}</span>
