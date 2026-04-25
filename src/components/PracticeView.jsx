@@ -50,6 +50,10 @@ export default function PracticeView({
   const canvasSnapshotRef = useRef(null);
   const animFrameRef = useRef(null);
   const animatingRef = useRef(false);
+  const glyphCanvasRef = useRef(null);
+  const maskCanvasRef = useRef(null);
+  const compCanvasRef = useRef(null);
+  const dprRef = useRef(devicePixelRatio || 1);
   const alphaBtnRefs = useRef([]);
   // Captures darkMode for redraw() without forcing redraw to change identity
   // (which would also change the ResizeObserver's callback). Kept in sync via
@@ -334,7 +338,7 @@ export default function PracticeView({
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext('2d');
-    const dpr = devicePixelRatio || 1;
+    const dpr = dprRef.current;
     // Snapshot the user's drawing so we can restore it after the animation.
     const savedStrokes = strokesRef.current;
     strokesRef.current = [];
@@ -368,10 +372,12 @@ export default function PracticeView({
     const glyphX = centerX - glyphSize / 2;
     const glyphY = centerY - glyphSize / 2;
 
-    const glyphCanvas = document.createElement('canvas');
+    const glyphCanvas = glyphCanvasRef.current ?? document.createElement('canvas');
     glyphCanvas.width = W;
     glyphCanvas.height = H;
+    glyphCanvasRef.current = glyphCanvas;
     const gCtx = glyphCanvas.getContext('2d');
+    gCtx.clearRect(0, 0, W, H);
     gCtx.save();
     gCtx.font = `${glyphSize}px "Amiri", "Scheherazade New", serif`;
     gCtx.fillStyle = darkModeRef.current ? '#c0703a' : '#8b4513';
@@ -381,10 +387,12 @@ export default function PracticeView({
     gCtx.fillText(currentChar, centerX, centerY);
     gCtx.restore();
 
-    const maskCanvas = document.createElement('canvas');
+    const maskCanvas = maskCanvasRef.current ?? document.createElement('canvas');
     maskCanvas.width = W;
     maskCanvas.height = H;
+    maskCanvasRef.current = maskCanvas;
     const mCtx = maskCanvas.getContext('2d');
+    mCtx.clearRect(0, 0, W, H);
 
     const scale = glyphSize / 100;
     const mapX = (x) => glyphX + x * scale;
@@ -443,9 +451,10 @@ export default function PracticeView({
     const PAUSE_FRAMES = 18;
     let pauseCount = 0;
 
-    const compCanvas = document.createElement('canvas');
+    const compCanvas = compCanvasRef.current ?? document.createElement('canvas');
     compCanvas.width = W;
     compCanvas.height = H;
+    compCanvasRef.current = compCanvas;
     const cCtx = compCanvas.getContext('2d');
 
     const drawFrame = () => {
@@ -538,6 +547,18 @@ export default function PracticeView({
       setAnimating(false);
     };
   }, [letterIndex, formIndex, practiceMode]);
+
+  // Keep dprRef in sync if the user moves the window to a different monitor
+  // or zooms during an active session
+  useEffect(() => {
+    const dpr = window.devicePixelRatio || 1;
+    const mediaQuery = window.matchMedia(`(resolution: ${dpr}dppx)`);
+    const handler = () => {
+      dprRef.current = window.devicePixelRatio || 1;
+    };
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
+  }, []);
 
   // ─── Pointer events ────────────────────────────────
 
