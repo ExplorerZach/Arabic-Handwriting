@@ -907,123 +907,136 @@ export default function PracticeView({
       {/* Settings panel */}
       {showSettings && (
         <div id="settings-panel" style={styles.keyPanel}>
-          {/* Dark mode toggle */}
-          <button
-            className="btn-panel"
-            style={{ padding: '6px 10px', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'var(--color-surface-solid)', fontSize: '12px', color: 'var(--color-text)' }}
-            onClick={onToggleDarkMode}
-            aria-pressed={darkMode}
-            aria-label={t('ariaDarkModeBtn')}
-          >
-            {darkMode ? '☀ ' + t('settingsLightMode') : '🌙 ' + t('settingsDarkMode')}
-          </button>
 
-          {/* Language toggle */}
-          <button
-            className="btn-panel"
-            style={{ padding: '6px 10px', border: '1px solid var(--color-border)', borderRadius: '6px', background: 'var(--color-surface-solid)', fontSize: '12px', color: 'var(--color-text)' }}
-            onClick={onToggleLocale}
-            aria-label={t('ariaLangBtn')}
-          >
-            {locale === 'ar' ? 'EN' : 'عربي'}
-          </button>
+          {/* ── Appearance ── */}
+          <div style={styles.settingsSection} role="group" aria-labelledby="settings-heading-appearance">
+            <span id="settings-heading-appearance" style={styles.settingsSectionTitle}>{t('settingsSectionAppearance')}</span>
+            <div style={styles.settingsRow}>
+              <button
+                className="btn-panel"
+                style={styles.settingsToggleBtn}
+                onClick={onToggleDarkMode}
+                aria-pressed={darkMode}
+                aria-label={t('ariaDarkModeBtn')}
+              >
+                {darkMode ? '☀ ' + t('settingsLightMode') : '🌙 ' + t('settingsDarkMode')}
+              </button>
+              <button
+                className="btn-panel"
+                style={styles.settingsToggleBtn}
+                onClick={onToggleLocale}
+                aria-label={t('ariaLangBtn')}
+              >
+                {locale === 'ar' ? 'EN' : 'عربي'}
+              </button>
+            </div>
+          </div>
 
-          {/* Model selector */}
-          <label style={{ fontSize: '12px', color: 'var(--color-text-soft)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            {t('settingsModel')}
+          <div style={styles.settingsDivider} />
+
+          {/* ── AI Model ── */}
+          <div style={styles.settingsSection} role="group" aria-labelledby="settings-heading-model">
+            <span id="settings-heading-model" style={styles.settingsSectionTitle}>{t('settingsSectionModel')}</span>
             <select
               value={model}
               onChange={handleModelChange}
-              style={{ padding: '6px 8px', borderRadius: '8px', border: '1.5px solid var(--color-border)', background: 'var(--color-input-bg)', fontSize: '13px', fontFamily: 'Georgia,serif', color: 'var(--color-text)' }}
-              aria-label={t('ariaModelSelect')}
+              style={{ padding: '6px 8px', borderRadius: '8px', border: '1.5px solid var(--color-border)', background: 'var(--color-input-bg)', fontSize: '13px', fontFamily: 'Georgia,serif', color: 'var(--color-text)', width: '100%' }}
+              aria-labelledby="settings-heading-model"
             >
               <option value="google/gemini-3-flash-preview">Gemini 3 Flash</option>
               <option value="google/gemini-3.1-pro-preview">Gemini 3.1 Pro</option>
               <option value="anthropic/claude-sonnet-4.6">Claude Sonnet 4.6</option>
               <option value="openai/gpt-5.4-mini">GPT-5.4 mini</option>
             </select>
-          </label>
+          </div>
 
-          {/* Paper theme selector */}
-          <label style={{ fontSize: '12px', color: 'var(--color-text-soft)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {t('settingsTheme')}
-            <div style={styles.themeRow}>
-              {Object.values(PAPER_THEMES).map((theme) => {
-                const colors = getPaperColors(theme.id, darkMode);
-                const isActive = paperTheme === theme.id;
-                return (
-                  <button
-                    key={theme.id}
-                    className={`btn-theme ${isActive ? 'btn-theme-active' : ''}`}
-                    style={{ ...styles.themeBtn, ...(isActive ? styles.themeBtnActive : {}) }}
-                    onClick={() => handleThemeChange(theme.id)}
-                    aria-pressed={isActive}
-                    aria-label={t(theme.nameKey)}
-                  >
-                    <span style={{ ...styles.themeSwatch, background: colors.bg }} />
-                    <span>{t(theme.nameKey)}</span>
-                  </button>
-                );
-              })}
+          <div style={styles.settingsDivider} />
+
+          {/* ── Canvas (Paper + Ink) ── */}
+          <div style={styles.settingsSection} role="group" aria-labelledby="settings-heading-canvas">
+            <span id="settings-heading-canvas" style={styles.settingsSectionTitle}>{t('settingsSectionCanvas')}</span>
+            <div style={{ fontSize: '12px', color: 'var(--color-text-soft)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {t('settingsTheme')}
+              <div style={styles.themeRow}>
+                {Object.values(PAPER_THEMES).map((theme) => {
+                  const colors = getPaperColors(theme.id, darkMode);
+                  const isActive = paperTheme === theme.id;
+                  return (
+                    <button
+                      key={theme.id}
+                      className={`btn-theme ${isActive ? 'btn-theme-active' : ''}`}
+                      style={{ ...styles.themeBtn, ...(isActive ? styles.themeBtnActive : {}) }}
+                      onClick={() => handleThemeChange(theme.id)}
+                      aria-pressed={isActive}
+                      aria-label={t(theme.nameKey)}
+                    >
+                      <span style={{ ...styles.themeSwatch, background: colors.bg }} />
+                      <span>{t(theme.nameKey)}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </label>
-
-          {/* Brush pack selector */}
-          <label style={{ fontSize: '12px', color: 'var(--color-text-soft)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-            {t('settingsBrush')}
-            <div style={styles.brushRow}>
-              {Object.values(BRUSH_PACKS).map((pack) => {
-                const color = getBrushColor(pack.id, darkMode);
-                const isActive = brushPack === pack.id;
-                return (
-                  <button
-                    key={pack.id}
-                    className={`btn-swatch ${isActive ? 'btn-swatch-active' : ''}`}
-                    style={{
-                      ...styles.brushSwatch,
-                      background: color,
-                      ...(isActive ? styles.brushSwatchActive : {}),
-                    }}
-                    onClick={() => handleBrushPackChange(pack.id)}
-                    aria-pressed={isActive}
-                    aria-label={t(pack.nameKey)}
-                    title={t(pack.nameKey)}
-                  />
-                );
-              })}
+            <div style={{ fontSize: '12px', color: 'var(--color-text-soft)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              {t('settingsBrush')}
+              <div style={styles.brushRow}>
+                {Object.values(BRUSH_PACKS).map((pack) => {
+                  const color = getBrushColor(pack.id, darkMode);
+                  const isActive = brushPack === pack.id;
+                  return (
+                    <button
+                      key={pack.id}
+                      className={`btn-swatch ${isActive ? 'btn-swatch-active' : ''}`}
+                      style={{
+                        ...styles.brushSwatch,
+                        background: color,
+                        ...(isActive ? styles.brushSwatchActive : {}),
+                      }}
+                      onClick={() => handleBrushPackChange(pack.id)}
+                      aria-pressed={isActive}
+                      aria-label={t(pack.nameKey)}
+                      title={t(pack.nameKey)}
+                    />
+                  );
+                })}
+              </div>
             </div>
-          </label>
+          </div>
 
-          {/* API key — opens full-screen LoginScreen overlay. Clear is only
-              offered when a real key is stored. */}
-          <span style={{ fontSize: '12px', color: 'var(--color-text-soft)' }}>{t('settingsNote')}</span>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              className="btn-panel"
-              style={{ ...styles.keyPanelBtn, flex: 1 }}
-              onClick={() => {
-                setShowSettings(false);
-                setShowKeyScreen(true);
-              }}
-            >
-              {apiKey && apiKey !== 'skip' ? t('settingsChangeKey') : t('settingsSetKey')}
-            </button>
-            {apiKey && apiKey !== 'skip' && (
+          <div style={styles.settingsDivider} />
+
+          {/* ── API Key ── */}
+          <div style={styles.settingsSection} role="group" aria-labelledby="settings-heading-apikey">
+            <span id="settings-heading-apikey" style={styles.settingsSectionTitle}>{t('settingsSectionApiKey')}</span>
+            <span style={{ fontSize: '12px', color: 'var(--color-text-soft)' }}>{t('settingsNote')}</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
               <button
                 className="btn-panel"
-                style={{
-                  ...styles.keyPanelBtn,
-                  flex: 1,
-                  background: 'transparent',
-                  color: 'var(--color-accent)',
-                  border: '1px solid var(--color-border)',
-                  boxShadow: 'none',
+                style={{ ...styles.keyPanelBtn, flex: 1 }}
+                onClick={() => {
+                  setShowSettings(false);
+                  setShowKeyScreen(true);
                 }}
-                onClick={onClearKey}
               >
-                {t('settingsClearKey')}
+                {apiKey && apiKey !== 'skip' ? t('settingsChangeKey') : t('settingsSetKey')}
               </button>
-            )}
+              {apiKey && apiKey !== 'skip' && (
+                <button
+                  className="btn-panel"
+                  style={{
+                    ...styles.keyPanelBtn,
+                    flex: 1,
+                    background: 'transparent',
+                    color: 'var(--color-accent)',
+                    border: '1px solid var(--color-border)',
+                    boxShadow: 'none',
+                  }}
+                  onClick={onClearKey}
+                >
+                  {t('settingsClearKey')}
+                </button>
+              )}
+            </div>
           </div>
 
         </div>

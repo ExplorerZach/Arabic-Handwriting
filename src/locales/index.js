@@ -28,6 +28,10 @@ export const UI = {
     settingsLangAr: 'العربية',
     settingsTheme: 'Paper',
     settingsBrush: 'Ink color',
+    settingsSectionAppearance: 'Appearance',
+    settingsSectionModel: 'AI Model',
+    settingsSectionCanvas: 'Canvas',
+    settingsSectionApiKey: 'API Key',
 
     // Mode tabs
     tabLetters: 'Letters',
@@ -261,6 +265,10 @@ export const UI = {
     settingsLangAr: 'العربية',
     settingsTheme: 'الورق',
     settingsBrush: 'لون الحبر',
+    settingsSectionAppearance: 'المظهر',
+    settingsSectionModel: 'نموذج الذكاء',
+    settingsSectionCanvas: 'اللوحة',
+    settingsSectionApiKey: 'مفتاح الواجهة',
 
     // Mode tabs
     tabLetters: 'الحروف',
