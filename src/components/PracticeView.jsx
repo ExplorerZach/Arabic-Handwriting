@@ -74,6 +74,12 @@ export default function PracticeView({
   // the gap. This flag forces the next recorded point to start a new stroke.
   const strokeResumedRef = useRef(false);
 
+  // Whether the current drawing has already incremented practiceCount, so a
+  // single drawing of a letter+form counts once regardless of how many
+  // strokes it takes or whether AI feedback also fires. Reset whenever the
+  // canvas is cleared or the user navigates to a different letter/form.
+  const countedDrawingRef = useRef(false);
+
   const [letterIndex, setLetterIndex] = useState(0);
   const [formIndex, setFormIndex] = useState('isolated');
   const [feedback, setFeedback] = useState(null);
@@ -211,6 +217,7 @@ export default function PracticeView({
 
   const clearCanvas = useCallback(() => {
     strokesRef.current = [];
+    countedDrawingRef.current = false;
     setFeedback(null);
     setHasStrokes(false);
     const canvas = canvasRef.current;
@@ -260,14 +267,14 @@ export default function PracticeView({
     setLessonMode((prev) => {
       const next = !prev;
       localStorage.setItem('lessonMode', String(next));
-      setLetterIndex(0);
-      setFormIndex('isolated');
-      setShowHistory(false);
-      setShowComparison(false);
-      alphaBtnRefs.current = [];
-      clearCanvas();
       return next;
     });
+    setLetterIndex(0);
+    setFormIndex('isolated');
+    setShowHistory(false);
+    setShowComparison(false);
+    alphaBtnRefs.current = [];
+    clearCanvas();
   }, [clearCanvas]);
 
   // ─── Canvas sizing (HiDPI) ─────────────────────────────
@@ -289,7 +296,9 @@ export default function PracticeView({
     const observer = new ResizeObserver(resize);
     observer.observe(canvas);
     return () => observer.disconnect();
-  }, [redraw]);
+    // practiceMode dep ensures the observer re-attaches when the canvas
+    // mounts again after being unmounted (e.g. switching from Stats→Letters).
+  }, [redraw, practiceMode]);
 
   // ─── Theme/brush sync → repaint existing strokes ───────
   // Keeps the refs that redraw() reads in step with state. Repaints so
@@ -605,7 +614,19 @@ export default function PracticeView({
     // and therefore never trigger the AI-feedback code path. Only bump
     // progressVersion when today was newly added (once per day per tab)
     // so we don't needlessly re-memoize on every stroke completion.
-    if (markDayActive()) setProgressVersion((v) => v + 1);
+    let bump = markDayActive();
+    // Count the letter as practiced once the user has actually drawn it,
+    // independent of AI feedback (which is gated behind an API key and never
+    // fires for no-key/words-mode users). Without this the practice heatmap
+    // stays flat at its opacity floor for anyone who hasn't set a key.
+    // Guarded so a single drawing counts once no matter how many strokes it
+    // takes; cleared on clear/navigation so the next drawing recounts.
+    if (practiceMode === 'letters' && !countedDrawingRef.current && strokesRef.current.length > 0) {
+      countedDrawingRef.current = true;
+      markPracticed(letter.name, activeForm);
+      bump = true;
+    }
+    if (bump) setProgressVersion((v) => v + 1);
   };
 
   const handlePointerLeave = (e) => {
@@ -791,7 +812,13 @@ export default function PracticeView({
       const score = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
       const cleanText = text.replace(/\[SCORE:\s*[1-5]\s*\]\s*/gi, '').trim();
       if (practiceMode === 'letters') {
-        markPracticed(letter.name, activeForm);
+        // Only count if drawing the strokes didn't already count this drawing
+        // (handlePointerUp counts on draw), so submitting feedback on a letter
+        // you just drew doesn't double-count it in the heatmap.
+        if (!countedDrawingRef.current) {
+          countedDrawingRef.current = true;
+          markPracticed(letter.name, activeForm);
+        }
         if (score) { setScore(letter.name, activeForm, score); updateSR(letter.name, activeForm, score); }
         addFeedbackEntry(letter.name, activeForm, cleanText);
         setProgressVersion((v) => v + 1);
