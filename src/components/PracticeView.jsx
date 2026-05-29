@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { LETTERS } from '../data/letters';
+import { NUMBERS } from '../data/numbers';
 import { LESSON_ORDER, getLessonGroup } from '../data/lessonOrder';
 import { calcLineWidth, setBrushScale } from '../utils/drawing';
 import { getAIFeedback } from '../utils/api';
@@ -14,6 +15,7 @@ import {
 } from '../utils/progress';
 import { addFeedbackEntry, getFeedbackHistory } from '../utils/history';
 import { markDayActive } from '../utils/analytics';
+import { exportBackup, importBackupFile } from '../utils/backup';
 import STROKE_DATA from '../data/strokeOrder';
 import { WORD_GROUPS } from '../data/words';
 import { UI, FORM_NAMES, FORM_SHORT, FORM_FULL, FORM_DESCRIPTIONS } from '../locales';
@@ -55,6 +57,8 @@ export default function PracticeView({
   const compCanvasRef = useRef(null);
   const dprRef = useRef(devicePixelRatio || 1);
   const alphaBtnRefs = useRef([]);
+  // Hidden <input type=file> used by the Settings "Import progress" button.
+  const importInputRef = useRef(null);
   // Captures darkMode for redraw() without forcing redraw to change identity
   // (which would also change the ResizeObserver's callback). Kept in sync via
   // an effect below.
@@ -126,20 +130,29 @@ export default function PracticeView({
     []
   );
 
-  const actualLetterIndex = lessonMode ? (lessonToAlpha[letterIndex] ?? 0) : letterIndex;
-  const letter = LETTERS[actualLetterIndex];
+  // Numbers reuse the entire letters rendering path but swap the dataset.
+  // They have a single isolated form, no positional variants, and lesson
+  // mode (which is alphabet-shape ordering) doesn't apply.
+  const isNumbersMode = practiceMode === 'numbers';
+  const activeSet = isNumbersMode ? NUMBERS : LETTERS;
+  // Lesson ordering only exists for letters; force off in numbers mode.
+  const useLessonOrder = lessonMode && !isNumbersMode;
+
+  const actualLetterIndex = useLessonOrder ? (lessonToAlpha[letterIndex] ?? 0) : letterIndex;
+  const letter = activeSet[Math.min(actualLetterIndex, activeSet.length - 1)];
   const formKeys = Object.keys(letter.forms);
   const activeForm = formKeys.includes(formIndex) ? formIndex : 'isolated';
   const currentChar = letter.forms[activeForm];
-  const totalCount = lessonMode ? LESSON_ORDER.length : LETTERS.length;
-  const lessonGroupInfo = lessonMode ? getLessonGroup(letterIndex) : null;
+  const totalCount = useLessonOrder ? LESSON_ORDER.length : activeSet.length;
+  const lessonGroupInfo = useLessonOrder ? getLessonGroup(letterIndex) : null;
 
   const currentWordGroup = WORD_GROUPS[wordGroupIndex];
   const currentWord = currentWordGroup?.words[wordIndex];
 
   // Batched progress reads: one load() per render instead of 56+.
+  // Includes NUMBERS so the numerals row shows started/complete dots too.
   const progressSummary = useMemo(
-    () => getProgressSummary(LETTERS),
+    () => getProgressSummary([...LETTERS, ...NUMBERS]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [progressVersion]
   );
@@ -149,7 +162,7 @@ export default function PracticeView({
     [progressVersion]
   );
   const dueItems = useMemo(
-    () => getDueLetters(LETTERS),
+    () => getDueLetters([...LETTERS, ...NUMBERS]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [progressVersion]
   );
@@ -247,6 +260,10 @@ export default function PracticeView({
 
   const switchPracticeMode = useCallback((mode) => {
     setPracticeMode(mode);
+    // Reset selection — letters (28) and numbers (10) have different lengths,
+    // so a stale letterIndex/form could point past the smaller set.
+    setLetterIndex(0);
+    setFormIndex('isolated');
     setFeedback(null);
     setShowComparison(false);
     setShowHistory(false);
@@ -621,7 +638,7 @@ export default function PracticeView({
     // stays flat at its opacity floor for anyone who hasn't set a key.
     // Guarded so a single drawing counts once no matter how many strokes it
     // takes; cleared on clear/navigation so the next drawing recounts.
-    if (practiceMode === 'letters' && !countedDrawingRef.current && strokesRef.current.length > 0) {
+    if ((practiceMode === 'letters' || practiceMode === 'numbers') && !countedDrawingRef.current && strokesRef.current.length > 0) {
       countedDrawingRef.current = true;
       markPracticed(letter.name, activeForm);
       bump = true;
@@ -708,6 +725,20 @@ export default function PracticeView({
   // ─── Navigate to letter from review dashboard ──────────
 
   const goToReviewItem = useCallback((letterName, formKey) => {
+    // Numerals (name prefixed "Num") live in NUMBERS, not the alphabet.
+    if (letterName.startsWith('Num')) {
+      const numIdx = NUMBERS.findIndex((n) => n.name === letterName);
+      if (numIdx === -1) return;
+      setLetterIndex(numIdx);
+      setFormIndex('isolated');
+      setPracticeMode('numbers');
+      setFeedback(null);
+      setShowComparison(false);
+      setShowHistory(false);
+      alphaBtnRefs.current = [];
+      clearCanvas();
+      return;
+    }
     const alphIdx = LETTERS.findIndex((l) => l.name === letterName);
     if (alphIdx === -1) return;
     if (lessonMode) {
@@ -805,13 +836,15 @@ export default function PracticeView({
       let text;
       if (practiceMode === 'words' && currentWord) {
         text = await getAIFeedback(apiKey, imageBase64, currentWord.word, currentWord.word, currentWord.roman, `word "${currentWord.meaning}"`);
+      } else if (isNumbersMode) {
+        text = await getAIFeedback(apiKey, imageBase64, letter.name, letter.letter, letter.roman, 'Arabic numeral');
       } else {
         text = await getAIFeedback(apiKey, imageBase64, letter.name, letter.letter, letter.roman, t(FORM_FULL[activeForm]));
       }
       const scoreMatch = text.match(/\[SCORE:\s*([1-5])\s*\]/i);
       const score = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
       const cleanText = text.replace(/\[SCORE:\s*[1-5]\s*\]\s*/gi, '').trim();
-      if (practiceMode === 'letters') {
+      if (practiceMode === 'letters' || isNumbersMode) {
         // Only count if drawing the strokes didn't already count this drawing
         // (handlePointerUp counts on draw), so submitting feedback on a letter
         // you just drew doesn't double-count it in the heatmap.
@@ -858,6 +891,24 @@ export default function PracticeView({
     localStorage.setItem('brush_pack', packId);
     brushColorRef.current = getBrushColor(packId, darkMode);
     redraw(strokesRef.current);
+  };
+
+  // ─── Progress backup (export / import) ───────────────
+
+  const handleImportFile = async (ev) => {
+    const file = ev.target.files?.[0];
+    // Reset the input so picking the same file twice still fires onChange.
+    ev.target.value = '';
+    if (!file) return;
+    if (!window.confirm(t('importConfirm'))) return;
+    const result = await importBackupFile(file);
+    if (!result.ok) {
+      window.alert(t('importError'));
+      return;
+    }
+    // Reload so every module's in-memory cache re-reads the imported data.
+    window.alert(t('importSuccess'));
+    window.location.reload();
   };
 
   // ─── Keyboard nav for alphabet row ───────────────────
@@ -1087,6 +1138,47 @@ export default function PracticeView({
             </div>
           </div>
 
+          <div style={styles.settingsDivider} />
+
+          {/* ── Backup (export / import) ── */}
+          <div style={styles.settingsSection} role="group" aria-labelledby="settings-heading-data">
+            <span id="settings-heading-data" style={styles.settingsSectionTitle}>{t('settingsSectionData')}</span>
+            <span style={{ fontSize: '12px', color: 'var(--color-text-soft)' }}>{t('settingsDataNote')}</span>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                className="btn-panel"
+                style={{ ...styles.keyPanelBtn, flex: 1 }}
+                onClick={exportBackup}
+                aria-label={t('ariaExportBtn')}
+              >
+                {t('settingsExport')}
+              </button>
+              <button
+                className="btn-panel"
+                style={{
+                  ...styles.keyPanelBtn,
+                  flex: 1,
+                  background: 'transparent',
+                  color: 'var(--color-accent)',
+                  border: '1px solid var(--color-border)',
+                  boxShadow: 'none',
+                }}
+                onClick={() => importInputRef.current?.click()}
+                aria-label={t('ariaImportBtn')}
+              >
+                {t('settingsImport')}
+              </button>
+              <input
+                ref={importInputRef}
+                type="file"
+                accept="application/json,.json"
+                onChange={handleImportFile}
+                style={{ display: 'none' }}
+                aria-hidden="true"
+              />
+            </div>
+          </div>
+
         </div>
       )}
 
@@ -1102,6 +1194,17 @@ export default function PracticeView({
           id="tab-letters"
         >
           {t('tabLetters')}
+        </button>
+        <button
+          className="btn-form"
+          style={{ ...styles.modeTab, ...(practiceMode === 'numbers' ? styles.modeTabActive : {}) }}
+          onClick={() => switchPracticeMode('numbers')}
+          role="tab"
+          aria-selected={practiceMode === 'numbers'}
+          aria-label={t('ariaNumberTab')}
+          id="tab-numbers"
+        >
+          {t('tabNumbers')}
         </button>
         <button
           className="btn-form"
@@ -1190,10 +1293,12 @@ export default function PracticeView({
       {practiceMode !== 'review' && practiceMode !== 'stats' && <>
 
       {/* Info bar */}
-      {practiceMode === 'letters' ? (
+      {practiceMode !== 'words' ? (
         <div style={styles.infoBar}>
           <div style={styles.letterMeta}>
-            <span style={styles.letterNameLarge}>{letter.name}</span>
+            <span style={styles.letterNameLarge} lang={isNumbersMode ? 'ar' : undefined}>
+              {isNumbersMode ? letter.letter : letter.name}
+            </span>
             <span style={styles.letterRoman}>/{letter.roman}/</span>
           </div>
           <div style={styles.miniPreviews}>
@@ -1267,10 +1372,10 @@ export default function PracticeView({
       <div style={styles.hintRow}>
         <span style={styles.hintIcon}>✦</span>
         <span style={styles.hintText}>
-          {practiceMode === 'letters' ? (
+          {practiceMode !== 'words' ? (
             <>
               <strong>{letter.hint}</strong>
-              {formKeys.length > 1 && <> <em>{t(FORM_DESCRIPTIONS[activeForm])}</em></>}
+              {!isNumbersMode && formKeys.length > 1 && <> <em>{t(FORM_DESCRIPTIONS[activeForm])}</em></>}
             </>
           ) : <strong>{currentWord?.hint}</strong>}
         </span>
@@ -1284,7 +1389,7 @@ export default function PracticeView({
         }}
         className="canvas-max"
       >
-        {practiceMode === 'letters' ? (
+        {practiceMode !== 'words' ? (
           <div style={styles.ghostLetter} lang="ar">{currentChar}</div>
         ) : (
           <div style={styles.ghostWord} lang="ar" dir="rtl">{currentWord?.word}</div>
@@ -1351,7 +1456,7 @@ export default function PracticeView({
         >
           {t('btnClear')}
         </button>
-        {practiceMode === 'letters' && formIndex === 'isolated' && STROKE_DATA[letter.letter] && (
+        {practiceMode !== 'words' && activeForm === 'isolated' && STROKE_DATA[letter.letter] && (
           <button
             className="btn-nav"
             style={{ ...styles.btn, ...styles.btnShowMe, opacity: animating ? 0.35 : 1 }}
@@ -1485,17 +1590,17 @@ export default function PracticeView({
         </div>
       )}
 
-      {/* Alphabet / lesson / word row */}
-      {practiceMode === 'letters' ? (
+      {/* Alphabet / numerals / lesson / word row */}
+      {practiceMode !== 'words' ? (
         <div
           style={styles.alphabetRow}
           className="alpha-row-wrap"
           role="listbox"
-          aria-label={t('ariaSelectLetter')}
+          aria-label={isNumbersMode ? t('ariaNumberTab') : t('ariaSelectLetter')}
           aria-activedescendant={`letter-btn-${letterIndex}`}
         >
-          {(lessonMode ? LESSON_ORDER : LETTERS).map((item, idx) => {
-            const l = lessonMode ? LETTERS[lessonToAlpha[idx]] : item;
+          {(useLessonOrder ? LESSON_ORDER : activeSet).map((item, idx) => {
+            const l = useLessonOrder ? LETTERS[lessonToAlpha[idx]] : item;
             const status = progressSummary[l.name];
             return (
               <button
@@ -1510,7 +1615,7 @@ export default function PracticeView({
                 lang="ar"
                 role="option"
                 aria-selected={idx === letterIndex}
-                aria-label={t('ariaLetterBtn') + ': ' + l.name}
+                aria-label={(isNumbersMode ? t('ariaNumberTab') : t('ariaLetterBtn')) + ': ' + l.roman}
               >
                 {l.letter}
                 {status?.complete ? <span style={styles.dotComplete} /> : status?.started ? <span style={styles.dotStarted} /> : null}

@@ -32,12 +32,23 @@ export const UI = {
     settingsSectionModel: 'AI Model',
     settingsSectionCanvas: 'Canvas',
     settingsSectionApiKey: 'API Key',
+    settingsSectionData: 'Backup',
+    settingsDataNote: 'Your progress lives only in this browser. Export a backup file to keep it safe or move it to another device.',
+    settingsExport: 'Export progress',
+    settingsImport: 'Import progress',
+    importConfirm: 'Importing will overwrite your current progress on this device. Continue?',
+    importSuccess: 'Progress imported — reloading…',
+    importError: 'That file is not a valid progress backup.',
+    ariaExportBtn: 'Export progress backup file',
+    ariaImportBtn: 'Import progress backup file',
 
     // Mode tabs
     tabLetters: 'Letters',
+    tabNumbers: 'Numbers',
     tabWords: 'Words',
     tabReview: 'Review',
     tabStats: 'Stats',
+    ariaNumberTab: 'Practice numbers',
 
     // Form names
     formIsolated: 'isolated',
@@ -269,12 +280,23 @@ export const UI = {
     settingsSectionModel: 'نموذج الذكاء',
     settingsSectionCanvas: 'اللوحة',
     settingsSectionApiKey: 'مفتاح الواجهة',
+    settingsSectionData: 'نسخ احتياطي',
+    settingsDataNote: 'تقدّمك محفوظ في هذا المتصفح فقط. صدّر نسخة احتياطية لحفظه أو نقله إلى جهاز آخر.',
+    settingsExport: 'تصدير التقدّم',
+    settingsImport: 'استيراد التقدّم',
+    importConfirm: 'الاستيراد سيستبدل تقدّمك الحالي على هذا الجهاز. هل تريد المتابعة؟',
+    importSuccess: 'تم الاستيراد — جارٍ إعادة التحميل…',
+    importError: 'هذا الملف ليس نسخة احتياطية صالحة.',
+    ariaExportBtn: 'تصدير ملف النسخة الاحتياطية',
+    ariaImportBtn: 'استيراد ملف النسخة الاحتياطية',
 
     // Mode tabs
     tabLetters: 'الحروف',
+    tabNumbers: 'الأرقام',
     tabWords: 'الكلمات',
     tabReview: 'مراجعة',
     tabStats: 'إحصائيات',
+    ariaNumberTab: 'تدريب الأرقام',
 
     // Form names
     formIsolated: 'منفرد',

@@ -190,6 +190,69 @@ const STROKE_DATA = {
     ],
     dots: [{ x: 48, y: 55, below: true }, { x: 58, y: 55, below: true }],
   },
+
+  // ── Eastern Arabic numerals (٠–٩) ───────────────────────
+  // Single-glyph digits, no positional forms. Paths approximate the
+  // Amiri/Scheherazade glyph shapes in the shared 0–100 space.
+  '٠': {  // 0 (ṣifr) — small dot on the baseline
+    strokes: [],
+    dots: [{ x: 50, y: 50 }],
+  },
+  '١': {  // 1 (wāḥid) — single vertical stroke, top to bottom
+    strokes: [
+      [{ x: 50, y: 25 }, { x: 50, y: 38 }, { x: 50, y: 52 }, { x: 50, y: 66 }, { x: 50, y: 78 }],
+    ],
+    dots: [],
+  },
+  '٢': {  // 2 (ithnān) — small hook opening up-right
+    strokes: [
+      [{ x: 35, y: 40 }, { x: 42, y: 35 }, { x: 50, y: 38 }, { x: 54, y: 48 }, { x: 56, y: 60 }, { x: 58, y: 70 }],
+    ],
+    dots: [],
+  },
+  '٣': {  // 3 (thalātha) — three connected humps along the top
+    strokes: [
+      [{ x: 30, y: 38 }, { x: 34, y: 30 }, { x: 38, y: 38 }, { x: 44, y: 30 }, { x: 50, y: 38 }, { x: 56, y: 30 }, { x: 60, y: 38 }, { x: 58, y: 55 }, { x: 55, y: 68 }],
+    ],
+    dots: [],
+  },
+  '٤': {  // 4 (arbaʿa) — reversed-3 curl
+    strokes: [
+      [{ x: 60, y: 30 }, { x: 48, y: 30 }, { x: 40, y: 38 }, { x: 46, y: 46 }, { x: 56, y: 50 }, { x: 48, y: 58 }, { x: 38, y: 62 }, { x: 42, y: 72 }, { x: 54, y: 74 }],
+    ],
+    dots: [],
+  },
+  '٥': {  // 5 (khamsa) — small heart-shaped loop, open at top
+    strokes: [
+      [{ x: 42, y: 40 }, { x: 36, y: 48 }, { x: 38, y: 58 }, { x: 48, y: 64 }, { x: 60, y: 60 }, { x: 64, y: 50 }, { x: 58, y: 42 }, { x: 50, y: 42 }],
+    ],
+    dots: [],
+  },
+  '٦': {  // 6 (sitta) — diagonal stroke down to a small base
+    strokes: [
+      [{ x: 58, y: 32 }, { x: 54, y: 42 }, { x: 48, y: 54 }, { x: 42, y: 66 }, { x: 40, y: 74 }],
+    ],
+    dots: [],
+  },
+  '٧': {  // 7 (sabʿa) — upward V (checkmark opening to the top)
+    strokes: [
+      [{ x: 36, y: 32 }, { x: 44, y: 50 }, { x: 50, y: 66 }, { x: 56, y: 50 }, { x: 64, y: 32 }],
+    ],
+    dots: [],
+  },
+  '٨': {  // 8 (thamāniya) — inverted V opening downward
+    strokes: [
+      [{ x: 36, y: 70 }, { x: 44, y: 52 }, { x: 50, y: 36 }, { x: 56, y: 52 }, { x: 64, y: 70 }],
+    ],
+    dots: [],
+  },
+  '٩': {  // 9 (tisʿa) — loop on top with a straight descending tail
+    strokes: [
+      [{ x: 56, y: 38 }, { x: 48, y: 34 }, { x: 42, y: 40 }, { x: 44, y: 48 }, { x: 52, y: 50 }, { x: 58, y: 44 }],
+      [{ x: 56, y: 46 }, { x: 55, y: 58 }, { x: 54, y: 70 }, { x: 53, y: 78 }],
+    ],
+    dots: [],
+  },
 };
 
 export default STROKE_DATA;
