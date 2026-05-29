@@ -7,11 +7,12 @@
  *     [formKey]: {           // e.g. "isolated"
  *       practiced: true,     // has the user drawn on this form?
  *       practiceCount: 3,    // total times practiced
+ *       lastPracticed: null, // YYYY-MM-DD of most recent drawing (non-AI path)
  *       score: 4,            // latest AI score 1–5
- *       // SM-2 spaced repetition fields:
+ *       // SM-2 spaced repetition fields (AI path only):
  *       interval: 1,          // days until next review (1 = tomorrow)
  *       easeFactor: 2.5,     // SM-2 ease factor (min 1.3)
- *       lastReview: null,    // YYYY-MM-DD (local date) of last review, or null
+ *       lastReview: null,    // YYYY-MM-DD (local date) of last AI review, or null
  *     }
  *   }
  * }
@@ -20,6 +21,11 @@
 import { recordPracticeDate } from './analytics.js';
 
 const STORAGE_KEY = 'arabic_progress';
+
+// Thresholds for non-AI scheduling fallbacks
+const RECENCY_DAYS = 3;        // option 4: days between practices before re-surfacing
+const GRADUATION_THRESHOLD = 5; // option 5: drawings before interval starts growing
+const GRADUATION_STEP = 3;     // option 5: days added per graduation tier
 
 // ─── In-memory cache ──────────────────────────────────────
 // localStorage.getItem + JSON.parse is cheap individually but called
@@ -106,6 +112,7 @@ export function markPracticed(letterName, formKey) {
   const entry = data[letterName][formKey] || { practiced: false, practiceCount: 0 };
   entry.practiced = true;
   entry.practiceCount = (entry.practiceCount || 0) + 1;
+  entry.lastPracticed = todayLocal();
   data[letterName][formKey] = entry;
   save(data);
   recordPracticeDate();
@@ -251,14 +258,33 @@ export function getDueLetters(LETTERS) {
         continue;
       }
 
-      if (!stored.lastReview) {
-        due.push({ letterName: letter.name, letterChar: letter.forms[formKey], formKey });
-        continue;
-      }
-
-      const nextReview = addDaysLocal(stored.lastReview, Math.max(1, stored.interval || 1));
-      if (nextReview <= today) {
-        due.push({ letterName: letter.name, letterChar: letter.forms[formKey], formKey });
+      if (stored.lastReview) {
+        // AI has scored this item — use SM-2 interval exclusively
+        const nextReview = addDaysLocal(stored.lastReview, Math.max(1, stored.interval || 1));
+        if (nextReview <= today) {
+          due.push({ letterName: letter.name, letterChar: letter.forms[formKey], formKey });
+        }
+      } else {
+        // No AI score yet — apply non-AI fallbacks (options 4 & 5)
+        const count = stored.practiceCount || 0;
+        const lp = stored.lastPracticed;
+        if (!lp) {
+          // Practiced today for the first time — immediately due
+          due.push({ letterName: letter.name, letterChar: letter.forms[formKey], formKey });
+        } else if (count >= GRADUATION_THRESHOLD) {
+          // Option 5: interval grows with practice count
+          const syntheticInterval = Math.floor(count / GRADUATION_THRESHOLD) * GRADUATION_STEP;
+          const nextDue = addDaysLocal(lp, syntheticInterval);
+          if (nextDue <= today) {
+            due.push({ letterName: letter.name, letterChar: letter.forms[formKey], formKey });
+          }
+        } else {
+          // Option 4: simple recency — due again after RECENCY_DAYS
+          const nextDue = addDaysLocal(lp, RECENCY_DAYS);
+          if (nextDue <= today) {
+            due.push({ letterName: letter.name, letterChar: letter.forms[formKey], formKey });
+          }
+        }
       }
     }
   }
