@@ -88,8 +88,8 @@ Effort key: 🟢 small · 🟡 medium · 🔴 large. Each item notes the value i
   A 3–4 step coachmark tour (ghost watermark, Show Me, AI Feedback, Review tab).
   Surfaces features new users currently never discover.
 
-- [ ] **#15 — Stroke animation for all forms** 🟡
-  "Show Me" only works for the isolated form despite stroke data existing.
+- [ ] **#15 — Fix Stroke animation for all forms** 🟡
+  "Show Me" only works for the isolated form despite stroke data existing. And the isolated forms that do exist are bugged and only portions of the stroke are actually shown in the UI.
   Extend to initial/medial/final so the feature feels complete.
 
 - [ ] **#16 — Audio/visual feedback on score** 🟢

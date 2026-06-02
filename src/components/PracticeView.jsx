@@ -55,6 +55,11 @@ export default function PracticeView({
   const glyphCanvasRef = useRef(null);
   const maskCanvasRef = useRef(null);
   const compCanvasRef = useRef(null);
+  // Holds the fully-revealed glyph bitmap left on screen after a "Show me"
+  // animation finishes (when the user has no strokes of their own). redraw()
+  // re-blits this so layout reflows / ResizeObserver repaints don't wipe the
+  // finished letter. Cleared on any draw / clear / navigation.
+  const restGlyphRef = useRef(null);
   const dprRef = useRef(devicePixelRatio || 1);
   const alphaBtnRefs = useRef([]);
   // Hidden <input type=file> used by the Settings "Import progress" button.
@@ -96,6 +101,10 @@ export default function PracticeView({
   );
   const [showComparison, setShowComparison] = useState(false);
   const [animating, setAnimating] = useState(false);
+  // True while a fully-revealed "Show me" glyph is left resting on the canvas
+  // (user has drawn nothing). Used to hide the DOM ghost div so the canvas's
+  // own aligned faint ghost is the only one shown.
+  const [restingGlyph, setRestingGlyph] = useState(false);
   const [practiceMode, setPracticeMode] = useState('letters');
   const [wordGroupIndex, setWordGroupIndex] = useState(0);
   const [wordIndex, setWordIndex] = useState(0);
@@ -225,11 +234,23 @@ export default function PracticeView({
     if (theme === 'ruled' || theme === 'grid') {
       drawPaperPattern(ctx, W, H, theme, darkModeRef.current);
     }
+    // Re-blit a finished "Show me" glyph (if any) so reflow-driven repaints
+    // (ResizeObserver, theme sync) don't erase it. It's stored at full bitmap
+    // resolution, so draw it under the identity transform.
+    if (restGlyphRef.current && !points.length) {
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.drawImage(restGlyphRef.current, 0, 0);
+      ctx.restore();
+      return;
+    }
     drawStrokes(ctx, points, W, H, brushColorRef.current);
   }, []);
 
   const clearCanvas = useCallback(() => {
     strokesRef.current = [];
+    restGlyphRef.current = null;
+    setRestingGlyph(false);
     countedDrawingRef.current = false;
     setFeedback(null);
     setHasStrokes(false);
@@ -360,6 +381,10 @@ export default function PracticeView({
   const playStrokeAnimation = useCallback(async () => {
     const data = STROKE_DATA[letter.letter];
     if (!data || animatingRef.current) return;
+    // Connected forms (initial/medial/final) render the same base glyph with
+    // tatweel tails. The authored isolated paths drive reveal *order* while
+    // source-in guarantees only real ink shows; the completion pass below then
+    // reveals any ink the spine paths don't pass through (e.g. the tails).
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -368,6 +393,8 @@ export default function PracticeView({
     // Snapshot the user's drawing so we can restore it after the animation.
     const savedStrokes = strokesRef.current;
     strokesRef.current = [];
+    restGlyphRef.current = null;
+    setRestingGlyph(false);
     setHasStrokes(false);
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -413,6 +440,25 @@ export default function PracticeView({
     gCtx.fillText(currentChar, centerX, centerY);
     gCtx.restore();
 
+    // Scan rendered pixels to find the actual visual bounding box of the glyph.
+    // Arabic font metrics vary wildly per-glyph, so we can't trust em-square math.
+    const pixels = gCtx.getImageData(0, 0, W, H).data;
+    let minX = W, maxX = 0, minY = H, maxY = 0;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        if (pixels[(y * W + x) * 4 + 3] > 16) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    // Fall back to theoretical square if the glyph wasn't rendered yet.
+    if (minX > maxX || minY > maxY) { minX = glyphX; maxX = glyphX + glyphSize; minY = glyphY; maxY = glyphY + glyphSize; }
+    const renderedW = maxX - minX;
+    const renderedH = maxY - minY;
+
     const maskCanvas = maskCanvasRef.current ?? document.createElement('canvas');
     maskCanvas.width = W;
     maskCanvas.height = H;
@@ -420,14 +466,17 @@ export default function PracticeView({
     const mCtx = maskCanvas.getContext('2d');
     mCtx.clearRect(0, 0, W, H);
 
-    const scale = glyphSize / 100;
-    const mapX = (x) => glyphX + x * scale;
-    const mapY = (y) => glyphY + y * scale;
+    // Map stroke coords (0–100 square) onto the actual rendered pixel bbox.
+    const mapX = (x) => minX + (x / 100) * renderedW;
+    const mapY = (y) => minY + (y / 100) * renderedH;
 
     const buildPolyline = (pts) => pts.map((p) => ({ x: mapX(p.x), y: mapY(p.y) }));
 
-    const BRUSH_RADIUS = glyphSize * 0.08;
-    const SPEED = Math.max(3, glyphSize * 0.012);
+    // Reveal brush is generous so it uncovers the full thickness of the glyph
+    // stroke near the authored path (the paths run through the letter's spine,
+    // not along its edges). Oversized reveal is clipped to real ink anyway.
+    const BRUSH_RADIUS = Math.max(renderedW, renderedH) * 0.18;
+    const SPEED = Math.max(2.5, Math.max(renderedW, renderedH) * 0.009);
 
     const ops = [];
     for (const stroke of data.strokes) {
@@ -444,6 +493,11 @@ export default function PracticeView({
       ops.push({ type: 'dot', point: { x: mapX(dot.x), y: mapY(dot.y) } });
     }
 
+    // The mask canvas accumulates an opaque "reveal" region as the brush
+    // sweeps along each authored path. We never paint the brush color itself;
+    // instead drawFrame uses this region to clip the *actual glyph ink*, so
+    // whatever shows on screen is always real font pixels — never a path that
+    // diverges from the letter. The authored paths only drive reveal order.
     const paintSegment = (from, to, radius) => {
       mCtx.beginPath();
       mCtx.moveTo(from.x, from.y);
@@ -476,31 +530,51 @@ export default function PracticeView({
     let prevPoint = null;
     const PAUSE_FRAMES = 18;
     let pauseCount = 0;
+    // Completion fill: once the ordered sweep is done we ramp a full-glyph
+    // reveal so every pixel of ink shows, even ink the authored spine paths
+    // never pass through (wave crests, tails on connected forms, extremities).
+    const FILL_FRAMES = 14;
+    let fillCount = 0;
 
+    // Compositing canvas: glyph ink clipped to the revealed mask region.
     const compCanvas = compCanvasRef.current ?? document.createElement('canvas');
     compCanvas.width = W;
     compCanvas.height = H;
     compCanvasRef.current = compCanvas;
     const cCtx = compCanvas.getContext('2d');
 
-    const drawFrame = () => {
+    // fillAlpha (0–1) fades in any not-yet-swept glyph ink at the end so the
+    // full letter is always shown, never just the portion under the brush path.
+    const drawFrame = (fillAlpha = 0) => {
+      // Build "revealed glyph" = real glyph ink ∩ swept mask region.
+      cCtx.save();
+      cCtx.setTransform(1, 0, 0, 1, 0, 0);
       cCtx.clearRect(0, 0, W, H);
-      cCtx.drawImage(glyphCanvas, 0, 0);
-      cCtx.globalCompositeOperation = 'destination-in';
-      cCtx.drawImage(maskCanvas, 0, 0);
-      cCtx.globalCompositeOperation = 'source-over';
+      cCtx.drawImage(maskCanvas, 0, 0);            // opaque reveal region
+      cCtx.globalCompositeOperation = 'source-in';
+      cCtx.drawImage(glyphCanvas, 0, 0);            // keep only glyph ink inside it
+      cCtx.restore();
+
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, W, H);
-      // Paper background for animation
       const paperAnim = getPaperColors(paperTheme, darkModeRef.current);
       ctx.fillStyle = paperAnim.bg;
       ctx.fillRect(0, 0, W, H);
       drawPaperPattern(ctx, W, H, paperTheme, darkModeRef.current);
-      ctx.globalAlpha = 0.12;
+      // Faint ghost of the full glyph as a target outline
+      ctx.globalAlpha = 0.14;
       ctx.drawImage(glyphCanvas, 0, 0);
       ctx.globalAlpha = 1;
+      // Progressively revealed real glyph ink along the authored stroke order.
       ctx.drawImage(compCanvas, 0, 0);
+      // Completion fill: fade in the remaining full-glyph ink on top so every
+      // pixel ends up visible regardless of where the spine paths ran.
+      if (fillAlpha > 0) {
+        ctx.globalAlpha = fillAlpha;
+        ctx.drawImage(glyphCanvas, 0, 0);
+        ctx.globalAlpha = 1;
+      }
       ctx.restore();
     };
 
@@ -509,13 +583,45 @@ export default function PracticeView({
       animFrameRef.current = null;
       setAnimating(false);
       strokesRef.current = savedStrokes;
-      if (savedStrokes.length) setHasStrokes(true);
-      redraw(savedStrokes);
+      if (savedStrokes.length) {
+        // User had their own drawing — restore it; the glyph was only a demo.
+        restGlyphRef.current = null;
+        setRestingGlyph(false);
+        setHasStrokes(true);
+        redraw(savedStrokes);
+      } else {
+        // No user strokes: keep the fully-revealed glyph as the resting frame.
+        // Snapshot the glyph ink into a *dedicated* canvas (not glyphCanvasRef,
+        // which gets cleared/reused on the next animation) so redraw() can
+        // re-blit it over paper when a reflow repaint fires.
+        const snap = document.createElement('canvas');
+        snap.width = W;
+        snap.height = H;
+        snap.getContext('2d').drawImage(glyphCanvas, 0, 0);
+        restGlyphRef.current = snap;
+        setRestingGlyph(true);
+        redraw([]);
+      }
     };
 
     const animate = () => {
       if (!animatingRef.current) return;
       if (opIdx >= ops.length) {
+        // Completion fill: ramp fillAlpha 0→1 so any ink not reached by the
+        // ordered sweep fades into view, then leave the full glyph revealed.
+        if (fillCount < FILL_FRAMES) {
+          fillCount++;
+          drawFrame(fillCount / FILL_FRAMES);
+          animFrameRef.current = requestAnimationFrame(animate);
+          return;
+        }
+        // Bake the whole glyph into the mask so the resting frame is complete.
+        mCtx.save();
+        mCtx.setTransform(1, 0, 0, 1, 0, 0);
+        mCtx.globalCompositeOperation = 'source-over';
+        mCtx.drawImage(glyphCanvas, 0, 0);
+        mCtx.restore();
+        drawFrame(0);
         finish();
         return;
       }
@@ -546,7 +652,7 @@ export default function PracticeView({
       } else if (op.type === 'dot') {
         const dp = op.point;
         mCtx.beginPath();
-        mCtx.arc(dp.x, dp.y, BRUSH_RADIUS * 0.8, 0, Math.PI * 2);
+        mCtx.arc(dp.x, dp.y, BRUSH_RADIUS, 0, Math.PI * 2);
         mCtx.fillStyle = '#000';
         mCtx.fill();
         drawFrame();
@@ -571,6 +677,8 @@ export default function PracticeView({
       }
       animatingRef.current = false;
       setAnimating(false);
+      restGlyphRef.current = null;
+      setRestingGlyph(false);
     };
   }, [letterIndex, formIndex, practiceMode]);
 
@@ -605,6 +713,12 @@ export default function PracticeView({
     e.preventDefault();
     const p = getPoint(e);
     if (!p) return;
+    // Starting to draw dismisses any leftover "Show me" demo glyph.
+    if (restGlyphRef.current) {
+      restGlyphRef.current = null;
+      setRestingGlyph(false);
+      redraw([]);
+    }
     strokeResumedRef.current = false;
     strokesRef.current.push({ ...p, newStroke: true });
     try { canvasRef.current?.setPointerCapture?.(e.pointerId); } catch (_) { /* ignore */ }
@@ -1390,7 +1504,19 @@ export default function PracticeView({
         className="canvas-max"
       >
         {practiceMode !== 'words' ? (
-          <div style={styles.ghostLetter} lang="ar">{currentChar}</div>
+          // Hidden while the canvas is showing its own (aligned) glyph — during
+          // a "Show me" animation or while a revealed glyph rests on the canvas.
+          // Otherwise the centered CSS ghost wouldn't coincide with the canvas
+          // glyph and would read as a misaligned double image.
+          <div
+            style={{
+              ...styles.ghostLetter,
+              opacity: animating || restingGlyph ? 0 : styles.ghostLetter.opacity ?? 1,
+            }}
+            lang="ar"
+          >
+            {currentChar}
+          </div>
         ) : (
           <div style={styles.ghostWord} lang="ar" dir="rtl">{currentWord?.word}</div>
         )}
@@ -1456,7 +1582,7 @@ export default function PracticeView({
         >
           {t('btnClear')}
         </button>
-        {practiceMode !== 'words' && activeForm === 'isolated' && STROKE_DATA[letter.letter] && (
+        {practiceMode !== 'words' && STROKE_DATA[letter.letter] && (
           <button
             className="btn-nav"
             style={{ ...styles.btn, ...styles.btnShowMe, opacity: animating ? 0.35 : 1 }}
