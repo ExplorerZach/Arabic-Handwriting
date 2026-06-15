@@ -23,6 +23,8 @@ import { PAPER_THEMES, BRUSH_PACKS, getPaperColors, getBrushColor, drawPaperPatt
 import styles from '../styles/practiceStyles';
 import AnalyticsPanel from './AnalyticsPanel';
 import LoginScreen from './LoginScreen';
+import DailyGoalRing from './DailyGoalRing';
+import { getDailyGoal, getTodayProgress } from '../utils/dailyGoal';
 
 const SCORE_LABELS = {
   5: 'feedbackScoreExcellent',
@@ -33,6 +35,26 @@ const SCORE_LABELS = {
 };
 
 const DEFAULT_MODEL = 'google/gemini-3-flash-preview';
+
+function playSuccessTone() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(1046.5, ctx.currentTime + 0.15);
+    gain.gain.setValueAtTime(0.001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  } catch {}
+}
 
 export default function PracticeView({
   apiKey,
@@ -122,6 +144,15 @@ export default function PracticeView({
   const [brushPack, setBrushPack] = useState(
     () => localStorage.getItem('brush_pack') || 'classic'
   );
+  const [dailyGoalState, setDailyGoalState] = useState(() => getDailyGoal());
+  const [reduceMotion, setReduceMotion] = useState(() => {
+    const saved = localStorage.getItem('reduce_motion');
+    if (saved !== null) return saved === 'true';
+    return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+  });
+  const [highContrast, setHighContrast] = useState(() => localStorage.getItem('high_contrast') === 'true');
+  const [celebrate, setCelebrate] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(() => localStorage.getItem('sound_enabled') === 'true');
   // Bumps on every write to progress/history so derived summaries recompute
   // without us having to pipe state through every helper.
   const [progressVersion, setProgressVersion] = useState(0);
@@ -129,6 +160,28 @@ export default function PracticeView({
   // Controls the full-screen LoginScreen overlay that's launched from the
   // Settings panel's "Set/Change key" button.
   const [showKeyScreen, setShowKeyScreen] = useState(false);
+
+  // Guided review session state
+  const [reviewSession, setReviewSession] = useState(null);
+  // { queue: DueItem[], index: number, summary: { letterName, letterChar, formKey, score }[], finished?: boolean }
+  const reviewSessionRef = useRef(null);
+  const advanceReviewRef = useRef(null);
+  useEffect(() => { reviewSessionRef.current = reviewSession; }, [reviewSession]);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-high-contrast', String(highContrast));
+    localStorage.setItem('high_contrast', String(highContrast));
+  }, [highContrast]);
+
+  const handleReduceMotionChange = (v) => {
+    setReduceMotion(v);
+    localStorage.setItem('reduce_motion', String(v));
+  };
+
+  const handleSoundToggle = (v) => {
+    setSoundEnabled(v);
+    localStorage.setItem('sound_enabled', String(v));
+  };
 
   const t = (key) => UI[locale][key] ?? key;
 
@@ -172,6 +225,12 @@ export default function PracticeView({
   );
   const dueItems = useMemo(
     () => getDueLetters([...LETTERS, ...NUMBERS]),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [progressVersion]
+  );
+  const dailyGoal = dailyGoalState;
+  const todayProgress = useMemo(
+    () => getTodayProgress(getProgress()),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [progressVersion]
   );
@@ -378,9 +437,42 @@ export default function PracticeView({
 
   // ─── Stroke order animation ────────────────────────────
 
+  const drawReferenceGlyph = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const W = rect.width;
+    const H = rect.height;
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    const theme = paperThemeRef.current;
+    if (theme === 'ruled' || theme === 'grid') {
+      drawPaperPattern(ctx, W, H, theme, darkModeRef.current);
+    }
+    // Draw the reference character as a full-opacity ghost.
+    const fontSize = Math.min(W, H) * 0.65;
+    ctx.save();
+    ctx.font = `${fontSize}px "Scheherazade New", "Amiri", serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = darkModeRef.current ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.25)';
+    ctx.fillText(currentChar, W / 2, H / 2 + fontSize * 0.08);
+    ctx.restore();
+  }, [currentChar]);
+
   const playStrokeAnimation = useCallback(async () => {
     const data = STROKE_DATA[letter.letter];
     if (!data || animatingRef.current) return;
+    if (reduceMotion) {
+      // Reveal the full reference glyph instantly instead of animating.
+      drawReferenceGlyph();
+      setRestingGlyph(true);
+      return;
+    }
     // Connected forms (initial/medial/final) render the same base glyph with
     // tatweel tails. The authored isolated paths drive reveal *order* while
     // source-in guarantees only real ink shows; the completion pass below then
@@ -835,6 +927,59 @@ export default function PracticeView({
     a.click();
     document.body.removeChild(a);
   }, [exportForSave, practiceMode, currentWord, letter.name, activeForm]);
+  // ─── Guided review session helpers ─────────────────
+
+  const enterReviewItem = useCallback((letterName, formKey) => {
+    if (letterName.startsWith('Num')) {
+      const numIdx = NUMBERS.findIndex((n) => n.name === letterName);
+      if (numIdx === -1) return;
+      setLetterIndex(numIdx);
+      setFormIndex('isolated');
+    } else {
+      const alphIdx = LETTERS.findIndex((l) => l.name === letterName);
+      if (alphIdx === -1) return;
+      if (lessonMode) {
+        const lessonIdx = lessonToAlpha.indexOf(alphIdx);
+        setLetterIndex(lessonIdx !== -1 ? lessonIdx : 0);
+      } else {
+        setLetterIndex(alphIdx);
+      }
+      setFormIndex(formKey);
+    }
+    setFeedback(null);
+    setShowComparison(false);
+    setShowHistory(false);
+    alphaBtnRefs.current = [];
+    clearCanvas();
+  }, [lessonMode, lessonToAlpha, clearCanvas]);
+
+  const startReviewSession = useCallback(() => {
+    if (!dueItems.length) return;
+    const queue = dueItems.slice();
+    setReviewSession({ queue, index: 0, summary: [] });
+    enterReviewItem(queue[0].letterName, queue[0].formKey);
+  }, [dueItems, enterReviewItem]);
+
+  const exitReviewSession = useCallback(() => {
+    setReviewSession(null);
+  }, []);
+
+  const advanceReview = useCallback((score) => {
+    const sess = reviewSessionRef.current;
+    if (!sess || sess.finished) return;
+    const item = sess.queue[sess.index];
+    const summary = [...sess.summary, { ...item, score }];
+    const nextIndex = sess.index + 1;
+    if (nextIndex >= sess.queue.length) {
+      setReviewSession({ ...sess, summary, finished: true });
+    } else {
+      setReviewSession({ ...sess, index: nextIndex, summary });
+      enterReviewItem(sess.queue[nextIndex].letterName, sess.queue[nextIndex].formKey);
+    }
+  }, [enterReviewItem]);
+
+  advanceReviewRef.current = advanceReview;
+
 
   // ─── Navigate to letter from review dashboard ──────────
 
@@ -972,6 +1117,11 @@ export default function PracticeView({
       }
       setFeedback({ text: cleanText, score });
       setShowComparison(true);
+      if (score && reviewSessionRef.current && !reviewSessionRef.current.finished) {
+        setTimeout(() => {
+          advanceReviewRef.current?.(score);
+        }, 1400);
+      }
     } catch (err) {
       setFeedback({ error: err.message });
     } finally {
@@ -985,6 +1135,11 @@ export default function PracticeView({
     const v = ev.target.value;
     setModel(v);
     localStorage.setItem('openrouter_model', v);
+  };
+
+  const handleDailyGoalChange = (ev) => {
+    const value = setDailyGoal(ev.target.value);
+    setDailyGoalState(value);
   };
 
   const handleBrushChange = (ev) => {
@@ -1076,6 +1231,13 @@ export default function PracticeView({
             </span>
           )}
         </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
+          <DailyGoalRing
+            current={todayProgress}
+            goal={dailyGoal}
+            label={t('dailyGoalTitle')}
+          />
+        </div>
         <div style={styles.headerButtons}>
           <button
             className="btn-gear"
@@ -1141,6 +1303,37 @@ export default function PracticeView({
                 aria-label={t('ariaLangBtn')}
               >
                 {locale === 'ar' ? 'EN' : 'عربي'}
+              </button>
+            </div>
+            <div style={{ ...styles.settingsRow, marginTop: 8 }}>
+              <button
+                className="btn-panel"
+                style={{ ...styles.settingsToggleBtn, flex: 1 }}
+                onClick={() => setHighContrast((v) => !v)}
+                aria-pressed={highContrast}
+                aria-label="Toggle high contrast"
+              >
+                {highContrast ? 'High contrast: on' : 'High contrast: off'}
+              </button>
+              <button
+                className="btn-panel"
+                style={{ ...styles.settingsToggleBtn, flex: 1 }}
+                onClick={() => handleReduceMotionChange(!reduceMotion)}
+                aria-pressed={reduceMotion}
+                aria-label="Toggle reduced motion"
+              >
+                {reduceMotion ? 'Reduced motion: on' : 'Reduced motion: off'}
+              </button>
+            </div>
+            <div style={{ ...styles.settingsRow, marginTop: 8 }}>
+              <button
+                className="btn-panel"
+                style={{ ...styles.settingsToggleBtn, flex: 1 }}
+                onClick={() => handleSoundToggle(!soundEnabled)}
+                aria-pressed={soundEnabled}
+                aria-label="Toggle success sound"
+              >
+                {soundEnabled ? 'Sound: on' : 'Sound: off'}
               </button>
             </div>
           </div>
@@ -1293,6 +1486,25 @@ export default function PracticeView({
             </div>
           </div>
 
+          <div style={styles.settingsDivider} />
+
+          {/* ── Goals ── */}
+          <div style={styles.settingsSection} role="group" aria-labelledby="settings-heading-goal">
+            <span id="settings-heading-goal" style={styles.settingsSectionTitle}>{t('dailyGoalTitle')}</span>
+            <div style={styles.settingsRow}>
+              <label style={{ fontSize: '12px', color: 'var(--color-text-soft)' }}>{t('dailyGoalSet')}</label>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={dailyGoalState}
+                onChange={handleDailyGoalChange}
+                style={{ width: 64, padding: '4px 8px', borderRadius: 6, border: '1.5px solid var(--color-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)' }}
+                aria-label={t('dailyGoalSet')}
+              />
+            </div>
+          </div>
+
         </div>
       )}
 
@@ -1361,7 +1573,7 @@ export default function PracticeView({
       </div>
 
       {/* Review dashboard */}
-      {practiceMode === 'review' && (
+      {practiceMode === 'review' && !reviewSession && (
         <div style={styles.reviewDash}>
           <div style={styles.reviewHeader}>
             {t('dashboardTitle')}
@@ -1372,22 +1584,31 @@ export default function PracticeView({
           {dueItems.length === 0 ? (
             <div style={styles.reviewEmpty}>{t('dashboardEmpty')}</div>
           ) : (
-            <div style={styles.reviewGrid}>
-              {dueItems.map(({ letterName, letterChar, formKey }) => (
-                <button
-                  key={`${letterName}-${formKey}`}
-                  className="btn-alpha"
-                  style={styles.reviewTile}
-                  onClick={() => goToReviewItem(letterName, formKey)}
-                  aria-label={`${letterName} ${t(FORM_NAMES[formKey] ?? formKey)}`}
-                  title={`${letterName} — ${t(FORM_NAMES[formKey] ?? formKey)}`}
-                >
-                  <span style={styles.reviewTileChar} lang="ar">{letterChar}</span>
-                  <span style={styles.reviewTileName}>{letterName}</span>
-                  <span style={styles.reviewTileForm}>{t(FORM_NAMES[formKey] ?? formKey)}</span>
-                </button>
-              ))}
-            </div>
+            <>
+              <div style={styles.reviewGrid}>
+                {dueItems.map(({ letterName, letterChar, formKey }) => (
+                  <button
+                    key={`${letterName}-${formKey}`}
+                    className="btn-alpha"
+                    style={styles.reviewTile}
+                    onClick={() => goToReviewItem(letterName, formKey)}
+                    aria-label={`${letterName} ${t(FORM_NAMES[formKey] ?? formKey)}`}
+                    title={`${letterName} — ${t(FORM_NAMES[formKey] ?? formKey)}`}
+                  >
+                    <span style={styles.reviewTileChar} lang="ar">{letterChar}</span>
+                    <span style={styles.reviewTileName}>{letterName}</span>
+                    <span style={styles.reviewTileForm}>{t(FORM_NAMES[formKey] ?? formKey)}</span>
+                  </button>
+                ))}
+              </div>
+              <button
+                className="btn-ai"
+                onClick={startReviewSession}
+                style={{ ...styles.btn, ...styles.btnAI, marginTop: 16, width: '100%', maxWidth: 520 }}
+              >
+                ▶ Start Review Session
+              </button>
+            </>
           )}
         </div>
       )}
@@ -1403,8 +1624,68 @@ export default function PracticeView({
         />
       )}
 
-      {/* Practice UI (hidden in review/stats mode) */}
-      {practiceMode !== 'review' && practiceMode !== 'stats' && <>
+      {/* Practice UI (hidden in review/stats mode unless in a guided session) */}
+      {((practiceMode !== 'review' && practiceMode !== 'stats') || reviewSession) && <>
+
+      {reviewSession && !reviewSession.finished && (
+        <div style={{ width: '100%', maxWidth: 520, padding: '8px 12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+            <span style={{ fontSize: 13, color: 'var(--color-text-soft)' }}>
+              Review {reviewSession.index + 1} of {reviewSession.queue.length}
+            </span>
+            <button
+              className="btn-clear"
+              onClick={exitReviewSession}
+              style={{ fontSize: 12, padding: '4px 10px' }}
+            >
+              Exit
+            </button>
+          </div>
+          <div style={{ height: 6, background: 'var(--color-progress-badge-bg)', borderRadius: 99, overflow: 'hidden' }}>
+            <div
+              style={{
+                width: `${((reviewSession.index) / reviewSession.queue.length) * 100}%`,
+                height: '100%',
+                background: 'var(--color-accent)',
+                borderRadius: 99,
+                transition: 'width 0.25s ease',
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {reviewSession?.finished && (
+        <div style={{ width: '100%', maxWidth: 520, padding: 16, background: 'var(--color-card-bg)', borderRadius: 12, border: '1px solid var(--color-border)', marginTop: 8 }}>
+          <h3 style={{ marginBottom: 8, color: 'var(--color-text)' }}>Review complete</h3>
+          <p style={{ fontSize: 14, color: 'var(--color-text-soft)', marginBottom: 12 }}>
+            You reviewed {reviewSession.summary.length} item{reviewSession.summary.length === 1 ? '' : 's'}.
+          </p>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+            {reviewSession.summary.map((item, i) => (
+              <span
+                key={i}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '4px 8px',
+                  borderRadius: 6,
+                  background: item.score >= 4 ? 'rgba(90,158,78,0.15)' : 'rgba(192,112,58,0.15)',
+                  color: 'var(--color-text)',
+                  fontSize: 13,
+                }}
+                lang="ar"
+              >
+                {item.letterChar} <span style={{ fontSize: 11, opacity: 0.8 }}>★{item.score}</span>
+              </span>
+            ))}
+          </div>
+          <button className="btn-nav" onClick={exitReviewSession} style={styles.btn}>
+            Done
+          </button>
+        </div>
+      )}
 
       {/* Info bar */}
       {practiceMode !== 'words' ? (
@@ -1662,6 +1943,10 @@ export default function PracticeView({
         </div>
       )}
 
+      {celebrate && (
+        <div className="score-celebrate" aria-hidden="true">★</div>
+      )}
+
       {/* Comparison */}
       {feedback && !feedback.error && canvasSnapshotRef.current && (
         <div style={{ width: '100%', maxWidth: '520px' }}>
@@ -1717,7 +2002,11 @@ export default function PracticeView({
       )}
 
       {/* Alphabet / numerals / lesson / word row */}
-      {practiceMode !== 'words' ? (
+      {reviewSession ? (
+        <div style={{ padding: '8px 0', color: 'var(--color-text-soft)', fontSize: 13 }}>
+          Guided review session in progress
+        </div>
+      ) : practiceMode !== 'words' ? (
         <div
           style={styles.alphabetRow}
           className="alpha-row-wrap"

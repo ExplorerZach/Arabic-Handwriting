@@ -44,9 +44,32 @@ export const WORD_GROUPS = [
       { word: 'صباح الخير', roman: 'ṣabāḥ al-khayr', meaning: 'good morning', hint: 'Two words with the definite article connecting them.' },
     ],
   },
+  {
+    name: 'Greetings',
+    description: 'Common everyday greetings',
+    words: [
+      { word: 'مرحبا', roman: 'marḥaba', meaning: 'hello', hint: 'Universal greeting — starts with Mim.' },
+      { word: 'أهلا', roman: 'ahlan', meaning: 'welcome', hint: 'Often paired with وسهلا.' },
+      { word: 'صباح الخير', roman: 'ṣabāḥ al-khayr', meaning: 'good morning', hint: 'Morning greeting with the definite article.' },
+      { word: 'مساء الخير', roman: 'masāʾ al-khayr', meaning: 'good evening', hint: 'Evening version of the greeting.' },
+      { word: 'شكرا', roman: 'shukran', meaning: 'thank you', hint: 'Shin to Kaf to Ra.' },
+      { word: 'مع السلامة', roman: 'maʿ as-salāma', meaning: 'goodbye', hint: 'Literally "with safety".' },
+    ],
+  },
+  {
+    name: 'Quranic Terms',
+    description: 'Frequently occurring words',
+    words: [
+      { word: 'الله', roman: 'Allāh', meaning: 'God', hint: 'The definite article plus الله.' },
+      { word: 'رب', roman: 'rabb', meaning: 'Lord / sustainer', hint: 'Ra to Ba — a foundational name.' },
+      { word: 'رحمن', roman: 'raḥmān', meaning: 'the Merciful', hint: 'Ra to Ha to Mim to Alif Nun.' },
+      { word: 'رحيم', roman: 'raḥīm', meaning: 'the Compassionate', hint: 'Closely related to Raḥmān.' },
+      { word: 'علم', roman: 'ʿilm', meaning: 'knowledge', hint: 'Ayn to Lam to Mim.' },
+      { word: 'قلم', roman: 'qalam', meaning: 'pen', hint: 'Qaf to Lam to Mim.' },
+    ],
+  },
 ];
 
-/** Flat list of all words for easy indexing */
 export const ALL_WORDS = WORD_GROUPS.flatMap((g) =>
   g.words.map((w) => ({ ...w, group: g.name }))
 );

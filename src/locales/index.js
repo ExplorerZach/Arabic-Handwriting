@@ -245,6 +245,13 @@ export const UI = {
     loginCancel: 'Cancel',
     ariaSwitchLight: 'Switch to light mode',
     ariaSwitchDark: 'Switch to dark mode',
+
+    // Daily goal
+    dailyGoalTitle: 'Daily goal',
+    dailyGoalOf: 'of',
+    dailyGoalReached: 'Goal reached!',
+    dailyGoalSet: 'Daily target',
+    ariaDailyGoal: 'Daily practice goal progress',
   },
 
 
@@ -493,6 +500,13 @@ export const UI = {
     loginCancel: 'إلغاء',
     ariaSwitchLight: 'التبديل إلى الوضع الفاتح',
     ariaSwitchDark: 'التبديل إلى الوضع الداكن',
+
+    // Daily goal
+    dailyGoalTitle: 'Daily goal',
+    dailyGoalOf: 'من',
+    dailyGoalReached: 'تم تحقيق الهدف!',
+    dailyGoalSet: 'الهدف اليومي',
+    ariaDailyGoal: 'تقدم الهدف اليومي للتدريب',
   },
 };
 

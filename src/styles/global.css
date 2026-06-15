@@ -359,3 +359,38 @@ input[type="range"]:focus-visible {
     padding: 20px 24px 48px !important;
   }
 }
+
+@keyframes scorePop {
+  0% { transform: scale(0.5); opacity: 0; }
+  40% { transform: scale(1.4); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+.score-celebrate {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 64px;
+  color: var(--color-star-filled);
+  pointer-events: none;
+  animation: scorePop 0.8s ease-out forwards;
+  z-index: 1000;
+}
+@media (prefers-reduced-motion: reduce) {
+  .score-celebrate { animation: none; opacity: 0; }
+}
+
+[data-high-contrast="true"] {
+  --color-text: #000000;
+  --color-bg: #ffffff;
+  --color-accent: #000000;
+  --color-border: #000000;
+  --color-ghost: rgba(0,0,0,0.35);
+}
+[data-theme="dark"][data-high-contrast="true"] {
+  --color-text: #ffffff;
+  --color-bg: #000000;
+  --color-accent: #ffffff;
+  --color-border: #ffffff;
+  --color-ghost: rgba(255,255,255,0.35);
+}
