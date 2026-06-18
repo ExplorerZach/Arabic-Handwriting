@@ -7,3 +7,6 @@ kilo.json
 _app_code_extract.txt
 _app_code_formatted.txt
 .vercel
+.hermes
+*.log
+crush.json

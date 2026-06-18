@@ -3,6 +3,10 @@
  *
  * Paper themes affect the canvas background fill and optional pattern overlay.
  * Brush packs affect stroke color; they vary between light and dark mode.
+ *
+ * When the user enables high-contrast mode we ignore the decorative paper
+ * colors and pattern colors so the canvas matches the high-contrast palette
+ * defined in global.css.
  */
 
 export const PAPER_THEMES = {
@@ -52,8 +56,15 @@ export const BRUSH_PACKS = {
   copper: { id: 'copper', nameKey: 'brushCopper', light: '#b87333', dark: '#ffd8a8' },
 };
 
+function isHighContrast() {
+  return typeof document !== 'undefined' && document.documentElement.getAttribute('data-high-contrast') === 'true';
+}
+
 /** Resolve a paper theme's colors for the current dark-mode state. */
 export function getPaperColors(themeId, isDark) {
+  if (isHighContrast()) {
+    return { bg: isDark ? '#000000' : '#ffffff' };
+  }
   const theme = PAPER_THEMES[themeId] || PAPER_THEMES.parchment;
   return isDark ? theme.dark : theme.light;
 }
@@ -66,6 +77,10 @@ export function getBrushColor(packId, isDark) {
 
 /** Draw the paper pattern (ruled lines / grid dots) onto a canvas context. */
 export function drawPaperPattern(ctx, W, H, themeId, isDark) {
+  // In high-contrast mode the canvas background is uniform black/white, so
+  // skip the subtle decorative ruling/grid pattern.
+  if (isHighContrast()) return;
+
   const theme = PAPER_THEMES[themeId] || PAPER_THEMES.parchment;
   const colors = isDark ? theme.dark : theme.light;
   if (!colors.lineColor) return;
@@ -96,4 +111,11 @@ export function drawPaperPattern(ctx, W, H, themeId, isDark) {
   }
 
   ctx.restore();
+}
+
+/** Return a suitable glyph/ink color for the canvas, respecting high contrast. */
+export function getCanvasInkColor(isDark) {
+  return isHighContrast()
+    ? (isDark ? '#ffffff' : '#000000')
+    : (isDark ? '#c0703a' : '#8b4513');
 }

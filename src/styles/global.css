@@ -376,21 +376,114 @@ input[type="range"]:focus-visible {
   animation: scorePop 0.8s ease-out forwards;
   z-index: 1000;
 }
+
+/* Reduced motion: suppress all CSS animations/transitions app-wide
+   when the user toggles the setting. Respect system preference as a fallback. */
 @media (prefers-reduced-motion: reduce) {
   .score-celebrate { animation: none; opacity: 0; }
 }
 
-[data-high-contrast="true"] {
-  --color-text: #000000;
-  --color-bg: #ffffff;
-  --color-accent: #000000;
-  --color-border: #000000;
-  --color-ghost: rgba(0,0,0,0.35);
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] *::before,
+[data-reduced-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.001ms !important;
 }
+
+[data-reduced-motion="true"] .score-celebrate { animation: none; opacity: 0; }
+[data-high-contrast="true"] {
+  --color-bg: #ffffff;
+  --color-bg-alt: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-solid: #ffffff;
+  --color-surface-hover: #f0f0f0;
+  --color-text: #000000;
+  --color-text-muted: #000000;
+  --color-text-soft: #000000;
+  --color-primary: #000000;
+  --color-accent: #000000;
+  --color-accent-light: #000000;
+  --color-accent-warm: #000000;
+  --color-border: #000000;
+  --color-border-strong: #000000;
+  --color-shadow: rgba(0, 0, 0, 0.5);
+  --color-shadow-deep: rgba(0, 0, 0, 0.8);
+  --color-canvas-bg: #ffffff;
+  --color-canvas-border: #000000;
+  --color-ghost: rgba(0, 0, 0, 0.45);
+  --color-btn-clear-bg: #ffffff;
+  --color-btn-nav-bg: #ffffff;
+  --color-btn-showme-bg: #ffffff;
+  --color-btn-ai-bg: #000000;
+  --color-btn-alpha-bg: #ffffff;
+  --color-btn-alpha-hover: #f0f0f0;
+  --color-dot-complete: #000000;
+  --color-dot-started: #000000;
+  --color-offline-bg: #ffffff;
+  --color-feedback-error-bg: #ffffff;
+  --color-feedback-error-border: #000000;
+  --color-feedback-error-text: #000000;
+  --color-star-filled: #000000;
+  --color-star-empty: rgba(0, 0, 0, 0.35);
+  --color-form-active-bg: #000000;
+  --color-input-bg: #ffffff;
+  --color-progress-badge-bg: #ffffff;
+  --color-scrollbar-thumb: #000000;
+  --color-scrollbar-thumb-hover: #000000;
+  --color-outline: #000000;
+  --color-gradient-start: #ffffff;
+  --color-gradient-mid: #ffffff;
+  --color-gradient-end: #ffffff;
+  --color-link: #000000;
+  --color-card-bg: #ffffff;
+}
+
+/* ─── High contrast (dark) ──────────────────────────────── */
 [data-theme="dark"][data-high-contrast="true"] {
-  --color-text: #ffffff;
   --color-bg: #000000;
+  --color-bg-alt: #000000;
+  --color-surface: #000000;
+  --color-surface-solid: #000000;
+  --color-surface-hover: #1a1a1a;
+  --color-text: #ffffff;
+  --color-text-muted: #ffffff;
+  --color-text-soft: #ffffff;
+  --color-primary: #ffffff;
   --color-accent: #ffffff;
+  --color-accent-light: #ffffff;
+  --color-accent-warm: #ffffff;
   --color-border: #ffffff;
-  --color-ghost: rgba(255,255,255,0.35);
+  --color-border-strong: #ffffff;
+  --color-shadow: rgba(0, 0, 0, 0.5);
+  --color-shadow-deep: rgba(0, 0, 0, 0.8);
+  --color-canvas-bg: #000000;
+  --color-canvas-border: #ffffff;
+  --color-ghost: rgba(255, 255, 255, 0.45);
+  --color-btn-clear-bg: #000000;
+  --color-btn-nav-bg: #000000;
+  --color-btn-showme-bg: #000000;
+  --color-btn-ai-bg: #ffffff;
+  --color-btn-alpha-bg: #000000;
+  --color-btn-alpha-hover: #1a1a1a;
+  --color-dot-complete: #ffffff;
+  --color-dot-started: #ffffff;
+  --color-offline-bg: #000000;
+  --color-feedback-error-bg: #000000;
+  --color-feedback-error-border: #ffffff;
+  --color-feedback-error-text: #ffffff;
+  --color-star-filled: #ffffff;
+  --color-star-empty: rgba(255, 255, 255, 0.35);
+  --color-form-active-bg: #ffffff;
+  --color-input-bg: #000000;
+  --color-progress-badge-bg: #000000;
+  --color-scrollbar-thumb: #ffffff;
+  --color-scrollbar-thumb-hover: #ffffff;
+  --color-outline: #ffffff;
+  --color-gradient-start: #000000;
+  --color-gradient-mid: #000000;
+  --color-gradient-end: #000000;
+  --color-link: #ffffff;
+  --color-card-bg: #000000;
 }
