@@ -51,7 +51,7 @@ Effort key: 🟢 small · 🟡 medium · 🔴 large. Each item notes the value i
   canvas + stroke-order + progress systems. Among the first things learners
   want. *(First content add.)*
 
-- [ ] **#8 — Diacritics / harakat (تشكيل)** 🟡
+- [x] **#8 — Diacritics / harakat (تشكيل)** 🟡
   Fatha, kasra, damma, sukun, shadda, tanwin. Critical for actually reading and
   writing Arabic; currently absent. Could be a dedicated mode or an overlay on
   existing letters.
@@ -125,4 +125,5 @@ Then: gamification layer (#3 XP, #4 badges, #5 freeze) and word progress (#6).
   (Greetings, Quranic Terms); #16 score celebration animation + optional success
   sound; #17 reduced-motion/high-contrast toggles. Verified with `npm run build`
   and browser smoke test.
+- **2026-06-21** — Added "Diacritics" mode (#8), establishing practice support for fatha, kasra, damma, sukun, shadda, and tanwin. Integrated transparently into heatmap, review session, and AI grading pipeline.
 

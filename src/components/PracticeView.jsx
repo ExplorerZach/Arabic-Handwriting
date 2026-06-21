@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { LETTERS } from "../data/letters";
 import { NUMBERS } from "../data/numbers";
+import { DIACRITICS } from "../data/diacritics";
 import { LESSON_ORDER, getLessonGroup } from "../data/lessonOrder";
 import { calcLineWidth, setBrushScale } from "../utils/drawing";
 import { getAIFeedback } from "../utils/api";
@@ -218,9 +219,14 @@ export default function PracticeView({
   // They have a single isolated form, no positional variants, and lesson
   // mode (which is alphabet-shape ordering) doesn't apply.
   const isNumbersMode = practiceMode === "numbers";
-  const activeSet = isNumbersMode ? NUMBERS : LETTERS;
-  // Lesson ordering only exists for letters; force off in numbers mode.
-  const useLessonOrder = lessonMode && !isNumbersMode;
+  const isDiacriticsMode = practiceMode === "diacritics";
+  const activeSet = isNumbersMode
+    ? NUMBERS
+    : isDiacriticsMode
+      ? DIACRITICS
+      : LETTERS;
+  // Lesson ordering only exists for letters; force off in numbers/diacritics mode.
+  const useLessonOrder = lessonMode && practiceMode === "letters";
 
   const actualLetterIndex = useLessonOrder
     ? (lessonToAlpha[letterIndex] ?? 0)
@@ -238,7 +244,7 @@ export default function PracticeView({
   // Batched progress reads: one load() per render instead of 56+.
   // Includes NUMBERS so the numerals row shows started/complete dots too.
   const progressSummary = useMemo(
-    () => getProgressSummary([...LETTERS, ...NUMBERS]),
+    () => getProgressSummary([...LETTERS, ...NUMBERS, ...DIACRITICS]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [progressVersion],
   );
@@ -248,7 +254,7 @@ export default function PracticeView({
     [progressVersion],
   );
   const dueItems = useMemo(
-    () => getDueLetters([...LETTERS, ...NUMBERS]),
+    () => getDueLetters([...LETTERS, ...NUMBERS, ...DIACRITICS]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [progressVersion],
   );
@@ -928,7 +934,9 @@ export default function PracticeView({
     // Guarded so a single drawing counts once no matter how many strokes it
     // takes; cleared on clear/navigation so the next drawing recounts.
     if (
-      (practiceMode === "letters" || practiceMode === "numbers") &&
+      (practiceMode === "letters" ||
+        practiceMode === "numbers" ||
+        practiceMode === "diacritics") &&
       !countedDrawingRef.current &&
       strokesRef.current.length > 0
     ) {
@@ -1131,16 +1139,30 @@ export default function PracticeView({
 
   const goToAnalyticsItem = useCallback(
     (letterName, formKey) => {
-      const alphIdx = LETTERS.findIndex((l) => l.name === letterName);
-      if (alphIdx === -1) return;
-      if (lessonMode) {
-        const lessonIdx = lessonToAlpha.indexOf(alphIdx);
+      let targetSet = "letters";
+      let idx = LETTERS.findIndex((l) => l.name === letterName);
+
+      if (idx === -1) {
+        idx = NUMBERS.findIndex((l) => l.name === letterName);
+        if (idx !== -1) {
+          targetSet = "numbers";
+        } else {
+          idx = DIACRITICS.findIndex((l) => l.name === letterName);
+          if (idx !== -1) targetSet = "diacritics";
+        }
+      }
+
+      if (idx === -1) return;
+
+      if (targetSet === "letters" && lessonMode) {
+        const lessonIdx = lessonToAlpha.indexOf(idx);
         setLetterIndex(lessonIdx !== -1 ? lessonIdx : 0);
       } else {
-        setLetterIndex(alphIdx);
+        setLetterIndex(idx);
       }
+
       setFormIndex(formKey);
-      setPracticeMode("letters");
+      setPracticeMode(targetSet);
       setFeedback(null);
       setShowComparison(false);
       setShowHistory(false);
@@ -1231,14 +1253,14 @@ export default function PracticeView({
           currentWord.roman,
           `word "${currentWord.meaning}"`,
         );
-      } else if (isNumbersMode) {
+      } else if (isNumbersMode || isDiacriticsMode) {
         text = await getAIFeedback(
           apiKey,
           imageBase64,
           letter.name,
           letter.letter,
           letter.roman,
-          "Arabic numeral",
+          isNumbersMode ? "Arabic numeral" : "Arabic diacritic (harakat)",
         );
       } else {
         text = await getAIFeedback(
@@ -1253,7 +1275,7 @@ export default function PracticeView({
       const scoreMatch = text.match(/\[SCORE:\s*([1-5])\s*\]/i);
       const score = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
       const cleanText = text.replace(/\[SCORE:\s*[1-5]\s*\]\s*/gi, "").trim();
-      if (practiceMode === "letters" || isNumbersMode) {
+      if (practiceMode === "letters" || isNumbersMode || isDiacriticsMode) {
         // Only count if drawing the strokes didn't already count this drawing
         // (handlePointerUp counts on draw), so submitting feedback on a letter
         // you just drew doesn't double-count it in the heatmap.
@@ -1560,9 +1582,21 @@ export default function PracticeView({
           role="tab"
           aria-selected={practiceMode === "words"}
           aria-label={t("ariaModeTab") + ": " + t("tabWords")}
-          id="tab-words"
         >
           {t("tabWords")}
+        </button>
+        <button
+          className="btn-form"
+          style={{
+            ...styles.modeTab,
+            ...(practiceMode === "diacritics" ? styles.modeTabActive : {}),
+          }}
+          onClick={() => switchPracticeMode("diacritics")}
+          role="tab"
+          aria-selected={practiceMode === "diacritics"}
+          aria-label={t("ariaModeTab") + ": " + t("tabDiacritics")}
+        >
+          {t("tabDiacritics")}
         </button>
         <button
           className="btn-form"
@@ -1666,7 +1700,7 @@ export default function PracticeView({
       {practiceMode === "stats" && (
         <AnalyticsPanel
           locale={locale}
-          LETTERS={LETTERS}
+          LETTERS={[...LETTERS, ...NUMBERS, ...DIACRITICS]}
           progress={getProgress()}
           progressVersion={progressVersion}
           onGoToItem={goToAnalyticsItem}
@@ -1794,9 +1828,11 @@ export default function PracticeView({
               <div style={styles.letterMeta}>
                 <span
                   style={styles.letterNameLarge}
-                  lang={isNumbersMode ? "ar" : undefined}
+                  lang={isNumbersMode || isDiacriticsMode ? "ar" : undefined}
                 >
-                  {isNumbersMode ? letter.letter : letter.name}
+                  {isNumbersMode || isDiacriticsMode
+                    ? letter.letter
+                    : letter.name}
                 </span>
                 <span style={styles.letterRoman}>/{letter.roman}/</span>
               </div>
@@ -1937,12 +1973,13 @@ export default function PracticeView({
               {practiceMode !== "words" ? (
                 <>
                   <strong>{letter.hint}</strong>
-                  {!isNumbersMode && formKeys.length > 1 && (
-                    <>
-                      {" "}
-                      <em>{t(FORM_DESCRIPTIONS[activeForm])}</em>
-                    </>
-                  )}
+                  {!(isNumbersMode || isDiacriticsMode) &&
+                    formKeys.length > 1 && (
+                      <>
+                        {" "}
+                        <em>{t(FORM_DESCRIPTIONS[activeForm])}</em>
+                      </>
+                    )}
                 </>
               ) : (
                 <strong>{currentWord?.hint}</strong>
@@ -2291,7 +2328,11 @@ export default function PracticeView({
               className="alpha-row-wrap"
               role="listbox"
               aria-label={
-                isNumbersMode ? t("ariaNumberTab") : t("ariaSelectLetter")
+                isNumbersMode
+                  ? t("ariaNumberTab")
+                  : isDiacriticsMode
+                    ? t("ariaDiacriticTab")
+                    : t("ariaSelectLetter")
               }
               aria-activedescendant={`letter-btn-${letterIndex}`}
             >
@@ -2319,7 +2360,9 @@ export default function PracticeView({
                     aria-label={
                       (isNumbersMode
                         ? t("ariaNumberTab")
-                        : t("ariaLetterBtn")) +
+                        : isDiacriticsMode
+                          ? t("ariaDiacriticTab")
+                          : t("ariaLetterBtn")) +
                       ": " +
                       l.roman
                     }
