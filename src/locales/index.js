@@ -259,6 +259,11 @@ export const UI = {
     ariaSwitchLight: "Switch to light mode",
     ariaSwitchDark: "Switch to dark mode",
 
+    // Review session
+    reviewResume: "Resume unfinished review session?",
+    reviewResumeYes: "Resume",
+    reviewResumeNo: "Start fresh",
+
     // Daily goal
     dailyGoalTitle: "Daily goal",
     dailyGoalOf: "of",
@@ -522,6 +527,11 @@ export const UI = {
     loginCancel: "إلغاء",
     ariaSwitchLight: "التبديل إلى الوضع الفاتح",
     ariaSwitchDark: "التبديل إلى الوضع الداكن",
+
+    // Review session
+    reviewResume: "استئناف جلسة المراجعة غير المكتملة؟",
+    reviewResumeYes: "استئناف",
+    reviewResumeNo: "بدء من جديد",
 
     // Daily goal
     dailyGoalTitle: "Daily goal",

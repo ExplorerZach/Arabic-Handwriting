@@ -181,9 +181,43 @@ export default function PracticeView({
   // { queue: DueItem[], index: number, summary: { letterName, letterChar, formKey, score }[], finished?: boolean }
   const reviewSessionRef = useRef(null);
   const advanceReviewRef = useRef(null);
+  const autoAdvanceTimerRef = useRef(null);
+  const RESUME_KEY = "arabic_review_session";
+  const [showResumePrompt, setShowResumePrompt] = useState(false);
+  const [stashedSession, setStashedSession] = useState(null);
   useEffect(() => {
     reviewSessionRef.current = reviewSession;
   }, [reviewSession]);
+
+  // Stash review session to sessionStorage for resume on refresh
+  useEffect(() => {
+    if (reviewSession) {
+      try {
+        sessionStorage.setItem(RESUME_KEY, JSON.stringify(reviewSession));
+      } catch (_) {}
+    } else {
+      sessionStorage.removeItem(RESUME_KEY);
+    }
+  }, [reviewSession, RESUME_KEY]);
+
+  // Check for stashed session on mount
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(RESUME_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed && parsed.queue && !parsed.finished) {
+          setStashedSession(parsed);
+          setShowResumePrompt(true);
+        }
+      }
+    } catch (_) {}
+  }, [RESUME_KEY]);
+
+  // Cleanup auto-advance timer on unmount
+  useEffect(() => {
+    return () => clearTimeout(autoAdvanceTimerRef.current);
+  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute(
@@ -949,6 +983,19 @@ export default function PracticeView({
       bump = true;
     }
     if (bump) setProgressVersion((v) => v + 1);
+
+    // Auto-advance in review session when there's no API key
+    if (
+      reviewSession &&
+      !reviewSessionRef.current?.finished &&
+      strokesRef.current.length > 0 &&
+      apiKey === "skip"
+    ) {
+      clearTimeout(autoAdvanceTimerRef.current);
+      autoAdvanceTimerRef.current = setTimeout(() => {
+        advanceReviewRef.current?.();
+      }, 800);
+    }
   };
 
   const handlePointerLeave = (e) => {
@@ -1074,6 +1121,11 @@ export default function PracticeView({
   const startReviewSession = useCallback(() => {
     if (!dueItems.length) return;
     const queue = dueItems.slice();
+    // Fisher-Yates shuffle
+    for (let i = queue.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [queue[i], queue[j]] = [queue[j], queue[i]];
+    }
     setReviewSession({ queue, index: 0, summary: [] });
     enterReviewItem(queue[0].letterName, queue[0].formKey);
   }, [dueItems, enterReviewItem]);
@@ -1087,7 +1139,8 @@ export default function PracticeView({
       const sess = reviewSessionRef.current;
       if (!sess || sess.finished) return;
       const item = sess.queue[sess.index];
-      const summary = [...sess.summary, { ...item, score }];
+      const skipped = score == null;
+      const summary = [...sess.summary, { ...item, score, skipped }];
       const nextIndex = sess.index + 1;
       if (nextIndex >= sess.queue.length) {
         setReviewSession({ ...sess, summary, finished: true });
@@ -1279,7 +1332,7 @@ export default function PracticeView({
       const scoreMatch = text.match(/\[SCORE:\s*([1-5])\s*\]/i);
       const score = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
       const cleanText = text.replace(/\[SCORE:\s*[1-5]\s*\]\s*/gi, "").trim();
-      if (practiceMode === "letters" || isNumbersMode || isDiacriticsMode) {
+      if (practiceMode === "letters" || isNumbersMode || isDiacriticsMode || reviewSessionRef.current) {
         // Only count if drawing the strokes didn't already count this drawing
         // (handlePointerUp counts on draw), so submitting feedback on a letter
         // you just drew doesn't double-count it in the heatmap.
@@ -1662,6 +1715,24 @@ export default function PracticeView({
       {/* Review dashboard */}
       {practiceMode === "review" && !reviewSession && (
         <div style={styles.reviewDash}>
+          {showResumePrompt && stashedSession && (
+            <div style={{ padding: "12px 16px", marginBottom: 12, background: "var(--color-card-bg)", borderRadius: 12, border: "1px solid var(--color-border)" }}>
+              <p style={{ marginBottom: 8, fontSize: 14, color: "var(--color-text)" }}>{t("reviewResume")}</p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn-ai" style={{ ...styles.btn, ...styles.btnAI, flex: 1 }} onClick={() => {
+                  setReviewSession(stashedSession);
+                  enterReviewItem(stashedSession.queue[stashedSession.index].letterName, stashedSession.queue[stashedSession.index].formKey);
+                  setShowResumePrompt(false);
+                  setStashedSession(null);
+                }}>{t("reviewResumeYes")}</button>
+                <button className="btn-clear" style={{ ...styles.btn, flex: 1 }} onClick={() => {
+                  sessionStorage.removeItem(RESUME_KEY);
+                  setShowResumePrompt(false);
+                  setStashedSession(null);
+                }}>{t("reviewResumeNo")}</button>
+              </div>
+            </div>
+          )}
           <div style={styles.reviewHeader}>
             {t("dashboardTitle")}
             {dueItems.length > 0 && (
@@ -1812,19 +1883,25 @@ export default function PracticeView({
                       gap: 4,
                       padding: "4px 8px",
                       borderRadius: 6,
-                      background:
-                        item.score >= 4
+                      background: item.skipped
+                        ? "var(--color-progress-badge-bg)"
+                        : item.score >= 4
                           ? "rgba(90,158,78,0.15)"
                           : "rgba(192,112,58,0.15)",
                       color: "var(--color-text)",
                       fontSize: 13,
+                      opacity: item.skipped ? 0.55 : 1,
                     }}
                     lang="ar"
                   >
-                    {item.letterChar}{" "}
-                    <span style={{ fontSize: 11, opacity: 0.8 }}>
-                      ★{item.score}
-                    </span>
+                    {item.letterChar}
+                    {item.skipped ? (
+                      <span style={{ fontSize: 10, opacity: 0.6 }}>—</span>
+                    ) : (
+                      <span style={{ fontSize: 11, opacity: 0.8 }}>
+                        ★{item.score}
+                      </span>
+                    )}
                   </span>
                 ))}
               </div>
@@ -2204,7 +2281,9 @@ export default function PracticeView({
               className="btn-nav"
               style={{ ...styles.btn, ...styles.btnNav }}
               onClick={() => {
-                if (practiceMode === "words") {
+                if (reviewSession) {
+                  advanceReviewRef.current?.();
+                } else if (practiceMode === "words") {
                   const total = currentWordGroup.words.length;
                   selectWord(wordGroupIndex, (wordIndex + 1) % total);
                 } else {
