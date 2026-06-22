@@ -2,15 +2,18 @@
  * Common Arabic words and ligature combinations for practice.
  *
  * Organized by difficulty:
- * - 'basic' — 2–3 letter combinations, common ligatures
+ * - 'basic' — 2–4 letter combinations covering all 22 joiner letters
  * - 'common' — everyday words beginners should know
  * - 'phrases' — short phrases for advanced practice
+ *
+ * Every joiner letter (ب ت ث ج ح خ س ش ص ض ط ظ ع غ ف ق ك ل م ن ه ي)
+ * has at least one forward-connection example in the Basic Ligatures group.
  */
 
 export const WORD_GROUPS = [
   {
     name: 'Basic Ligatures',
-    description: 'Common 2–3 letter combinations',
+    description: 'Common 2–4 letter combinations covering all letter connections',
     words: [
       { word: 'لا', roman: 'lā', meaning: 'no', hint: 'The Lam-Alef ligature — one of the most common in Arabic.' },
       { word: 'بر', roman: 'br', meaning: 'land/righteousness', hint: 'Ba connects into Ra — practice the join from flat base to curve.' },
@@ -18,6 +21,17 @@ export const WORD_GROUPS = [
       { word: 'في', roman: 'fī', meaning: 'in', hint: 'Fa connects into Ya — dot above then dots below.' },
       { word: 'ان', roman: 'an', meaning: 'that', hint: 'Alef stands alone, Nun follows — non-joiner to joiner.' },
       { word: 'ما', roman: 'mā', meaning: 'what/not', hint: 'Mim connects into Alef — circle exits into vertical.' },
+      { word: 'جمل', roman: 'jamal', meaning: 'camel', hint: 'Jim connects into Mim, Mim into Lam — hook flowing into circle.' },
+      { word: 'خبز', roman: 'khubz', meaning: 'bread', hint: 'Kha connects into Ba, Ba into Zay — top dot then flat base.' },
+      { word: 'ثعلب', roman: 'thaʿlab', meaning: 'fox', hint: 'Tha connects into Ain — three dots above into open loop.' },
+      { word: 'ضرب', roman: 'ḍarb', meaning: 'to hit', hint: 'Dad connects into Ra — emphatic round head flows into the curve.' },
+      { word: 'طبيب', roman: 'ṭabīb', meaning: 'doctor', hint: 'Tta connects into Ba — emphatic loop into flat base.' },
+      { word: 'ظهر', roman: 'ẓahr', meaning: 'back / noon', hint: 'Dha connects into Ha — emphatic oval into figure-eight.' },
+      { word: 'غرفة', roman: 'ghurfa', meaning: 'room', hint: 'Ghain connects into Ra — open loop with dot above into curve.' },
+      { word: 'نعم', roman: 'naʿam', meaning: 'yes', hint: 'Nun connects into Ain — shallow bowl into open curve.' },
+      { word: 'فتح', roman: 'fatḥ', meaning: 'opening / victory', hint: 'Fa connects into Ta — circle and dot above into tooth.' },
+      { word: 'يسر', roman: 'yusr', meaning: 'ease', hint: 'Ya connects into Sin — two humps and dots below into waves.' },
+      { word: 'هذا', roman: 'hādhā', meaning: 'this', hint: 'Ha connects into Dhal — figure-eight into wedge with dot.' },
     ],
   },
   {
