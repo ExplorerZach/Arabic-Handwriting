@@ -263,6 +263,7 @@ export const UI = {
     reviewResume: "Resume unfinished review session?",
     reviewResumeYes: "Resume",
     reviewResumeNo: "Start fresh",
+    reviewSelfAssessed: "Self-assessed (no AI)",
 
     // Daily goal
     dailyGoalTitle: "Daily goal",
@@ -532,6 +533,7 @@ export const UI = {
     reviewResume: "استئناف جلسة المراجعة غير المكتملة؟",
     reviewResumeYes: "استئناف",
     reviewResumeNo: "بدء من جديد",
+    reviewSelfAssessed: "تقييم ذاتي (بدون ذكاء اصطناعي)",
 
     // Daily goal
     dailyGoalTitle: "Daily goal",

@@ -2264,6 +2264,16 @@ export default function PracticeView({
               style={{ ...styles.btn, ...styles.btnNav }}
               onClick={() => {
                 if (reviewSession) {
+                  if (apiKey === "skip") {
+                    const sess = reviewSessionRef.current;
+                    if (sess && !sess.finished && strokesRef.current.length > 0) {
+                      const item = sess.queue[sess.index];
+                      markPracticed(item.letterName, item.formKey);
+                      updateSR(item.letterName, item.formKey, 3);
+                      addFeedbackEntry(item.letterName, item.formKey, t("reviewSelfAssessed"));
+                      setProgressVersion(v => v + 1);
+                    }
+                  }
                   advanceReviewRef.current?.();
                 } else if (practiceMode === "words") {
                   const total = currentWordGroup.words.length;
