@@ -181,7 +181,6 @@ export default function PracticeView({
   // { queue: DueItem[], index: number, summary: { letterName, letterChar, formKey, score }[], finished?: boolean }
   const reviewSessionRef = useRef(null);
   const advanceReviewRef = useRef(null);
-  const autoAdvanceTimerRef = useRef(null);
   const RESUME_KEY = "arabic_review_session";
   const [showResumePrompt, setShowResumePrompt] = useState(false);
   const [stashedSession, setStashedSession] = useState(null);
@@ -213,11 +212,6 @@ export default function PracticeView({
       }
     } catch (_) {}
   }, [RESUME_KEY]);
-
-  // Cleanup auto-advance timer on unmount
-  useEffect(() => {
-    return () => clearTimeout(autoAdvanceTimerRef.current);
-  }, []);
 
   useEffect(() => {
     document.documentElement.setAttribute(
@@ -984,18 +978,6 @@ export default function PracticeView({
     }
     if (bump) setProgressVersion((v) => v + 1);
 
-    // Auto-advance in review session when there's no API key
-    if (
-      reviewSession &&
-      !reviewSessionRef.current?.finished &&
-      strokesRef.current.length > 0 &&
-      apiKey === "skip"
-    ) {
-      clearTimeout(autoAdvanceTimerRef.current);
-      autoAdvanceTimerRef.current = setTimeout(() => {
-        advanceReviewRef.current?.();
-      }, 800);
-    }
   };
 
   const handlePointerLeave = (e) => {
