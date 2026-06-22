@@ -81,6 +81,7 @@ export const UI = {
     hintDrawFirst: "Draw the letter first!",
     hintDrawWordFirst: "Draw the word first!",
     brushSize: "Brush size",
+    templateSize: "Template size",
     nonJoinerNote: "Non-joining — no initial or medial form",
 
     // Buttons
@@ -177,6 +178,7 @@ export const UI = {
     ariaModeTab: "Switch to practice mode",
     ariaModelSelect: "Select AI model",
     ariaBrushSlider: "Adjust brush size",
+    ariaTemplateSlider: "Adjust template size",
     ariaOfflineBanner: "You are currently offline",
     ariaCompletedBadge: "letters completed",
     ariaProgressBadge: "current position",
@@ -344,6 +346,7 @@ export const UI = {
     hintDrawFirst: "ارسم الحرف أولاً!",
     hintDrawWordFirst: "ارسم الكلمة أولاً!",
     brushSize: "حجم الفرشاة",
+    templateSize: "حجم النموذج",
     nonJoinerNote: "غير متصل — لا يوجد شكل مبتدأ أو وسطي",
 
     // Buttons
@@ -440,6 +443,7 @@ export const UI = {
     ariaModeTab: "التبديل لوضع التدريب",
     ariaModelSelect: "اختيار نموذج الذكاء الاصطناعي",
     ariaBrushSlider: "تعديل حجم الفرشاة",
+    ariaTemplateSlider: "تعديل حجم النموذج",
     ariaOfflineBanner: "أنت غير متصل حالياً",
     ariaCompletedBadge: "حروف مكتملة",
     ariaProgressBadge: "الموضع الحالي",

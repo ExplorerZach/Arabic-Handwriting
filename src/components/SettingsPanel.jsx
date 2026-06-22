@@ -30,8 +30,9 @@ export default function SettingsPanel({
   exportBackup,
   importInputRef,
   handleImportFile,
-  dailyGoalState,
+  dailyGoalInput,
   handleDailyGoalChange,
+  handleDailyGoalBlur,
 }) {
   return (
     <div id="settings-panel" style={styles.keyPanel}>
@@ -247,11 +248,13 @@ export default function SettingsPanel({
         <div style={styles.settingsRow}>
           <label style={{ fontSize: '12px', color: 'var(--color-text-soft)' }}>{t('dailyGoalSet')}</label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
             min={1}
             max={50}
-            value={dailyGoalState}
+            value={dailyGoalInput}
             onChange={handleDailyGoalChange}
+            onBlur={handleDailyGoalBlur}
             style={{ width: 64, padding: '4px 8px', borderRadius: 6, border: '1.5px solid var(--color-border)', background: 'var(--color-input-bg)', color: 'var(--color-text)' }}
             aria-label={t('dailyGoalSet')}
           />

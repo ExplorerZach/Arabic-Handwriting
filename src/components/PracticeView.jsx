@@ -134,6 +134,10 @@ export default function PracticeView({
     const v = parseFloat(localStorage.getItem("brushScale") || "1");
     return Number.isFinite(v) ? v : 1;
   });
+  const [templateScale, setTemplateScale] = useState(() => {
+    const v = parseFloat(localStorage.getItem("templateScale") || "1");
+    return Number.isFinite(v) ? v : 1;
+  });
   const [paperTheme, setPaperTheme] = useState(
     () => localStorage.getItem("app_theme") || "parchment",
   );
@@ -499,7 +503,7 @@ export default function PracticeView({
       drawPaperPattern(ctx, W, H, theme, darkModeRef.current);
     }
     // Draw the reference character as a full-opacity ghost.
-    const fontSize = Math.min(W, H) * 0.65;
+    const fontSize = Math.min(W, H) * 0.65 * templateScale;
     ctx.save();
     ctx.font = `${fontSize}px "Scheherazade New", "Amiri", serif`;
     ctx.textAlign = "center";
@@ -509,7 +513,7 @@ export default function PracticeView({
       : "rgba(0,0,0,0.25)";
     ctx.fillText(currentChar, W / 2, H / 2 + fontSize * 0.08);
     ctx.restore();
-  }, [currentChar]);
+  }, [currentChar, templateScale]);
 
   const playStrokeAnimation = useCallback(async () => {
     const data = STROKE_DATA[letter.letter];
@@ -567,7 +571,7 @@ export default function PracticeView({
     // into that same square (centered on canvas, scaled to fit) so the
     // authored paths align with the actual letter shape regardless of font
     // metrics. This is far more robust than measureText bounding boxes.
-    const CSS_SIZE = Math.min(200, rect.height * 0.8);
+    const CSS_SIZE = Math.min(200, rect.height * 0.8) * templateScale;
     const glyphSize = CSS_SIZE * dpr;
     const centerX = (rect.width / 2) * dpr;
     const centerY = (rect.height / 2) * dpr;
@@ -837,7 +841,7 @@ export default function PracticeView({
 
     drawFrame();
     animFrameRef.current = requestAnimationFrame(animate);
-  }, [letter.letter, currentChar]);
+  }, [letter.letter, currentChar, templateScale]);
 
   // Cancel in-flight animation when the user navigates away (letter, form,
   // or practice mode change) and on unmount. Resets the button state so it
@@ -1342,6 +1346,18 @@ export default function PracticeView({
     const safe = Number.isFinite(v) ? v : 1;
     setBrushValue(safe);
     setBrushScale(safe);
+  };
+
+  const handleTemplateScaleChange = (ev) => {
+    const v = parseFloat(ev.target.value);
+    const safe = Number.isFinite(v) ? v : 1;
+    setTemplateScale(safe);
+    localStorage.setItem("templateScale", String(safe));
+    if (restGlyphRef.current) {
+      restGlyphRef.current = null;
+      setRestingGlyph(false);
+      redraw(strokesRef.current);
+    }
   };
 
   const handleThemeChange = (themeId) => {
@@ -2007,6 +2023,7 @@ export default function PracticeView({
               <div
                 style={{
                   ...styles.ghostLetter,
+                  fontSize: `${200 * templateScale}px`,
                   opacity:
                     animating || restingGlyph
                       ? 0
@@ -2017,7 +2034,14 @@ export default function PracticeView({
                 {currentChar}
               </div>
             ) : (
-              <div style={styles.ghostWord} lang="ar" dir="rtl">
+              <div
+                style={{
+                  ...styles.ghostWord,
+                  fontSize: `${100 * templateScale}px`,
+                }}
+                lang="ar"
+                dir="rtl"
+              >
                 {currentWord?.word}
               </div>
             )}
@@ -2055,6 +2079,7 @@ export default function PracticeView({
                 fontSize: "12px",
                 color: "var(--color-text-soft)",
                 whiteSpace: "nowrap",
+                minWidth: "90px",
               }}
             >
               {t("brushSize")}
@@ -2068,6 +2093,39 @@ export default function PracticeView({
               style={{ flex: 1, accentColor: "var(--color-accent)" }}
               onChange={handleBrushChange}
               aria-label={t("ariaBrushSlider")}
+            />
+          </div>
+
+          {/* Template size slider */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              padding: "4px 12px",
+              width: "100%",
+              maxWidth: "520px",
+            }}
+          >
+            <label
+              style={{
+                fontSize: "12px",
+                color: "var(--color-text-soft)",
+                whiteSpace: "nowrap",
+                minWidth: "90px",
+              }}
+            >
+              {t("templateSize")}
+            </label>
+            <input
+              type="range"
+              min={0.5}
+              max={1.5}
+              step={0.05}
+              value={templateScale}
+              style={{ flex: 1, accentColor: "var(--color-accent)" }}
+              onChange={handleTemplateScaleChange}
+              aria-label={t("ariaTemplateSlider")}
             />
           </div>
 
