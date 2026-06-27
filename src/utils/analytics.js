@@ -237,17 +237,20 @@ export function getPracticeHeatmap(LETTERS, progress) {
  */
 export function getProgressOverTime(_LETTERS, _progress, days = 30) {
   const data = loadDates();
+  const frozenSet = new Set(getFrozenDates());
   const today = todayLocal();
   const result = [];
   for (let i = days - 1; i >= 0; i--) {
     const dateStr = addDaysLocal(today, -i);
     const [, m, d] = dateStr.split('-');
     const entry = data[dateStr];
+    const frozen = frozenSet.has(dateStr);
     result.push({
       date: dateStr,
       label: `${m}-${d}`,
       sessions: entry?.sessions || 0,
-      practiced: !!entry,
+      practiced: !!entry || frozen,
+      frozen,
     });
   }
   return result;
