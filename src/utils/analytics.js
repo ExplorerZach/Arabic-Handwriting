@@ -10,6 +10,8 @@
  * west of UTC. Use `parseLocalDate()` / `addDaysLocal()` instead.
  */
 
+import { hasFreezeAvailable, consumeFreeze, getFrozenDates } from './freezes.js';
+
 const DATES_KEY = 'arabic_practice_dates';
 
 // ─── In-memory cache ─────────────────────────────────────
@@ -105,30 +107,58 @@ export function markDayActive() {
 /** Get { current: number, longest: number } streaks (both in local-calendar days). */
 export function getStreaks() {
   const data = loadDates();
-  const dateSet = new Set(Object.keys(data));
-  if (dateSet.size === 0) return { current: 0, longest: 0 };
+  const frozenDates = getFrozenDates();
+  const practiceSet = new Set(Object.keys(data));
+  const frozenSet = new Set(frozenDates);
+  const merged = new Set([...practiceSet, ...frozenSet]);
+
+  if (merged.size === 0) return { current: 0, longest: 0 };
 
   const today = todayLocal();
   const yesterday = addDaysLocal(today, -1);
 
   // ── Current streak: walk backwards from today (or yesterday, if the
   // user hasn't practiced yet today but did yesterday, so we don't
-  // penalize them for being mid-day).
+  // penalize them for being mid-day). A one-day gap is bridged if a freeze
+  // is still available for that month; consuming it persists the frozen
+  // date so subsequent re-runs (memo recompute, StrictMode) stay idempotent.
   let current = 0;
   let anchor = null;
-  if (dateSet.has(today)) anchor = today;
-  else if (dateSet.has(yesterday)) anchor = yesterday;
+  if (merged.has(today)) {
+    anchor = today;
+  } else if (merged.has(yesterday)) {
+    anchor = yesterday;
+  } else if (hasFreezeAvailable(yesterday.slice(0, 7))) {
+    consumeFreeze(yesterday);
+    merged.add(yesterday);
+    anchor = yesterday;
+  }
 
   if (anchor) {
     let cursor = anchor;
-    while (dateSet.has(cursor)) {
-      current++;
-      cursor = addDaysLocal(cursor, -1);
+    for (;;) {
+      if (merged.has(cursor)) {
+        current++;
+        cursor = addDaysLocal(cursor, -1);
+      } else {
+        // One-day gap — try to bridge it with a monthly freeze.
+        const gapMonth = cursor.slice(0, 7);
+        if (hasFreezeAvailable(gapMonth)) {
+          consumeFreeze(cursor);
+          merged.add(cursor);
+          current++;
+          cursor = addDaysLocal(cursor, -1);
+        } else {
+          break;
+        }
+      }
     }
   }
 
-  // ── Longest streak: sort dates ascending, track runs.
-  const sorted = [...dateSet].sort();
+  // ── Longest streak: sort all active days (practice + frozen) ascending,
+  // track runs. Frozen days count toward longest too, since the streak
+  // was preserved through them.
+  const sorted = [...merged].sort();
   let longest = 0;
   let run = 0;
   let prev = null;
