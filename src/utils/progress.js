@@ -291,3 +291,19 @@ export function getDueLetters(LETTERS) {
 
   return due;
 }
+
+/**
+ * Was this letter+form reviewed on or before its due date? Called BEFORE
+ * updateSR (which overwrites lastReview to today), so it sees the previous
+ * review's due date. An item never reviewed (no lastReview) counts as
+ * on-time — the first review is never "late". Used by the XP award path
+ * to decide whether to grant the REVIEW_ON_TIME bonus.
+ */
+export function isReviewOnTime(letterName, formKey) {
+  const data = load();
+  const entry = data[letterName]?.[formKey];
+  if (!entry || !entry.lastReview) return true;
+  const interval = Math.max(1, entry.interval || 1);
+  const dueDate = addDaysLocal(entry.lastReview, interval);
+  return dueDate >= todayLocal();
+}
