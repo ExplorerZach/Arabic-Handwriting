@@ -228,6 +228,9 @@ export const UI = {
     statsSessions: "sessions",
     statsWeaknesses: "Focus Areas",
     statsTimeline: "Progress (30 days)",
+    freezeAvailable: "Freeze available",
+    freezeUsed: "Freeze used",
+    freezePreserved: "Streak preserved",
 
     // Tip jar
     tipJarMessage:
@@ -499,6 +502,9 @@ export const UI = {
     statsSessions: "جلسات",
     statsWeaknesses: "مناطق التركيز",
     statsTimeline: "التقدم (30 يوم)",
+    freezeAvailable: "تجميد متاح",
+    freezeUsed: "تم استخدام التجميد",
+    freezePreserved: "حُفظت السلسلة",
 
     // Tip jar
     tipJarMessage: "إذا كان هذا التطبيق يساعدك على التعلم، فكر في دعم تطويره.",
