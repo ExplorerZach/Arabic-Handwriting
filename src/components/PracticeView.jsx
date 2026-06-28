@@ -13,6 +13,7 @@ import {
   getDueLetters,
   getProgressSummary,
   getProgress,
+  isReviewOnTime,
 } from "../utils/progress";
 import { addFeedbackEntry, getFeedbackHistory } from "../utils/history";
 import { markDayActive } from "../utils/analytics";
@@ -39,6 +40,9 @@ import DailyGoalRing from "./DailyGoalRing";
 import SettingsPanel from "./SettingsPanel";
 import { playSuccessTone } from "../utils/sound";
 import { getDailyGoal, getTodayProgress } from "../utils/dailyGoal";
+import { getXPTotal, awardXP, XP_AWARDS } from "../utils/xp";
+import LevelBadge from "./LevelBadge";
+import XpGainToast from "./XpGainToast";
 
 const SCORE_LABELS = {
   5: "feedbackScoreExcellent",
@@ -165,6 +169,8 @@ export default function PracticeView({
     () => localStorage.getItem("high_contrast") === "true",
   );
   const [celebrate, setCelebrate] = useState(false);
+  const [xpGain, setXpGain] = useState(null); // { amount, key } | null
+  const xpGainTimerRef = useRef(null);
   const [soundEnabled, setSoundEnabled] = useState(
     () => localStorage.getItem("sound_enabled") === "true",
   );
@@ -228,6 +234,12 @@ export default function PracticeView({
     );
     localStorage.setItem("reduce_motion", String(reduceMotion));
   }, [reduceMotion]);
+
+  useEffect(() => {
+    return () => {
+      if (xpGainTimerRef.current) clearTimeout(xpGainTimerRef.current);
+    };
+  }, []);
 
   const handleReduceMotionChange = (v) => {
     setReduceMotion(v);
@@ -296,6 +308,7 @@ export default function PracticeView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [progressVersion],
   );
+  const xpTotal = useMemo(() => getXPTotal(), [progressVersion]);
 
   // ─── Drawing ─────────────────────────────────────────────
 
@@ -974,6 +987,7 @@ export default function PracticeView({
     ) {
       countedDrawingRef.current = true;
       markPracticed(letter.name, activeForm);
+      addXP(XP_AWARDS.PRACTICE, "practice");
       bump = true;
     }
     if (bump) setProgressVersion((v) => v + 1);
@@ -1323,8 +1337,21 @@ export default function PracticeView({
           markPracticed(letter.name, activeForm);
         }
         if (score) {
+          // Compute on-time BEFORE updateSR overwrites lastReview.
+          const inReview = !!reviewSessionRef.current;
+          const onTime = !inReview || isReviewOnTime(letter.name, activeForm);
           setScore(letter.name, activeForm, score);
           updateSR(letter.name, activeForm, score);
+          addXP(XP_AWARDS.SCORE[score] || 0, "score");
+          if (inReview && onTime) addXP(XP_AWARDS.REVIEW_ON_TIME, "review-on-time");
+          // Celebrate + sound on a strong score (wires the dormant #16
+          // scaffolding: setCelebrate / playSuccessTone were imported but
+          // never previously invoked).
+          if (score >= 4) {
+            setCelebrate(true);
+            setTimeout(() => setCelebrate(false), 850);
+            if (soundEnabled) playSuccessTone();
+          }
         }
         addFeedbackEntry(letter.name, activeForm, cleanText);
         setProgressVersion((v) => v + 1);
@@ -1375,6 +1402,18 @@ export default function PracticeView({
       setDailyGoalInput(String(dailyGoalState));
     }
   };
+
+  // Award XP and flash a "+N XP" toast. The accompanying setProgressVersion
+  // bump (at each call site) is what re-renders the LevelBadge; this helper
+  // only persists the XP and triggers the toast. No-op for amount <= 0 so
+  // score-1 attempts don't show a "+0 XP" flash.
+  const addXP = useCallback((amount, reason) => {
+    if (amount <= 0) return;
+    awardXP(amount, reason);
+    setXpGain({ amount, key: Date.now() });
+    if (xpGainTimerRef.current) clearTimeout(xpGainTimerRef.current);
+    xpGainTimerRef.current = setTimeout(() => setXpGain(null), 1700);
+  }, []);
 
   const handleBrushChange = (ev) => {
     const v = parseFloat(ev.target.value);
@@ -1501,6 +1540,11 @@ export default function PracticeView({
             marginLeft: "auto",
           }}
         >
+          <LevelBadge
+            totalXp={xpTotal}
+            label={t("xpLevel")}
+            t={t}
+          />
           <DailyGoalRing
             current={todayProgress}
             goal={dailyGoal}
@@ -2268,9 +2312,12 @@ export default function PracticeView({
                     const sess = reviewSessionRef.current;
                     if (sess && !sess.finished && strokesRef.current.length > 0) {
                       const item = sess.queue[sess.index];
+                      const onTime = isReviewOnTime(item.letterName, item.formKey);
                       markPracticed(item.letterName, item.formKey);
                       updateSR(item.letterName, item.formKey, 3);
                       addFeedbackEntry(item.letterName, item.formKey, t("reviewSelfAssessed"));
+                      addXP(XP_AWARDS.REVIEW_SELF, "review-self");
+                      if (onTime) addXP(XP_AWARDS.REVIEW_ON_TIME, "review-on-time");
                       setProgressVersion(v => v + 1);
                     }
                   }
@@ -2360,6 +2407,13 @@ export default function PracticeView({
               ★
             </div>
           )}
+
+          <XpGainToast
+            gain={xpGain?.amount ?? 0}
+            gainKey={xpGain?.key ?? 0}
+            t={t}
+            reduceMotion={reduceMotion}
+          />
 
           {/* Comparison */}
           {feedback && !feedback.error && canvasSnapshotRef.current && (
