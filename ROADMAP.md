@@ -8,6 +8,7 @@ Effort key: 🟢 small · 🟡 medium · 🔴 large. Each item notes the value i
 ---
 
 ## Core Learning & Gamification
+
 *Make practicing more engaging and habit-forming.*
 
 - [x] **#1 — Review Session flow** 🟡
@@ -32,7 +33,7 @@ Effort key: 🟢 small · 🟡 medium · 🔴 large. Each item notes the value i
   Most states are already detectable (`isLetterComplete`, `getStreaks`,
   `score===5`). Converts silent milestones into visible, shareable wins.
 
-- [ ] **#5 — Streak protection ("freeze")** 🟢
+- [x] **#5 — Streak protection ("freeze")** 🟢
   One free monthly freeze that preserves a streak through a missed day. Reduces
   churn from the discouragement of breaking a long run.
 
@@ -44,6 +45,7 @@ Effort key: 🟢 small · 🟡 medium · 🔴 large. Each item notes the value i
 ---
 
 ## Content Expansion
+
 *Other types of Arabic practice beyond basic letters and words.*
 
 - [x] **#7 — Arabic numerals (٠ ١ ٢ …)** 🟢
@@ -77,6 +79,7 @@ Effort key: 🟢 small · 🟡 medium · 🔴 large. Each item notes the value i
 ---
 
 ## UI/UX Improvements
+
 *Make the learning environment more intuitive and accessible.*
 
 - [x] **#13 — Progress export / import (JSON backup)** 🟢
@@ -88,9 +91,8 @@ Effort key: 🟢 small · 🟡 medium · 🔴 large. Each item notes the value i
   A 3–4 step coachmark tour (ghost watermark, Show Me, AI Feedback, Review tab).
   Surfaces features new users currently never discover.
 
-- [ ] **#15 — Fix Stroke animation for all forms** 🟡
-  "Show Me" only works for the isolated form despite stroke data existing. And the isolated forms that do exist are bugged and only portions of the stroke are actually shown in the UI.
-  Extend to initial/medial/final so the feature feels complete.
+- [ ] **#15 — Fix Stroke animation for all forms** 🔴
+  "Show Me" is supposed to draw the strokes in real time to help the student learn. Currently, when the button is pressed it only partially animates the strokes so the student does not learn anything.
 
 - [x] **#16 — Audio/visual feedback on score** 🟢
   Subtle success animation + optional sound on a 4–5★ score. Makes the AI
@@ -100,17 +102,7 @@ Effort key: 🟢 small · 🟡 medium · 🔴 large. Each item notes the value i
   `prefers-reduced-motion` guard for the Show Me animation, plus a text-size /
   high-contrast toggle. Rounds out the already-strong a11y foundation.
 
----
 
-## Recommended sequencing
-
-Fast, high-impact first wave (each closes an obvious gap):
-1. #1 Review Session flow — turns existing SR data into a daily ritual
-2. #7 Arabic numerals — easiest high-value content add ✅
-3. #13 Progress export/import — protects against data loss ✅
-4. #2 Daily goal indicator — the retention hook everything else hangs off
-
-Then: gamification layer (#3 XP, #4 badges, #5 freeze) and word progress (#6).
 
 ---
 
@@ -126,4 +118,4 @@ Then: gamification layer (#3 XP, #4 badges, #5 freeze) and word progress (#6).
   sound; #17 reduced-motion/high-contrast toggles. Verified with `npm run build`
   and browser smoke test.
 - **2026-06-21** — Added "Diacritics" mode (#8), establishing practice support for fatha, kasra, damma, sukun, shadda, and tanwin. Integrated transparently into heatmap, review session, and AI grading pipeline.
-
+- **2026-06-27** — Implemented #5 streak protection ("freeze"): one auto-applied freeze per calendar month (use-it-or-lose-it) that bridges a one-day gap in `getStreaks()`. New `src/utils/freezes.js` storage module (`arabic_freezes` key, added to backup export/import). Stats tab shows "Freeze available/used" indicator and marks frozen days on the 30-day timeline with a "Streak preserved" tooltip. Verified with `npm run build` and Playwright browser tests (freeze bridges single gap, breaks at second same-month gap, Arabic locale + dark mode).
