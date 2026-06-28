@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { UI } from '../locales';
 import { getStreaks, getScoreDistribution, getWeaknesses, getPracticeHeatmap, getProgressOverTime, getTotalSessions } from '../utils/analytics';
+import { getXPTotal, getLevelInfo } from '../utils/xp';
 import { getFreezeStatus } from '../utils/freezes';
 import { FORM_NAMES } from '../locales';
 import styles from '../styles/practiceStyles';
@@ -20,6 +21,8 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
   const timeline = useMemo(() => getProgressOverTime(LETTERS, progress, 30), [LETTERS, progress, progressVersion]);
   const totalSessions = useMemo(() => getTotalSessions(), [progressVersion]);
   const freezeStatus = useMemo(() => getFreezeStatus(), [progressVersion]);
+  const xpTotal = useMemo(() => getXPTotal(), [progressVersion]);
+  const levelInfo = useMemo(() => getLevelInfo(xpTotal), [xpTotal]);
 
   const totalScoreCount = Object.values(scoreDist).reduce((a, b) => a + b, 0);
   const avgScore = totalScoreCount > 0
@@ -33,6 +36,33 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
 
   return (
     <div style={styles.analyticsPanel}>
+      {/* Level / XP card */}
+      <div style={styles.xpCard}>
+        <div style={styles.xpCardTitle}>{t('xpCardTitle')}</div>
+        <div style={styles.xpCardRow}>
+          <span style={styles.xpCardLevel}>{levelInfo.level}</span>
+          <div style={styles.xpCardBarWrap}>
+            <div style={styles.xpCardBar} aria-hidden="true">
+              <div
+                style={{
+                  ...styles.xpCardBarFill,
+                  width: `${Math.max(0, Math.min(1, levelInfo.progressPct)) * 100}%`,
+                }}
+              />
+            </div>
+            <span style={styles.xpCardTotal}>
+              {t('xpTotal')}: {levelInfo.totalXp}
+            </span>
+          </div>
+        </div>
+        <div style={styles.xpCardHint}>
+          {t('xpCardNextHint')
+            .replace('{done}', String(levelInfo.xpIntoLevel))
+            .replace('{need}', String(levelInfo.xpForNextLevel))
+            .replace('{next}', String(levelInfo.level + 1))}
+        </div>
+      </div>
+
       {/* Streak Card */}
       <div style={styles.analyticsCard}>
         <div style={styles.analyticsCardTitle}>{t('statsStreakTitle')}</div>
