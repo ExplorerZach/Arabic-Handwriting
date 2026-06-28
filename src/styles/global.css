@@ -377,10 +377,31 @@ input[type="range"]:focus-visible {
   z-index: 1000;
 }
 
+@keyframes xpPop {
+  0%   { transform: translate(-50%, 0) scale(0.8); opacity: 0; }
+  20%  { transform: translate(-50%, -10px) scale(1.1); opacity: 1; }
+  100% { transform: translate(-50%, -48px) scale(1); opacity: 0; }
+}
+.xp-toast {
+  position: fixed;
+  top: 84px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-star-filled);
+  text-shadow: 0 1px 3px var(--color-shadow);
+  pointer-events: none;
+  z-index: 1000;
+  animation: xpPop 1.6s ease-out forwards;
+  white-space: nowrap;
+}
+
 /* Reduced motion: suppress all CSS animations/transitions app-wide
    when the user toggles the setting. Respect system preference as a fallback. */
 @media (prefers-reduced-motion: reduce) {
   .score-celebrate { animation: none; opacity: 0; }
+  .xp-toast { animation: none; opacity: 0; }
 }
 
 [data-reduced-motion="true"] *,
@@ -393,6 +414,7 @@ input[type="range"]:focus-visible {
 }
 
 [data-reduced-motion="true"] .score-celebrate { animation: none; opacity: 0; }
+[data-reduced-motion="true"] .xp-toast { animation: none; opacity: 0; }
 [data-high-contrast="true"] {
   --color-bg: #ffffff;
   --color-bg-alt: #ffffff;
