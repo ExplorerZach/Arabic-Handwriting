@@ -1024,6 +1024,102 @@ const styles = {
     color: 'var(--color-text-muted)',
     whiteSpace: 'nowrap',
   },
+
+  /* ─── XP / level badge (header) ──────────────────────── */
+  levelBadge: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '3px 8px 3px 6px',
+    borderRadius: '20px',
+    border: '1px solid var(--color-border)',
+    background: 'var(--color-progress-badge-bg)',
+    flexShrink: 0,
+    title: '', // (no-op; titles set via JSX)
+  },
+  levelBadgeIcon: {
+    fontSize: '12px',
+    color: 'var(--color-accent-warm)',
+    lineHeight: 1,
+  },
+  levelBadgeNum: {
+    fontSize: '11px',
+    fontWeight: 700,
+    color: 'var(--color-text)',
+    letterSpacing: '.02em',
+  },
+  levelBadgeBar: {
+    width: '28px',
+    height: '4px',
+    borderRadius: '2px',
+    background: 'var(--color-btn-clear-bg)',
+    overflow: 'hidden',
+  },
+  levelBadgeBarFill: {
+    height: '100%',
+    background: 'var(--color-accent)',
+    borderRadius: '2px',
+    transition: 'width .3s ease',
+  },
+
+  /* ─── XP card (Stats tab) ────────────────────────────── */
+  xpCard: {
+    background: 'var(--color-surface-solid)',
+    border: '1px solid var(--color-border)',
+    borderRadius: '12px',
+    padding: '14px 16px',
+    boxSizing: 'border-box',
+  },
+  xpCardTitle: {
+    fontSize: '11px',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '.18em',
+    color: 'var(--color-text-muted)',
+    marginBottom: '12px',
+  },
+  xpCardRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '12px',
+  },
+  xpCardLevel: {
+    fontSize: '32px',
+    fontWeight: 700,
+    color: 'var(--color-primary)',
+    fontFamily: "'Georgia',serif",
+    lineHeight: 1,
+    minWidth: '48px',
+  },
+  xpCardBarWrap: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  xpCardBar: {
+    width: '100%',
+    height: '10px',
+    borderRadius: '5px',
+    background: 'var(--color-btn-clear-bg)',
+    overflow: 'hidden',
+  },
+  xpCardBarFill: {
+    height: '100%',
+    background: 'var(--color-accent)',
+    borderRadius: '5px',
+    transition: 'width .4s ease',
+  },
+  xpCardTotal: {
+    fontSize: '11px',
+    color: 'var(--color-text-muted)',
+    letterSpacing: '.04em',
+  },
+  xpCardHint: {
+    fontSize: '11px',
+    color: 'var(--color-text-soft)',
+    marginTop: '8px',
+  },
 };
 
 export default styles;
