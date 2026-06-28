@@ -17,6 +17,7 @@ const BACKUP_KEYS = [
   'arabic_progress',
   'arabic_feedback_history',
   'arabic_practice_dates',
+  'arabic_freezes',
   'openrouter_model',
   'brushScale',
   'lessonMode',
