@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { UI } from '../locales';
 import { getStreaks, getScoreDistribution, getWeaknesses, getPracticeHeatmap, getProgressOverTime, getTotalSessions } from '../utils/analytics';
+import { getFreezeStatus } from '../utils/freezes';
 import { FORM_NAMES } from '../locales';
 import styles from '../styles/practiceStyles';
 
@@ -18,6 +19,7 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
   const { heatmap, max: heatMax } = useMemo(() => getPracticeHeatmap(LETTERS, progress), [LETTERS, progress, progressVersion]);
   const timeline = useMemo(() => getProgressOverTime(LETTERS, progress, 30), [LETTERS, progress, progressVersion]);
   const totalSessions = useMemo(() => getTotalSessions(), [progressVersion]);
+  const freezeStatus = useMemo(() => getFreezeStatus(), [progressVersion]);
 
   const totalScoreCount = Object.values(scoreDist).reduce((a, b) => a + b, 0);
   const avgScore = totalScoreCount > 0
@@ -49,6 +51,11 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
             <span style={styles.analyticsStreakNumber}>{totalSessions}</span>
             <span style={styles.analyticsStreakLabel}>{t('statsTotalSessions')}</span>
           </div>
+        </div>
+        <div style={styles.analyticsFreezeRow}>
+          <span style={freezeStatus.availableThisMonth ? styles.analyticsFreezeAvailable : styles.analyticsFreezeUsed}>
+            {freezeStatus.availableThisMonth ? t('freezeAvailable') : t('freezeUsed')}
+          </span>
         </div>
       </div>
 
@@ -145,10 +152,18 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
           {timeline.map((pt, i) => {
             const heightPct = pt.sessions > 0 ? (pt.sessions / timelineMax) * 100 : 0;
             return (
-              <div key={pt.date} style={styles.analyticsTimelineCol} title={`${pt.date}: ${pt.sessions} ${t('statsSessions')}`}>
+              <div
+                key={pt.date}
+                style={styles.analyticsTimelineCol}
+                title={`${pt.date}: ${pt.sessions} ${t('statsSessions')}${pt.frozen ? ' · ' + t('freezePreserved') : ''}`}
+              >
                 <div style={styles.analyticsTimelineBarWrap}>
                   {pt.practiced && (
-                    <div style={{ ...styles.analyticsTimelineBar, height: `${Math.max(heightPct, 8)}%` }} />
+                    pt.frozen ? (
+                      <div style={styles.analyticsTimelineFrozenBar} />
+                    ) : (
+                      <div style={{ ...styles.analyticsTimelineBar, height: `${Math.max(heightPct, 8)}%` }} />
+                    )
                   )}
                 </div>
                 {i % 5 === 0 && (
