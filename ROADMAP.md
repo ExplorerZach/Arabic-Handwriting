@@ -23,7 +23,7 @@ Effort key: 🟢 small · 🟡 medium · 🔴 large. Each item notes the value i
   proven core retention mechanic; all needed data already lives in
   `arabic_practice_dates`.
 
-- [ ] **#3 — XP / levels** 🟡
+- [x] **#3 — XP / levels** 🟡
   Award XP per practice (bonus for high AI scores and on-time reviews); surface
   a level number + progress bar. Cheap on top of existing `practiceCount` and
   scores; provides constant forward momentum.
@@ -119,3 +119,12 @@ Effort key: 🟢 small · 🟡 medium · 🔴 large. Each item notes the value i
   and browser smoke test.
 - **2026-06-21** — Added "Diacritics" mode (#8), establishing practice support for fatha, kasra, damma, sukun, shadda, and tanwin. Integrated transparently into heatmap, review session, and AI grading pipeline.
 - **2026-06-27** — Implemented #5 streak protection ("freeze"): one auto-applied freeze per calendar month (use-it-or-lose-it) that bridges a one-day gap in `getStreaks()`. New `src/utils/freezes.js` storage module (`arabic_freezes` key, added to backup export/import). Stats tab shows "Freeze available/used" indicator and marks frozen days on the 30-day timeline with a "Streak preserved" tooltip. Verified with `npm run build` and Playwright browser tests (freeze bridges single gap, breaks at second same-month gap, Arabic locale + dark mode).
+- **2026-06-27** — Implemented #3 (XP / levels): new `src/utils/xp.js` storage
+  module (`arabic_xp` key, quadratic level curve `50·(L-1)·L`); XP awarded at
+  the draw (+10), AI-score (+0/5/15/25/40 by score), and review (+10 self,
+  +15 on-time) call sites in PracticeView; `LevelBadge` in the header and a
+  Level/XP card in the Stats tab; floating "+N XP" toast with reduced-motion
+  guard; `arabic_xp` added to backup export/import. Also wired the dormant
+  `celebrate` state + `playSuccessTone()` on score ≥4 (roadmap #16
+  scaffolding was present but never triggered). Verified with `npm run build`
+  and Playwright browser tests (XP accrues, stats card, backup, Arabic + dark).
