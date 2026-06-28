@@ -274,6 +274,19 @@ export const UI = {
     dailyGoalReached: "Goal reached!",
     dailyGoalSet: "Daily target",
     ariaDailyGoal: "Daily practice goal progress",
+
+    // XP / levels
+    xpLevelShort: "Lv",
+    xpLevel: "Level",
+    xpTotal: "Total XP",
+    xpToNext: "{n} XP to next level",
+    xpEarned: "+{n} XP",
+    xpCardTitle: "Experience",
+    xpCardLevel: "Level",
+    xpCardInto: "into level {n}",
+    xpCardNextHint: "{done}/{need} XP to level {next}",
+    ariaXpLevel: "Experience level and progress",
+    ariaXpGain: "Experience gained",
   },
 
   ar: {
@@ -547,6 +560,19 @@ export const UI = {
     dailyGoalReached: "تم تحقيق الهدف!",
     dailyGoalSet: "الهدف اليومي",
     ariaDailyGoal: "تقدم الهدف اليومي للتدريب",
+
+    // XP / levels
+    xpLevelShort: "مست",
+    xpLevel: "المستوى",
+    xpTotal: "إجمالي الخبرة",
+    xpToNext: "{n} خبرة للمستوى التالي",
+    xpEarned: "+{n} خبرة",
+    xpCardTitle: "الخبرة",
+    xpCardLevel: "المستوى",
+    xpCardInto: "ضمن المستوى {n}",
+    xpCardNextHint: "{done}/{need} خبرة للمستوى {next}",
+    ariaXpLevel: "مستوى الخبرة والتقدم",
+    ariaXpGain: "خبرة مكتسبة",
   },
 };
 
