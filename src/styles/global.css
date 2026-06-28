@@ -378,15 +378,15 @@ input[type="range"]:focus-visible {
 }
 
 @keyframes xpPop {
-  0%   { transform: translate(-50%, 0) scale(0.8); opacity: 0; }
-  20%  { transform: translate(-50%, -10px) scale(1.1); opacity: 1; }
-  100% { transform: translate(-50%, -48px) scale(1); opacity: 0; }
+  0%   { transform: translate(0, 0) scale(0.8); opacity: 0; }
+  20%  { transform: translate(0, -10px) scale(1.1); opacity: 1; }
+  100% { transform: translate(0, -48px) scale(1); opacity: 0; }
 }
 .xp-toast {
   position: fixed;
   top: 84px;
-  left: 50%;
-  transform: translate(-50%, 0);
+  left: 100px;
+  transform: translate(0, 0);
   font-size: 15px;
   font-weight: 700;
   color: var(--color-star-filled);

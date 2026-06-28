@@ -8,10 +8,11 @@
  * `gainKey` is a changing token (e.g. Date.now()) so React remounts the
  * element on each award and the CSS animation replays from the start.
  */
-export default function XpGainToast({ gain, gainKey, t, reduceMotion }) {
+export default function XpGainToast({ gain, gainKey, position, t, reduceMotion }) {
   if (!gain || gain <= 0 || reduceMotion) return null;
+  const style = position ? { left: position.left, top: position.top } : null;
   return (
-    <div key={gainKey} className="xp-toast" aria-hidden="true">
+    <div key={gainKey} className="xp-toast" aria-hidden="true" style={style}>
       {t("xpEarned").replace("{n}", String(gain))}
     </div>
   );

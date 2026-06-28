@@ -171,6 +171,7 @@ export default function PracticeView({
   const [celebrate, setCelebrate] = useState(false);
   const [xpGain, setXpGain] = useState(null); // { amount, key } | null
   const xpGainTimerRef = useRef(null);
+  const appTitleRef = useRef(null);
   const [soundEnabled, setSoundEnabled] = useState(
     () => localStorage.getItem("sound_enabled") === "true",
   );
@@ -1410,7 +1411,11 @@ export default function PracticeView({
   const addXP = useCallback((amount, reason) => {
     if (amount <= 0) return;
     awardXP(amount, reason);
-    setXpGain({ amount, key: Date.now() });
+    const rect = appTitleRef.current?.getBoundingClientRect();
+    const position = rect
+      ? { left: rect.left - 100, top: rect.top + rect.height / 2 - 10 }
+      : null;
+    setXpGain({ amount, key: Date.now(), position });
     if (xpGainTimerRef.current) clearTimeout(xpGainTimerRef.current);
     xpGainTimerRef.current = setTimeout(() => setXpGain(null), 1700);
   }, []);
@@ -1518,7 +1523,7 @@ export default function PracticeView({
     <div style={styles.root} className="practice-root">
       {/* Header */}
       <div style={styles.header}>
-        <span style={styles.appTitle} lang="ar">
+        <span ref={appTitleRef} style={styles.appTitle} lang="ar">
           {t("appTitle")}
         </span>
         <span style={styles.appSubtitle}>
@@ -2411,6 +2416,7 @@ export default function PracticeView({
           <XpGainToast
             gain={xpGain?.amount ?? 0}
             gainKey={xpGain?.key ?? 0}
+            position={xpGain?.position}
             t={t}
             reduceMotion={reduceMotion}
           />
