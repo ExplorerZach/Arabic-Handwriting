@@ -851,6 +851,23 @@ const styles = {
     height: '32px',
     background: 'var(--color-border)',
   },
+  analyticsFreezeRow: {
+    marginTop: '10px',
+    textAlign: 'center',
+  },
+  analyticsFreezeAvailable: {
+    fontSize: '10px',
+    textTransform: 'uppercase',
+    letterSpacing: '.08em',
+    color: 'var(--color-dot-complete)',
+    fontWeight: '600',
+  },
+  analyticsFreezeUsed: {
+    fontSize: '10px',
+    textTransform: 'uppercase',
+    letterSpacing: '.08em',
+    color: 'var(--color-text-muted)',
+  },
   analyticsScoreBig: {
     fontSize: '32px',
     fontWeight: '700',
@@ -990,6 +1007,15 @@ const styles = {
     opacity: 0.7,
     transition: 'height .3s ease',
     minHeight: '2px',
+  },
+  analyticsTimelineFrozenBar: {
+    width: '100%',
+    background: 'var(--color-dot-complete)',
+    borderRadius: '2px 2px 0 0',
+    opacity: 0.5,
+    height: '20%',
+    minHeight: '4px',
+    transition: 'height .3s ease',
   },
   analyticsTimelineLabel: {
     position: 'absolute',
