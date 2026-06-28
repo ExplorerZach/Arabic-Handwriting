@@ -503,7 +503,7 @@ export const UI = {
     statsWeaknesses: "مناطق التركيز",
     statsTimeline: "التقدم (30 يوم)",
     freezeAvailable: "تجميد متاح",
-    freezeUsed: "تم استخدام التجميد",
+    freezeUsed: "تجميد مستخدم",
     freezePreserved: "حُفظت السلسلة",
 
     // Tip jar

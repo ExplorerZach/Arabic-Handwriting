@@ -101,7 +101,46 @@ export function markDayActive() {
   if (data[today]) return false;
   data[today] = { sessions: 0 };
   saveDates(data);
+  // Reconcile freezes now that today's practice is recorded — this is the
+  // single write-time trigger that consumes freezes for one-day gaps.
+  reconcileFreezes();
   return true;
+}
+
+/**
+ * Walk the practice history and consume one freeze per month for any
+ * one-day gap between consecutive practice days. Idempotent — re-runs
+ * (React StrictMode, memo recompute) don't double-consume.
+ *
+ * This is the ONLY place freezes are consumed, and it runs at practice
+ * time (via markDayActive), never at view time. Previously getStreaks()
+ * consumed freezes as a side effect of the Stats-tab useMemo, which
+ * meant merely opening the Stats page spent your monthly freeze.
+ */
+function reconcileFreezes() {
+  const data = loadDates();
+  const dates = Object.keys(data).sort();
+  if (dates.length < 2) return;
+
+  const frozenSet = new Set(getFrozenDates());
+
+  for (let i = 1; i < dates.length; i++) {
+    const prev = dates[i - 1];
+    const curr = dates[i];
+    const expected = addDaysLocal(prev, 1);
+    if (curr === expected) continue; // consecutive, no gap
+
+    // Gap between prev and curr. Only a one-day gap is bridgeable.
+    const gapDay = addDaysLocal(prev, 1);
+    const dayAfterGap = addDaysLocal(gapDay, 1);
+    if (dayAfterGap !== curr || frozenSet.has(gapDay)) continue;
+
+    const monthStr = gapDay.slice(0, 7);
+    if (hasFreezeAvailable(monthStr)) {
+      consumeFreeze(gapDay);
+      frozenSet.add(gapDay);
+    }
+  }
 }
 
 /** Get { current: number, longest: number } streaks (both in local-calendar days). */
@@ -119,18 +158,14 @@ export function getStreaks() {
 
   // ── Current streak: walk backwards from today (or yesterday, if the
   // user hasn't practiced yet today but did yesterday, so we don't
-  // penalize them for being mid-day). A one-day gap is bridged if a freeze
-  // is still available for that month; consuming it persists the frozen
-  // date so subsequent re-runs (memo recompute, StrictMode) stay idempotent.
+  // penalize them for being mid-day). Gaps are bridged only by frozen
+  // dates already persisted by reconcileFreezes() at practice time —
+  // getStreaks is a pure read with no side effects.
   let current = 0;
   let anchor = null;
   if (merged.has(today)) {
     anchor = today;
   } else if (merged.has(yesterday)) {
-    anchor = yesterday;
-  } else if (hasFreezeAvailable(yesterday.slice(0, 7))) {
-    consumeFreeze(yesterday);
-    merged.add(yesterday);
     anchor = yesterday;
   }
 
@@ -141,16 +176,7 @@ export function getStreaks() {
         current++;
         cursor = addDaysLocal(cursor, -1);
       } else {
-        // One-day gap — try to bridge it with a monthly freeze.
-        const gapMonth = cursor.slice(0, 7);
-        if (hasFreezeAvailable(gapMonth)) {
-          consumeFreeze(cursor);
-          merged.add(cursor);
-          current++;
-          cursor = addDaysLocal(cursor, -1);
-        } else {
-          break;
-        }
+        break;
       }
     }
   }

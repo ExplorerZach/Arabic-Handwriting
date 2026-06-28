@@ -10,6 +10,7 @@
  */
 
 const STORAGE_KEY = 'arabic_freezes';
+const MIGRATION_KEY = 'arabic_freezes_v2';
 
 // ─── In-memory cache ──────────────────────────────────────
 // Match the pattern in progress.js / analytics.js: cache the parsed object,
@@ -33,7 +34,17 @@ function save(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
+// ─── One-time migration ───────────────────────────────────
+// Older code consumed freezes inside getStreaks() (a read-only Stats-tab
+// useMemo), so frozen dates were persisted merely by viewing the Stats
+// page. Clear those view-consumed entries once; reconcileFreezes() in
+// analytics.js re-establishes legitimate bridges on the next practice.
 if (typeof window !== 'undefined') {
+  if (!localStorage.getItem(MIGRATION_KEY)) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ frozenDates: [] }));
+    cache = { frozenDates: [] };
+    localStorage.setItem(MIGRATION_KEY, '1');
+  }
   window.addEventListener('storage', (e) => {
     if (e.key === STORAGE_KEY) cache = null;
   });
@@ -76,12 +87,17 @@ export function getFrozenDates() {
 
 /**
  * Current-month freeze status for the Stats indicator.
- * Returns { availableThisMonth: bool, frozenDates: string[] }.
+ * Returns { availableThisMonth: bool, usedThisMonth: number, frozenDates: string[] }.
  */
 export function getFreezeStatus() {
   const monthStr = todayLocal().slice(0, 7);
+  const frozenDates = getFrozenDates();
+  const usedThisMonth = frozenDates.filter(
+    (d) => typeof d === 'string' && d.startsWith(monthStr)
+  ).length;
   return {
-    availableThisMonth: hasFreezeAvailable(monthStr),
-    frozenDates: getFrozenDates(),
+    availableThisMonth: usedThisMonth === 0,
+    usedThisMonth,
+    frozenDates,
   };
 }

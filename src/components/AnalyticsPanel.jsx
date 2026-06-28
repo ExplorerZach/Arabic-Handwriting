@@ -54,7 +54,7 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
         </div>
         <div style={styles.analyticsFreezeRow}>
           <span style={freezeStatus.availableThisMonth ? styles.analyticsFreezeAvailable : styles.analyticsFreezeUsed}>
-            {freezeStatus.availableThisMonth ? t('freezeAvailable') : t('freezeUsed')}
+            {freezeStatus.usedThisMonth} {t('freezeUsed')}
           </span>
         </div>
       </div>
