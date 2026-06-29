@@ -10,3 +10,4 @@ _app_code_formatted.txt
 .hermes
 *.log
 crush.json
+.worktrees
