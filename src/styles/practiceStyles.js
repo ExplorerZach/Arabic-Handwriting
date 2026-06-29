@@ -1120,6 +1120,7 @@ const styles = {
     color: 'var(--color-text-soft)',
     marginTop: '8px',
   },
+
   /* ─── Decks (Review sub-tab) ─────────────────────────── */
   deckSubNav: {
     display: 'flex',
@@ -1142,8 +1143,8 @@ const styles = {
     transition: 'all .15s',
   },
   deckSubNavBtnActive: {
-    background: 'var(--color-accent)',
-    color: '#fff',
+    background: 'var(--color-form-active-bg)',
+    color: '#fff8ee',
     borderColor: 'var(--color-accent)',
   },
   deckRow: {
@@ -1219,7 +1220,6 @@ const styles = {
     fontSize: '12px',
     color: 'var(--color-text-muted)',
   },
-
 };
 
 export default styles;
