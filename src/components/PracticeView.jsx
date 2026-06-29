@@ -2112,7 +2112,8 @@ export default function PracticeView({
 
       {/* Practice UI (hidden in review/stats mode unless in a guided session) */}
       {((practiceMode !== "review" && practiceMode !== "stats") ||
-        reviewSession) && (
+        reviewSession ||
+        deckSession) && (
         <>
           {reviewSession && !reviewSession.finished && (
             <div style={{ width: "100%", maxWidth: 520, padding: "8px 12px" }}>
@@ -2147,6 +2148,56 @@ export default function PracticeView({
                 <div
                   style={{
                     width: `${(reviewSession.index / reviewSession.queue.length) * 100}%`,
+                    height: "100%",
+                    background: "var(--color-accent)",
+                    borderRadius: 99,
+                    transition: "width 0.25s ease",
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {deckSession && !deckSession.finished && (
+            <div style={{ width: "100%", maxWidth: 520, padding: "8px 12px" }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 6,
+                }}
+              >
+                <span style={{ fontSize: 13, color: "var(--color-text-soft)" }}>
+                  {t("deckSessionProgress")} {deckSession.index + 1} {t("deckSessionOf")}{" "}
+                  {deckSession.queue.length}
+                  {(() => {
+                    const item = deckSession.queue[deckSession.index];
+                    const resolved = resolveDeckItem(item);
+                    if (!resolved || resolved.formKeys.length <= 1) return null;
+                    const fIdx = resolved.formKeys.indexOf(activeForm);
+                    return ` · ${resolved.name} · ${t("deckSessionForm")} ${fIdx + 1}/${resolved.formKeys.length}`;
+                  })()}
+                </span>
+                <button
+                  className="btn-clear"
+                  onClick={exitDeckSession}
+                  style={{ fontSize: 12, padding: "4px 10px" }}
+                >
+                  Exit
+                </button>
+              </div>
+              <div
+                style={{
+                  height: 6,
+                  background: "var(--color-progress-badge-bg)",
+                  borderRadius: 99,
+                  overflow: "hidden",
+                }}
+              >
+                <div
+                  style={{
+                    width: `${(deckSession.index / deckSession.queue.length) * 100}%`,
                     height: "100%",
                     background: "var(--color-accent)",
                     borderRadius: 99,
@@ -2227,6 +2278,80 @@ export default function PracticeView({
                 style={styles.btn}
               >
                 Done
+              </button>
+            </div>
+          )}
+
+          {deckSession?.finished && (
+            <div
+              style={{
+                width: "100%",
+                maxWidth: 520,
+                padding: 16,
+                background: "var(--color-card-bg)",
+                borderRadius: 12,
+                border: "1px solid var(--color-border)",
+                marginTop: 8,
+              }}
+            >
+              <h3 style={{ marginBottom: 8, color: "var(--color-text)" }}>
+                {t("deckSessionComplete")}
+              </h3>
+              <p
+                style={{
+                  fontSize: 14,
+                  color: "var(--color-text-soft)",
+                  marginBottom: 12,
+                }}
+              >
+                {t("deckSessionReviewed")} {deckSession.summary.length}{" "}
+                {t("deckSessionItems")}.
+              </p>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 12,
+                  flexWrap: "wrap",
+                  marginBottom: 12,
+                }}
+              >
+                {deckSession.summary.map((entry, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 4,
+                      padding: "4px 8px",
+                      borderRadius: 6,
+                      background: entry.skipped
+                        ? "var(--color-progress-badge-bg)"
+                        : entry.score >= 4
+                          ? "rgba(90,158,78,0.15)"
+                          : "rgba(192,112,58,0.15)",
+                      color: "var(--color-text)",
+                      fontSize: 13,
+                      opacity: entry.skipped ? 0.55 : 1,
+                    }}
+                    lang="ar"
+                  >
+                    {entry.letterChar}
+                    {entry.skipped ? (
+                      <span style={{ fontSize: 10, opacity: 0.6 }}>—</span>
+                    ) : (
+                      <span style={{ fontSize: 11, opacity: 0.8 }}>
+                        ★{entry.score}
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </div>
+              <button
+                className="btn-nav"
+                onClick={exitDeckSession}
+                style={styles.btn}
+              >
+                {t("deckDone")}
               </button>
             </div>
           )}
