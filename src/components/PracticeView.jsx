@@ -19,7 +19,7 @@ import { addFeedbackEntry, getFeedbackHistory } from "../utils/history";
 import { markDayActive } from "../utils/analytics";
 import { exportBackup, importBackupFile } from "../utils/backup";
 import STROKE_DATA from "../data/strokeOrder";
-import { WORD_GROUPS, ALL_WORDS } from "../data/words";
+import { WORD_GROUPS } from "../data/words";
 import {
   UI,
   FORM_NAMES,
@@ -1421,10 +1421,11 @@ export default function PracticeView({
     }
     const formKeys = resolved.formKeys;
     const currentFormIdx = formKeys.indexOf(activeForm);
+    const currentFormKey = currentFormIdx !== -1 ? formKeys[currentFormIdx] : formKeys[0];
     const isLastForm = currentFormIdx === -1 || currentFormIdx === formKeys.length - 1;
     const skipped = score == null;
     const summary = [...sess.summary, {
-      item, formKey: activeForm, score, skipped,
+      item, formKey: currentFormKey, score, skipped,
       letterChar: resolved.glyph, name: resolved.name,
     }];
     if (!isLastForm) {
