@@ -19,7 +19,7 @@ import { addFeedbackEntry, getFeedbackHistory } from "../utils/history";
 import { markDayActive } from "../utils/analytics";
 import { exportBackup, importBackupFile } from "../utils/backup";
 import STROKE_DATA from "../data/strokeOrder";
-import { WORD_GROUPS } from "../data/words";
+import { WORD_GROUPS, ALL_WORDS } from "../data/words";
 import {
   UI,
   FORM_NAMES,
@@ -43,6 +43,16 @@ import { getDailyGoal, getTodayProgress } from "../utils/dailyGoal";
 import { getXPTotal, awardXP, XP_AWARDS } from "../utils/xp";
 import LevelBadge from "./LevelBadge";
 import XpGainToast from "./XpGainToast";
+import DeckManager from "./DeckManager";
+import {
+  getDecks,
+  createDeck,
+  renameDeck,
+  deleteDeck,
+  addDeckItem,
+  removeDeckItem,
+  reorderDeckItem,
+} from "../utils/decks";
 
 const SCORE_LABELS = {
   5: "feedbackScoreExcellent",
@@ -194,6 +204,37 @@ export default function PracticeView({
   useEffect(() => {
     reviewSessionRef.current = reviewSession;
   }, [reviewSession]);
+
+  // Deck session state (separate from reviewSession — no SM-2, full-pass)
+  const [deckSession, setDeckSession] = useState(null);
+  // { deckId, deckName, queue: DeckItem[], index, summary: [{item, formKey, score, skipped, letterChar, name}], finished? }
+  const deckSessionRef = useRef(null);
+  const advanceDeckRef = useRef(null);
+  useEffect(() => {
+    deckSessionRef.current = deckSession;
+  }, [deckSession]);
+
+  // Review sub-tab ("auto" = existing dashboard, "decks" = DeckManager)
+  const [reviewSubTab, setReviewSubTab] = useState("auto");
+
+  // Decks version counter — bumped on every deck CRUD write so the `decks`
+  // memo recomputes. Separate from progressVersion so deck edits don't
+  // needlessly re-memoize progress summaries.
+  const [decksVersion, setDecksVersion] = useState(0);
+  const decks = useMemo(() => getDecks(), [decksVersion]);
+
+  // Map word string -> { word, roman, meaning, hint, group, groupIndex, wordIndex }
+  // so a deck item with type:"word" can resolve to the right
+  // wordGroupIndex + wordIndex that the existing derivation expects.
+  const wordLookup = useMemo(() => {
+    const m = new Map();
+    WORD_GROUPS.forEach((g, gIdx) => {
+      g.words.forEach((w, wIdx) => {
+        if (!m.has(w.word)) m.set(w.word, { ...w, group: g.name, groupIndex: gIdx, wordIndex: wIdx });
+      });
+    });
+    return m;
+  }, []);
 
   // Stash review session to sessionStorage for resume on refresh
   useEffect(() => {
@@ -439,6 +480,39 @@ export default function PracticeView({
     [clearCanvas],
   );
 
+  const refreshDecks = useCallback(() => setDecksVersion((v) => v + 1), []);
+
+  const handleCreateDeck = useCallback((name) => {
+    const deck = createDeck(name);
+    refreshDecks();
+    return deck;
+  }, [refreshDecks]);
+
+  const handleRenameDeck = useCallback((id, name) => {
+    renameDeck(id, name);
+    refreshDecks();
+  }, [refreshDecks]);
+
+  const handleDeleteDeck = useCallback((id) => {
+    deleteDeck(id);
+    refreshDecks();
+  }, [refreshDecks]);
+
+  const handleAddDeckItem = useCallback((deckId, item) => {
+    addDeckItem(deckId, item);
+    refreshDecks();
+  }, [refreshDecks]);
+
+  const handleRemoveDeckItem = useCallback((deckId, itemId) => {
+    removeDeckItem(deckId, itemId);
+    refreshDecks();
+  }, [refreshDecks]);
+
+  const handleReorderDeckItem = useCallback((deckId, fromIdx, toIdx) => {
+    reorderDeckItem(deckId, fromIdx, toIdx);
+    refreshDecks();
+  }, [refreshDecks]);
+
   const selectWord = useCallback(
     (groupIdx, wIdx) => {
       setWordGroupIndex(groupIdx);
@@ -512,6 +586,14 @@ export default function PracticeView({
       window.removeEventListener("online", onOnline);
       window.removeEventListener("offline", onOffline);
     };
+  }, []);
+
+  useEffect(() => {
+    const onStorage = (e) => {
+      if (e.key === "arabic_decks") setDecksVersion((v) => v + 1);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
   }, []);
 
   // ─── Undo ────────────────────────────────────────────
@@ -1226,6 +1308,153 @@ export default function PracticeView({
     [lessonMode, lessonToAlpha, clearCanvas],
   );
 
+  // ─── Deck session helpers ─────────────────────────────
+  // Resolve a deck item { type, ref } to the data needed to render +
+  // practice it. Returns null if the ref can't be found (shouldn't happen
+  // with static data, but guard anyway).
+  const resolveDeckItem = useCallback((item) => {
+    if (!item) return null;
+    if (item.type === "letter") {
+      const l = LETTERS.find((x) => x.name === item.ref);
+      if (!l) return null;
+      return {
+        glyph: l.letter, name: l.name, roman: l.roman,
+        formKeys: Object.keys(l.forms), practiceMode: "letters", obj: l,
+      };
+    }
+    if (item.type === "number") {
+      const n = NUMBERS.find((x) => x.name === item.ref);
+      if (!n) return null;
+      return {
+        glyph: n.letter, name: n.name, roman: n.roman,
+        formKeys: ["isolated"], practiceMode: "numbers", obj: n,
+      };
+    }
+    if (item.type === "diacritic") {
+      const d = DIACRITICS.find((x) => x.name === item.ref);
+      if (!d) return null;
+      return {
+        glyph: d.letter, name: d.name, roman: d.roman,
+        formKeys: ["isolated"], practiceMode: "diacritics", obj: d,
+      };
+    }
+    if (item.type === "word") {
+      const w = wordLookup.get(item.ref);
+      if (!w) return null;
+      return {
+        glyph: w.word, name: w.word, roman: w.roman,
+        formKeys: ["word"], practiceMode: "words", obj: w,
+      };
+    }
+    return null;
+  }, [wordLookup]);
+
+  // Enter a specific deck queue index: resolve the item, set the right
+  // practiceMode + indices + first form, clear the canvas. Mirrors
+  // enterReviewItem but handles all four item types + lesson-mode index
+  // mapping for letters.
+  const enterDeckItem = useCallback((idx, itemArg) => {
+    const sess = deckSessionRef.current;
+    if (!sess) return;
+    const item = itemArg || sess.queue[idx];
+    if (!item) return;
+    const resolved = resolveDeckItem(item);
+    if (!resolved) return;
+    setPracticeMode(resolved.practiceMode);
+    if (resolved.practiceMode === "words") {
+      setWordGroupIndex(resolved.obj.groupIndex);
+      setWordIndex(resolved.obj.wordIndex);
+    } else if (resolved.practiceMode === "letters") {
+      const alphIdx = LETTERS.findIndex((l) => l.name === item.ref);
+      if (lessonMode) {
+        const lessonIdx = lessonToAlpha.indexOf(alphIdx);
+        setLetterIndex(lessonIdx !== -1 ? lessonIdx : 0);
+      } else {
+        setLetterIndex(alphIdx);
+      }
+    } else {
+      // numbers or diacritics — index into activeSet
+      const set = resolved.practiceMode === "numbers" ? NUMBERS : DIACRITICS;
+      const idxInSet = set.findIndex((x) => x.name === item.ref);
+      setLetterIndex(idxInSet);
+    }
+    setFormIndex(resolved.formKeys[0]);
+    setFeedback(null);
+    setShowComparison(false);
+    setShowHistory(false);
+    alphaBtnRefs.current = [];
+    clearCanvas();
+  }, [resolveDeckItem, lessonMode, lessonToAlpha, clearCanvas]);
+
+  const startDeckSession = useCallback((deck) => {
+    if (reviewSessionRef.current) return; // conflict guard — can't start during auto review
+    if (!deck || !deck.items || deck.items.length === 0) return;
+    setReviewSubTab("decks");
+    setDeckSession({
+      deckId: deck.id,
+      deckName: deck.name,
+      queue: deck.items.slice(),
+      index: 0,
+      summary: [],
+      finished: false,
+    });
+    enterDeckItem(0, deck.items[0]);
+  }, [enterDeckItem]);
+
+  // Advance the deck session. For letters, cycle through forms first; on
+  // the last form, advance to the next queue item. For non-letters, advance
+  // to the next item immediately.
+  const advanceDeck = useCallback((score) => {
+    const sess = deckSessionRef.current;
+    if (!sess || sess.finished) return;
+    const item = sess.queue[sess.index];
+    const resolved = resolveDeckItem(item);
+    if (!resolved) {
+      const nextIndex = sess.index + 1;
+      if (nextIndex >= sess.queue.length) {
+        setDeckSession({ ...sess, finished: true });
+      } else {
+        setDeckSession({ ...sess, index: nextIndex });
+        enterDeckItem(nextIndex);
+      }
+      return;
+    }
+    const formKeys = resolved.formKeys;
+    const currentFormIdx = formKeys.indexOf(activeForm);
+    const isLastForm = currentFormIdx === -1 || currentFormIdx === formKeys.length - 1;
+    const skipped = score == null;
+    const summary = [...sess.summary, {
+      item, formKey: activeForm, score, skipped,
+      letterChar: resolved.glyph, name: resolved.name,
+    }];
+    if (!isLastForm) {
+      setDeckSession({ ...sess, summary });
+      setFormIndex(formKeys[currentFormIdx + 1]);
+      setFeedback(null);
+      setShowComparison(false);
+      setShowHistory(false);
+      clearCanvas();
+    } else {
+      const nextIndex = sess.index + 1;
+      if (nextIndex >= sess.queue.length) {
+        setDeckSession({ ...sess, summary, finished: true });
+      } else {
+        setDeckSession({ ...sess, index: nextIndex, summary });
+        enterDeckItem(nextIndex);
+      }
+    }
+  }, [activeForm, resolveDeckItem, enterDeckItem, clearCanvas]);
+
+  advanceDeckRef.current = advanceDeck;
+
+  const exitDeckSession = useCallback(() => {
+    setDeckSession(null);
+    setFeedback(null);
+    setShowComparison(false);
+    setShowHistory(false);
+    clearCanvas();
+  }, [clearCanvas]);
+
   // ─── Canvas export (AI, JPEG 512px) ──────────────────
 
   const exportCanvas = () => {
@@ -1744,8 +1973,29 @@ export default function PracticeView({
       </div>
 
       {/* Review dashboard */}
-      {practiceMode === "review" && !reviewSession && (
+      {practiceMode === "review" && !reviewSession && !deckSession && (
         <div style={styles.reviewDash}>
+          {/* Sub-nav: Auto Review vs My Decks */}
+          <div style={styles.deckSubNav}>
+            <button
+              className="btn-form"
+              style={{ ...styles.deckSubNavBtn, ...(reviewSubTab === "auto" ? styles.deckSubNavBtnActive : {}) }}
+              onClick={() => setReviewSubTab("auto")}
+              aria-pressed={reviewSubTab === "auto"}
+            >
+              {t("subAutoReview")}
+            </button>
+            <button
+              className="btn-form"
+              style={{ ...styles.deckSubNavBtn, ...(reviewSubTab === "decks" ? styles.deckSubNavBtnActive : {}) }}
+              onClick={() => setReviewSubTab("decks")}
+              aria-pressed={reviewSubTab === "decks"}
+            >
+              {t("subMyDecks")}
+            </button>
+          </div>
+          {reviewSubTab === "auto" && (
+            <>
           {showResumePrompt && stashedSession && (
             <div style={{ padding: "12px 16px", marginBottom: 12, background: "var(--color-card-bg)", borderRadius: 12, border: "1px solid var(--color-border)" }}>
               <p style={{ marginBottom: 8, fontSize: 14, color: "var(--color-text)" }}>{t("reviewResume")}</p>
@@ -1810,6 +2060,23 @@ export default function PracticeView({
                 ▶ Start Review Session
               </button>
             </>
+          )}
+            </>
+          )}
+          {reviewSubTab === "decks" && (
+            <DeckManager
+              t={t}
+              locale={locale}
+              darkMode={darkMode}
+              decks={decks}
+              onCreateDeck={handleCreateDeck}
+              onRenameDeck={handleRenameDeck}
+              onDeleteDeck={handleDeleteDeck}
+              onAddItem={handleAddDeckItem}
+              onRemoveItem={handleRemoveDeckItem}
+              onReorderItem={handleReorderDeckItem}
+              onStartSession={startDeckSession}
+            />
           )}
         </div>
       )}
