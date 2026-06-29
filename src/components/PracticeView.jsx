@@ -466,6 +466,7 @@ export default function PracticeView({
 
   const switchPracticeMode = useCallback(
     (mode) => {
+      if (deckSessionRef.current) setDeckSession(null);
       setPracticeMode(mode);
       // Reset selection — letters (28) and numbers (10) have different lengths,
       // so a stale letterIndex/form could point past the smaller set.
