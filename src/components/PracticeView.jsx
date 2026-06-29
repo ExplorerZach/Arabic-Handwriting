@@ -2609,9 +2609,9 @@ export default function PracticeView({
                         if (!countedDrawingRef.current) {
                           countedDrawingRef.current = true;
                           markPracticed(pName, pForm);
+                          addXP(XP_AWARDS.PRACTICE, "practice");
                         }
                         addFeedbackEntry(pName, pForm, t("reviewSelfAssessed"));
-                        addXP(XP_AWARDS.PRACTICE, "practice");
                         setProgressVersion(v => v + 1);
                       }
                     }
