@@ -1560,20 +1560,27 @@ export default function PracticeView({
       const scoreMatch = text.match(/\[SCORE:\s*([1-5])\s*\]/i);
       const score = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
       const cleanText = text.replace(/\[SCORE:\s*[1-5]\s*\]\s*/gi, "").trim();
-      if (practiceMode === "letters" || isNumbersMode || isDiacriticsMode || reviewSessionRef.current) {
+      const inDeck = !!deckSessionRef.current;
+      const progressName = (practiceMode === "words" && inDeck) ? currentWord.word : letter.name;
+      const progressForm = (practiceMode === "words" && inDeck) ? "word" : activeForm;
+      if (practiceMode === "letters" || isNumbersMode || isDiacriticsMode || reviewSessionRef.current || inDeck) {
         // Only count if drawing the strokes didn't already count this drawing
         // (handlePointerUp counts on draw), so submitting feedback on a letter
         // you just drew doesn't double-count it in the heatmap.
         if (!countedDrawingRef.current) {
           countedDrawingRef.current = true;
-          markPracticed(letter.name, activeForm);
+          markPracticed(progressName, progressForm);
         }
         if (score) {
           // Compute on-time BEFORE updateSR overwrites lastReview.
           const inReview = !!reviewSessionRef.current;
-          const onTime = !inReview || isReviewOnTime(letter.name, activeForm);
-          setScore(letter.name, activeForm, score);
-          updateSR(letter.name, activeForm, score);
+          const onTime = !inReview || isReviewOnTime(progressName, progressForm);
+          setScore(progressName, progressForm, score);
+          // SM-2 scheduling only for non-deck paths (regular practice +
+          // Auto Review). Deck sessions are full-pass, no SM-2.
+          if (!inDeck) {
+            updateSR(progressName, progressForm, score);
+          }
           addXP(XP_AWARDS.SCORE[score] || 0, "score");
           if (inReview && onTime) addXP(XP_AWARDS.REVIEW_ON_TIME, "review-on-time");
           // Celebrate + sound on a strong score (wires the dormant #16
@@ -1585,7 +1592,7 @@ export default function PracticeView({
             if (soundEnabled) playSuccessTone();
           }
         }
-        addFeedbackEntry(letter.name, activeForm, cleanText);
+        addFeedbackEntry(progressName, progressForm, cleanText);
         setProgressVersion((v) => v + 1);
       }
       setFeedback({ text: cleanText, score });
@@ -1597,6 +1604,15 @@ export default function PracticeView({
       ) {
         setTimeout(() => {
           advanceReviewRef.current?.(score);
+        }, 1400);
+      }
+      if (
+        score &&
+        deckSessionRef.current &&
+        !deckSessionRef.current.finished
+      ) {
+        setTimeout(() => {
+          advanceDeckRef.current?.(score);
         }, 1400);
       }
     } catch (err) {
@@ -2581,7 +2597,27 @@ export default function PracticeView({
               className="btn-nav"
               style={{ ...styles.btn, ...styles.btnNav }}
               onClick={() => {
-                if (reviewSession) {
+                if (deckSession) {
+                  if (apiKey === "skip") {
+                    const sess = deckSessionRef.current;
+                    if (sess && !sess.finished && strokesRef.current.length > 0) {
+                      const item = sess.queue[sess.index];
+                      const resolved = resolveDeckItem(item);
+                      if (resolved) {
+                        const pName = resolved.practiceMode === "words" ? resolved.name : resolved.obj.name;
+                        const pForm = resolved.practiceMode === "words" ? "word" : activeForm;
+                        if (!countedDrawingRef.current) {
+                          countedDrawingRef.current = true;
+                          markPracticed(pName, pForm);
+                        }
+                        addFeedbackEntry(pName, pForm, t("reviewSelfAssessed"));
+                        addXP(XP_AWARDS.PRACTICE, "practice");
+                        setProgressVersion(v => v + 1);
+                      }
+                    }
+                  }
+                  advanceDeckRef.current?.();
+                } else if (reviewSession) {
                   if (apiKey === "skip") {
                     const sess = reviewSessionRef.current;
                     if (sess && !sess.finished && strokesRef.current.length > 0) {
