@@ -5,7 +5,7 @@
  * {
  *   decks: [
  *     {
- *       id: "deck_1700000000000",
+ *       id: "deck_1700000000000_1",
  *       name: "My tricky letters",
  *       createdAt: "2026-06-28T00:00:00.000Z",
  *       items: [
@@ -74,7 +74,7 @@ export function createDeck(name) {
   const data = load();
   const deck = {
     id: uniqueId('deck'),
-    name: name || 'Untitled',
+    name: name || '',
     createdAt: new Date().toISOString(),
     items: [],
   };
@@ -111,6 +111,7 @@ export function addDeckItem(deckId, item) {
   const data = load();
   const deck = data.decks.find((d) => d.id === deckId);
   if (!deck) return null;
+  if (!item || !item.type || !item.ref) return null;
   const full = { id: uniqueId('item'), type: item.type, ref: item.ref };
   deck.items.push(full);
   save(data);
