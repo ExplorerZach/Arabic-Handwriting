@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import styles from "../styles/practiceStyles";
 import { LETTERS } from "../data/letters";
 import { NUMBERS } from "../data/numbers";
@@ -37,6 +37,17 @@ export default function DeckManager({
   const [pickerTab, setPickerTab] = useState("letters");
 
   const editingDeck = editingId ? decks.find((d) => d.id === editingId) : null;
+
+  // If the deck being edited is deleted (e.g. in another tab via storage
+  // event), editingDeck becomes null and both the editor and picker panes
+  // would fall through to the `return null` fallback — stranding the user
+  // on a blank screen. Auto-return to the list view instead.
+  useEffect(() => {
+    if (deckView !== "list" && editingId && !editingDeck) {
+      setDeckView("list");
+      setEditingId(null);
+    }
+  }, [deckView, editingId, editingDeck]);
 
   const backToList = () => {
     setDeckView("list");
