@@ -1178,6 +1178,11 @@ export default function PracticeView({
         if (numIdx === -1) return;
         setLetterIndex(numIdx);
         setFormIndex("isolated");
+      } else if (letterName.startsWith("Diacritic")) {
+        const diaIdx = DIACRITICS.findIndex((d) => d.name === letterName);
+        if (diaIdx === -1) return;
+        setLetterIndex(diaIdx);
+        setFormIndex("isolated");
       } else {
         const alphIdx = LETTERS.findIndex((l) => l.name === letterName);
         if (alphIdx === -1) return;
@@ -1199,6 +1204,7 @@ export default function PracticeView({
   );
 
   const startReviewSession = useCallback(() => {
+    if (deckSessionRef.current) return; // can't start auto review during a deck session
     if (!dueItems.length) return;
     const queue = dueItems.slice();
     // Fisher-Yates shuffle
@@ -1248,6 +1254,20 @@ export default function PracticeView({
         setLetterIndex(numIdx);
         setFormIndex("isolated");
         setPracticeMode("numbers");
+        setFeedback(null);
+        setShowComparison(false);
+        setShowHistory(false);
+        alphaBtnRefs.current = [];
+        clearCanvas();
+        return;
+      }
+      // Diacritics (name prefixed "Diacritic") live in DIACRITICS.
+      if (letterName.startsWith("Diacritic")) {
+        const diaIdx = DIACRITICS.findIndex((d) => d.name === letterName);
+        if (diaIdx === -1) return;
+        setLetterIndex(diaIdx);
+        setFormIndex("isolated");
+        setPracticeMode("diacritics");
         setFeedback(null);
         setShowComparison(false);
         setShowHistory(false);
