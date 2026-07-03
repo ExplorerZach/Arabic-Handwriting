@@ -29,10 +29,10 @@ window/workDoneProgress/create`). `jsconfig.json` configures `jsx: "react-jsx"`
 ## Architecture & Data Flow
 
 - `index.html` (Vite entry, fonts, SW registration), `src/main.jsx` (root, global.css), `src/App.jsx` (manages key/locale/dark props).
-- `src/components/`: `LoginScreen.jsx` (API key/skip), `PracticeView.jsx` (main UI, canvas, drawing, nav, AI feedback, ~1100 lines).
+- `src/components/`: `LoginScreen.jsx` (API key/skip), `PracticeView.jsx` (main UI, canvas, drawing, nav, AI feedback), `DeckManager.jsx` (presentational deck list/editor/picker, Review sub-tab).
 - `src/data/`: `letters.js` (auto-gen positional forms), `lessonOrder.js` (shape families), `strokeOrder.js` (0-100 coords), `words.js`.
 - `src/locales/index.js` (UI strings + sole source of FORM_NAMES/FORM_SHORT/FORM_FULL/FORM_DESCRIPTIONS).
-- `src/utils/`: `api.js` (OpenRouter vision), `drawing.js` (pressure/brush), `progress.js` (SM-2), `history.js` (feedback history).
+- `src/utils/`: `api.js` (OpenRouter vision), `drawing.js` (pressure/brush), `progress.js` (SM-2), `history.js` (feedback history), `decks.js` (study deck CRUD).
 - `src/styles/`: `global.css` (CSS vars, breakpoints, hover/focus, RTL), `practiceStyles.js`, `loginStyles.js` (inline styles).
 - `public/` (sw.js, manifest.json, icons), `vercel.json` (headers), `scripts/bust-sw.js` (post-build cache-bust).
 
@@ -70,7 +70,7 @@ adding new files to the `ASSETS` precache list.
 
 ## localStorage Keys — Do Not Rename
 
-Keys: `openrouter_key` (API key), `openrouter_model` (model ID), `brushScale` (brush size), `lessonMode` (`"true"`/`"false"`), `app_locale` (`"en"`/`"ar"`), `app_darkMode` (`"true"`/`"false"`), `arabic_progress` (SM-2 progress JSON), `arabic_feedback_history` (last 5 entries JSON). Renaming silently loses user data.
+Keys: `openrouter_key` (API key), `openrouter_model` (model ID), `brushScale` (brush size), `lessonMode` (`"true"`/`"false"`), `app_locale` (`"en"`/`"ar"`), `app_darkMode` (`"true"`/`"false"`), `arabic_progress` (SM-2 progress JSON), `arabic_feedback_history` (last 5 entries JSON), `arabic_decks` (user study decks JSON). Renaming silently loses user data.
 
 **Letter-name keys** must stay distinct (two pairs share romanizations): ح=`Hha`, ه=`Ha`, ط=`Tta`, ت=`Ta`. `progress.js` and `history.js` each have a `migrate()` that copies old `Ha`/`Ta` onto `Hha`/`Tta`. **Never rename these or remove the migration** without a forward migration.
 
@@ -109,6 +109,11 @@ All UI strings in `src/locales/index.js` as `UI = { en: {...}, ar: {...} }`.
   401/402/429/503 mapped to friendly messages.
 - After a scored letters call: `markPracticed` → `setScore` → `updateSR` →
   `addFeedbackEntry`.
+- **Words are first-class progress entries** when practiced via a deck session:
+  `name` = the Arabic word string, `formKey` = `"word"`. Word strings (Arabic)
+  never collide with letter/number/diacritic names (romanized). **Deck sessions
+  do NOT call `updateSR`** — they're full-pass, no SM-2. Only regular practice
+  and Auto Review use SM-2 scheduling.
 - `progress.js` SM-2: `updateSR(letterName, formKey, aiScore)` takes the **raw AI
   score 1–5** and maps internally (1→quality 0, else identity) — pass the model's
   score, not a pre-mapped quality. **Dates are local, not UTC**
