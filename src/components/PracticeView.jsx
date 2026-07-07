@@ -1419,9 +1419,16 @@ export default function PracticeView({
   // enterReviewItem but handles all four item types + lesson-mode index
   // mapping for letters.
   const enterDeckItem = useCallback((idx, itemArg) => {
+    // NOTE: deckSessionRef only syncs via a useEffect one render after
+    // setDeckSession, so it can still be null/stale here when this is
+    // called synchronously right after setDeckSession (e.g. from
+    // startDeckSession). Don't gate on `sess` being non-null — prefer the
+    // explicitly-passed itemArg (always provided by session-start callers)
+    // and only fall back to the ref's queue for callers that omit itemArg
+    // (advanceDeck's item-to-item transitions, where the ref is already
+    // populated from the session's earlier renders).
     const sess = deckSessionRef.current;
-    if (!sess) return;
-    const item = itemArg || sess.queue[idx];
+    const item = itemArg || (sess && sess.queue[idx]);
     if (!item) return;
     const resolved = resolveDeckItem(item);
     if (!resolved) return;
