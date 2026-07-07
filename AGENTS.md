@@ -29,10 +29,10 @@ window/workDoneProgress/create`). `jsconfig.json` configures `jsx: "react-jsx"`
 ## Architecture & Data Flow
 
 - `index.html` (Vite entry, fonts, SW registration), `src/main.jsx` (root, global.css), `src/App.jsx` (manages key/locale/dark props).
-- `src/components/`: `LoginScreen.jsx` (API key/skip), `PracticeView.jsx` (main UI, canvas, drawing, nav, AI feedback), `DeckManager.jsx` (presentational deck list/editor/picker, Review sub-tab).
+- `src/components/`: `LoginScreen.jsx` (API key/skip), `PracticeView.jsx` (main UI, canvas, drawing, nav, AI feedback), `DeckManager.jsx` (presentational deck list/editor/picker, Review sub-tab; bulk-add, word search, checkmark badges, roving tabindex), `UndoToast.jsx` (accessible interactive undo toast).
 - `src/data/`: `letters.js` (auto-gen positional forms), `lessonOrder.js` (shape families), `strokeOrder.js` (0-100 coords), `words.js`.
 - `src/locales/index.js` (UI strings + sole source of FORM_NAMES/FORM_SHORT/FORM_FULL/FORM_DESCRIPTIONS).
-- `src/utils/`: `api.js` (OpenRouter vision), `drawing.js` (pressure/brush), `progress.js` (SM-2), `history.js` (feedback history), `decks.js` (study deck CRUD).
+- `src/utils/`: `api.js` (OpenRouter vision), `drawing.js` (pressure/brush), `progress.js` (SM-2; also exports `todayLocal`), `history.js` (feedback history), `decks.js` (study deck CRUD + `duplicateDeck`/`reorderDecks`/`setLastSession`/`bulkAddItems`/`restoreDeck`).
 - `src/styles/`: `global.css` (CSS vars, breakpoints, hover/focus, RTL), `practiceStyles.js`, `loginStyles.js` (inline styles).
 - `public/` (sw.js, manifest.json, icons), `vercel.json` (headers), `scripts/bust-sw.js` (post-build cache-bust).
 
@@ -114,6 +114,14 @@ All UI strings in `src/locales/index.js` as `UI = { en: {...}, ar: {...} }`.
   never collide with letter/number/diacritic names (romanized). **Deck sessions
   do NOT call `updateSR`** — they're full-pass, no SM-2. Only regular practice
   and Auto Review use SM-2 scheduling.
+- **Deck session modes:** Full-pass (default) and low-score re-run
+  (`mode: "lowScore"`). Low-score re-runs filter `deck.lastSession.items`
+  to `score == null || score <= 3` and constrain each queue entry to the
+  specific `formKey` that scored low. Both modes skip `updateSR`.
+  `setLastSession(deckId, session)` is called only on `finished: true` in
+  `advanceDeck` — the single write site. `deck.lastSession` stores
+  `{ date, mode, avgScore, items: [{ref, type, formKey, score}] }`.
+  `deck.order` is a stable integer for list reordering.
 - `progress.js` SM-2: `updateSR(letterName, formKey, aiScore)` takes the **raw AI
   score 1–5** and maps internally (1→quality 0, else identity) — pass the model's
   score, not a pre-mapped quality. **Dates are local, not UTC**
