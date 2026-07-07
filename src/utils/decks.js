@@ -85,7 +85,9 @@ export function createDeck(name) {
     id: uniqueId('deck'),
     name: name || '',
     createdAt: new Date().toISOString(),
+    order: data.decks.length,
     items: [],
+    lastSession: null,
   };
   data.decks.push(deck);
   save(data);
