@@ -17,7 +17,8 @@ import { WORD_GROUPS } from "../data/words";
  *   onCreateDeck(name), onRenameDeck(id, name), onDeleteDeck(id)
  *   onAddItem(deckId, item), onRemoveItem(deckId, itemId)
  *   onReorderItem(deckId, fromIdx, toIdx)
- *   onStartSession(deck)
+ *   onReorderDecks(fromIdx, toIdx), onCopyDeck(id)
+ *   onStartSession(deck, mode) — mode is "full" (default) or "lowScore"
  */
 export default function DeckManager({
   t,
