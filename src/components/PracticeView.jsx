@@ -14,6 +14,7 @@ import {
   getProgressSummary,
   getProgress,
   isReviewOnTime,
+  todayLocal,
 } from "../utils/progress";
 import { addFeedbackEntry, getFeedbackHistory } from "../utils/history";
 import { markDayActive } from "../utils/analytics";
@@ -43,15 +44,22 @@ import { getDailyGoal, getTodayProgress } from "../utils/dailyGoal";
 import { getXPTotal, awardXP, XP_AWARDS } from "../utils/xp";
 import LevelBadge from "./LevelBadge";
 import XpGainToast from "./XpGainToast";
+import UndoToast from "./UndoToast";
 import DeckManager from "./DeckManager";
 import {
   getDecks,
+  getDeck,
   createDeck,
   renameDeck,
   deleteDeck,
   addDeckItem,
   removeDeckItem,
   reorderDeckItem,
+  reorderDecks,
+  duplicateDeck,
+  setLastSession,
+  bulkAddItems,
+  restoreDeck,
 } from "../utils/decks";
 
 const SCORE_LABELS = {
@@ -222,6 +230,9 @@ export default function PracticeView({
   // needlessly re-memoize progress summaries.
   const [decksVersion, setDecksVersion] = useState(0);
   const decks = useMemo(() => getDecks(), [decksVersion]);
+
+  const [undoDelete, setUndoDelete] = useState(null);
+  const deleteBtnRef = useRef(null);
 
   // Map word string -> { word, roman, meaning, hint, group, groupIndex, wordIndex }
   // so a deck item with type:"word" can resolve to the right
@@ -495,12 +506,41 @@ export default function PracticeView({
   }, [refreshDecks]);
 
   const handleDeleteDeck = useCallback((id) => {
+    const deck = getDeck(id);
+    if (!deck) return;
+    const snapshot = JSON.parse(JSON.stringify(deck));
     deleteDeck(id);
+    refreshDecks();
+    setUndoDelete({ deletedDeck: snapshot });
+  }, [refreshDecks]);
+
+  const handleUndoDelete = useCallback(() => {
+    if (!undoDelete) return;
+    restoreDeck(undoDelete.deletedDeck);
+    refreshDecks();
+    setUndoDelete(null);
+  }, [undoDelete, refreshDecks]);
+
+  const handleDismissUndo = useCallback(() => {
+    setUndoDelete(null);
+  }, []);
+
+  const handleCopyDeck = useCallback((id) => {
+    duplicateDeck(id);
+    refreshDecks();
+  }, [refreshDecks]);
+
+  const handleReorderDecks = useCallback((fromIdx, toIdx) => {
+    reorderDecks(fromIdx, toIdx);
     refreshDecks();
   }, [refreshDecks]);
 
   const handleAddDeckItem = useCallback((deckId, item) => {
-    addDeckItem(deckId, item);
+    if (item._bulk) {
+      bulkAddItems(deckId, item._bulk);
+    } else {
+      addDeckItem(deckId, item);
+    }
     refreshDecks();
   }, [refreshDecks]);
 
@@ -1338,9 +1378,13 @@ export default function PracticeView({
     if (item.type === "letter") {
       const l = LETTERS.find((x) => x.name === item.ref);
       if (!l) return null;
+      const allForms = Object.keys(l.forms);
+      const formKeys = item.formKey && allForms.includes(item.formKey)
+        ? [item.formKey]
+        : allForms;
       return {
         glyph: l.letter, name: l.name, roman: l.roman,
-        formKeys: Object.keys(l.forms), practiceMode: "letters", obj: l,
+        formKeys, practiceMode: "letters", obj: l,
       };
     }
     if (item.type === "number") {
@@ -1407,20 +1451,67 @@ export default function PracticeView({
     clearCanvas();
   }, [resolveDeckItem, lessonMode, lessonToAlpha, clearCanvas]);
 
-  const startDeckSession = useCallback((deck) => {
+  const buildLowScoreQueue = useCallback((deckId) => {
+    const deck = getDeck(deckId);
+    if (!deck || !deck.lastSession || !deck.lastSession.items) return [];
+    return deck.lastSession.items
+      .filter((e) => e.score == null || e.score <= 3)
+      .map((e) => ({ type: e.type, ref: e.ref, formKey: e.formKey }));
+  }, []);
+
+  const restartDeckSession = useCallback((mode) => {
+    const sess = deckSessionRef.current;
+    if (!sess) return;
+    if (mode === "full") {
+      const deck = getDeck(sess.deckId);
+      if (!deck || !deck.items.length) return;
+      setDeckSession({
+        ...sess,
+        queue: deck.items.slice(),
+        index: 0,
+        summary: [],
+        finished: false,
+        mode: "full",
+      });
+      enterDeckItem(0, deck.items[0]);
+    } else {
+      const queue = buildLowScoreQueue(sess.deckId);
+      if (!queue.length) return;
+      setDeckSession({
+        ...sess,
+        queue,
+        index: 0,
+        summary: [],
+        finished: false,
+        mode: "lowScore",
+      });
+      enterDeckItem(0, queue[0]);
+    }
+  }, [enterDeckItem, buildLowScoreQueue]);
+
+  const startDeckSession = useCallback((deck, mode = "full") => {
     if (reviewSessionRef.current) return; // conflict guard — can't start during auto review
     if (!deck || !deck.items || deck.items.length === 0) return;
+    setUndoDelete(null);
     setReviewSubTab("decks");
+    let queue;
+    if (mode === "lowScore") {
+      queue = buildLowScoreQueue(deck.id);
+      if (queue.length === 0) return;
+    } else {
+      queue = deck.items.slice();
+    }
     setDeckSession({
       deckId: deck.id,
       deckName: deck.name,
-      queue: deck.items.slice(),
+      queue,
       index: 0,
       summary: [],
       finished: false,
+      mode,
     });
-    enterDeckItem(0, deck.items[0]);
-  }, [enterDeckItem]);
+    enterDeckItem(0, queue[0]);
+  }, [enterDeckItem, buildLowScoreQueue]);
 
   // Advance the deck session. For letters, cycle through forms first; on
   // the last form, advance to the next queue item. For non-letters, advance
@@ -1459,23 +1550,45 @@ export default function PracticeView({
     } else {
       const nextIndex = sess.index + 1;
       if (nextIndex >= sess.queue.length) {
+        // Session finished — write lastSession before marking finished.
+        const scored = summary.filter((s) => s.score != null);
+        const avgScore = scored.length > 0
+          ? scored.reduce((sum, s) => sum + s.score, 0) / scored.length
+          : null;
+        setLastSession(sess.deckId, {
+          date: todayLocal(),
+          mode: sess.mode || "full",
+          avgScore,
+          items: summary.map((s) => ({
+            ref: s.item.ref,
+            type: s.item.type,
+            formKey: s.formKey,
+            score: s.score,
+          })),
+        });
+        refreshDecks();
         setDeckSession({ ...sess, summary, finished: true });
       } else {
         setDeckSession({ ...sess, index: nextIndex, summary });
         enterDeckItem(nextIndex);
       }
     }
-  }, [activeForm, resolveDeckItem, enterDeckItem, clearCanvas]);
+  }, [activeForm, resolveDeckItem, enterDeckItem, clearCanvas, refreshDecks]);
 
   advanceDeckRef.current = advanceDeck;
 
   const exitDeckSession = useCallback(() => {
+    const sess = deckSessionRef.current;
+    if (sess && !sess.finished) {
+      if (!window.confirm(t("deckExitConfirm"))) return;
+    }
     setDeckSession(null);
+    setUndoDelete(null);
     setFeedback(null);
     setShowComparison(false);
     setShowHistory(false);
     clearCanvas();
-  }, [clearCanvas]);
+  }, [clearCanvas, t]);
 
   // ─── Canvas export (AI, JPEG 512px) ──────────────────
 
@@ -2113,7 +2226,9 @@ export default function PracticeView({
               onAddItem={handleAddDeckItem}
               onRemoveItem={handleRemoveDeckItem}
               onReorderItem={handleReorderDeckItem}
-              onStartSession={startDeckSession}
+              onReorderDecks={handleReorderDecks}
+              onCopyDeck={handleCopyDeck}
+              onStartSession={(deck, mode) => startDeckSession(deck, mode)}
             />
           )}
         </div>
@@ -2180,6 +2295,28 @@ export default function PracticeView({
 
           {deckSession && !deckSession.finished && (
             <div style={{ width: "100%", maxWidth: 520, padding: "8px 12px" }}>
+              <div style={styles.deckSessionHeader}>
+                <span style={styles.deckSessionName}>
+                  {deckSession.deckName}
+                  <span
+                    style={{
+                      ...styles.deckSessionModeChip,
+                      ...(deckSession.mode === "lowScore"
+                        ? styles.deckModeChipLowScore
+                        : styles.deckModeChipFull),
+                    }}
+                  >
+                    {deckSession.mode === "lowScore" ? t("deckModeLowScore") : t("deckModeFull")}
+                  </span>
+                </span>
+                <button
+                  className="btn-clear"
+                  onClick={exitDeckSession}
+                  style={{ fontSize: 12, padding: "4px 10px" }}
+                >
+                  {t("deckBack")}
+                </button>
+              </div>
               <div
                 style={{
                   display: "flex",
@@ -2199,13 +2336,6 @@ export default function PracticeView({
                     return ` · ${resolved.name} · ${t("deckSessionForm")} ${fIdx + 1}/${resolved.formKeys.length}`;
                   })()}
                 </span>
-                <button
-                  className="btn-clear"
-                  onClick={exitDeckSession}
-                  style={{ fontSize: 12, padding: "4px 10px" }}
-                >
-                  Exit
-                </button>
               </div>
               <div
                 style={{
@@ -2317,62 +2447,100 @@ export default function PracticeView({
               <h3 style={{ marginBottom: 8, color: "var(--color-text)" }}>
                 {t("deckSessionComplete")}
               </h3>
-              <p
-                style={{
-                  fontSize: 14,
-                  color: "var(--color-text-soft)",
-                  marginBottom: 12,
-                }}
-              >
-                {t("deckSessionReviewed")} {deckSession.summary.length}{" "}
-                {t("deckSessionItems")}.
-              </p>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 12,
-                  flexWrap: "wrap",
-                  marginBottom: 12,
-                }}
-              >
-                {deckSession.summary.map((entry, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                      padding: "4px 8px",
-                      borderRadius: 6,
-                      background: entry.skipped
-                        ? "var(--color-progress-badge-bg)"
-                        : entry.score >= 4
-                          ? "rgba(90,158,78,0.15)"
-                          : "rgba(192,112,58,0.15)",
-                      color: "var(--color-text)",
-                      fontSize: 13,
-                      opacity: entry.skipped ? 0.55 : 1,
-                    }}
-                    lang="ar"
-                  >
-                    {entry.letterChar}
-                    {entry.skipped ? (
-                      <span style={{ fontSize: 10, opacity: 0.6 }}>—</span>
-                    ) : (
-                      <span style={{ fontSize: 11, opacity: 0.8 }}>
-                        ★{entry.score}
-                      </span>
-                    )}
-                  </span>
-                ))}
-              </div>
-              <button
-                className="btn-nav"
-                onClick={exitDeckSession}
-                style={styles.btn}
-              >
-                {t("deckDone")}
-              </button>
+              {(() => {
+                const scored = deckSession.summary.filter((s) => s.score != null);
+                const avg = scored.length > 0
+                  ? (scored.reduce((sum, s) => sum + s.score, 0) / scored.length).toFixed(1)
+                  : null;
+                const lowCount = deckSession.summary.filter(
+                  (s) => s.score == null || s.score <= 3
+                ).length;
+                return (
+                  <>
+                    <p style={styles.deckSummarySubtitle}>
+                      {deckSession.deckName} · {deckSession.summary.length}{" "}
+                      {t("deckSessionItems")}
+                      {avg && ` · ${t("deckSessionAvg")} ★${avg}`}
+                    </p>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 12,
+                        flexWrap: "wrap",
+                        marginBottom: 12,
+                      }}
+                    >
+                      {deckSession.summary.map((entry, i) => (
+                        <span
+                          key={i}
+                          style={{
+                            display: "inline-flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            padding: "4px 8px",
+                            borderRadius: 6,
+                            background: entry.skipped
+                              ? "var(--color-progress-badge-bg)"
+                              : entry.score >= 4
+                                ? "rgba(90,158,78,0.15)"
+                                : "rgba(192,112,58,0.15)",
+                            color: "var(--color-text)",
+                            fontSize: 13,
+                            opacity: entry.skipped ? 0.55 : 1,
+                          }}
+                          lang="ar"
+                          aria-label={
+                            entry.skipped
+                              ? `${entry.letterChar} ${t("deckSkipped")}`
+                              : `${entry.letterChar} ★${entry.score}`
+                          }
+                        >
+                          {entry.letterChar}
+                          {entry.skipped ? (
+                            <span style={{ fontSize: 10, opacity: 0.6 }}>—</span>
+                          ) : (
+                            <span style={{ fontSize: 11, opacity: 0.8 }}>★{entry.score}</span>
+                          )}
+                          {(() => {
+                            const resolved = resolveDeckItem(entry.item);
+                            if (!resolved || resolved.formKeys.length <= 1) return null;
+                            return (
+                              <span style={styles.deckSummaryChipForm}>
+                                {t(FORM_SHORT[entry.formKey]) || entry.formKey}
+                              </span>
+                            );
+                          })()}
+                        </span>
+                      ))}
+                    </div>
+                    <div style={styles.deckSummaryButtons}>
+                      <button
+                        className="btn-nav"
+                        onClick={() => restartDeckSession("full")}
+                        style={styles.btn}
+                      >
+                        {t("deckRunAgain")}
+                      </button>
+                      {lowCount > 0 && (
+                        <button
+                          className="btn-ai"
+                          onClick={() => restartDeckSession("lowScore")}
+                          style={{ ...styles.btn, ...styles.btnAI }}
+                        >
+                          {t("deckRerunLowCount").replace("{n}", String(lowCount))}
+                        </button>
+                      )}
+                      <button
+                        className="btn-clear"
+                        onClick={exitDeckSession}
+                        style={styles.btn}
+                      >
+                        {t("deckDone")}
+                      </button>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           )}
 
@@ -3045,6 +3213,15 @@ export default function PracticeView({
             </div>
           )}
         </>
+      )}
+      {undoDelete && (
+        <UndoToast
+          message={t("undoDeleteMessage").replace("{name}", undoDelete.deletedDeck.name)}
+          actionLabel={t("undo")}
+          onUndo={handleUndoDelete}
+          onDismiss={handleDismissUndo}
+          dismissRef={deleteBtnRef}
+        />
       )}
     </div>
   );
