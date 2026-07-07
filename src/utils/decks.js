@@ -34,13 +34,22 @@ const STORAGE_KEY = 'arabic_decks';
 let cache = null;
 let idCounter = 0;
 
+function migrate(data) {
+  if (!data.decks || !Array.isArray(data.decks)) data = { decks: [] };
+  data.decks.forEach((d, i) => {
+    if (d.order === undefined) d.order = i;
+    if (!d.lastSession) d.lastSession = null;
+  });
+  return data;
+}
+
 function load() {
   if (cache !== null) return cache;
   try {
     cache = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"decks":[]}');
-    if (!cache.decks || !Array.isArray(cache.decks)) cache = { decks: [] };
+    cache = migrate(cache);
   } catch {
-    cache = { decks: [] };
+    cache = migrate({ decks: [] });
   }
   return cache;
 }
@@ -66,7 +75,7 @@ function uniqueId(prefix) {
 
 /** Return the decks array (fresh from cache/storage). */
 export function getDecks() {
-  return load().decks;
+  return load().decks.slice().sort((a, b) => a.order - b.order);
 }
 
 /** Create a new empty deck and return it. */
@@ -137,5 +146,81 @@ export function reorderDeckItem(deckId, fromIdx, toIdx) {
   if (toIdx < 0 || toIdx >= items.length) return;
   const [moved] = items.splice(fromIdx, 1);
   items.splice(toIdx, 0, moved);
+  save(data);
+}
+
+/** Create a copy of a deck with new ids and a fresh lastSession. */
+export function duplicateDeck(id) {
+  const data = load();
+  const original = data.decks.find((d) => d.id === id);
+  if (!original) return null;
+  const copy = {
+    id: uniqueId('deck'),
+    name: original.name + ' copy',
+    createdAt: new Date().toISOString(),
+    order: data.decks.length,
+    items: original.items.map((it) => ({
+      id: uniqueId('item'),
+      type: it.type,
+      ref: it.ref,
+    })),
+    lastSession: null,
+  };
+  data.decks.push(copy);
+  save(data);
+  return copy;
+}
+
+/** Reorder the deck list by swapping `order` values at two indices. */
+export function reorderDecks(fromIdx, toIdx) {
+  const data = load();
+  const decks = data.decks.slice().sort((a, b) => a.order - b.order);
+  if (fromIdx < 0 || fromIdx >= decks.length) return;
+  if (toIdx < 0 || toIdx >= decks.length) return;
+  // Swap order values
+  const tmp = decks[fromIdx].order;
+  decks[fromIdx].order = decks[toIdx].order;
+  decks[toIdx].order = tmp;
+  save(data);
+}
+
+/** Write the last completed session result onto a deck. */
+export function setLastSession(deckId, session) {
+  const data = load();
+  const deck = data.decks.find((d) => d.id === deckId);
+  if (!deck) return;
+  deck.lastSession = session;
+  save(data);
+}
+
+/** Add multiple items at once, skipping duplicates. Returns count added. */
+export function bulkAddItems(deckId, items) {
+  const data = load();
+  const deck = data.decks.find((d) => d.id === deckId);
+  if (!deck) return 0;
+  let added = 0;
+  for (const item of items) {
+    if (!item || !item.type || !item.ref) continue;
+    const exists = deck.items.some(
+      (it) => it.type === item.type && it.ref === item.ref
+    );
+    if (exists) continue;
+    deck.items.push({ id: uniqueId('item'), type: item.type, ref: item.ref });
+    added++;
+  }
+  if (added > 0) save(data);
+  return added;
+}
+
+/** Restore a previously deleted deck (used by undo-delete).
+ *  Inserts at the deck's original `order` position, shifting subsequent
+ *  `order` values to avoid collisions. */
+export function restoreDeck(deck) {
+  const data = load();
+  // Insert the deck back and re-sort by order
+  data.decks.push(deck);
+  data.decks.sort((a, b) => a.order - b.order);
+  // Re-index order values to remove any collisions
+  data.decks.forEach((d, i) => { d.order = i; });
   save(data);
 }

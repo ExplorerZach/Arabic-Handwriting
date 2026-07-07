@@ -59,7 +59,7 @@ if (typeof window !== 'undefined') {
 // SM-2 scheduling uses local calendar dates (not UTC) so a review due
 // "today" always surfaces on the user's local Wall-clock day.
 
-function todayLocal() {
+export function todayLocal() {
   const d = new Date();
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
