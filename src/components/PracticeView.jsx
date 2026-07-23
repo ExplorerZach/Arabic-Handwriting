@@ -15,6 +15,8 @@ import {
   getProgress,
   isReviewOnTime,
   todayLocal,
+  snoozeDue,
+  snoozeAllDue,
 } from "../utils/progress";
 import { addFeedbackEntry, getFeedbackHistory } from "../utils/history";
 import { markDayActive } from "../utils/analytics";
@@ -808,8 +810,12 @@ export default function PracticeView({
     // Reveal brush is generous so it uncovers the full thickness of the glyph
     // stroke near the authored path (the paths run through the letter's spine,
     // not along its edges). Oversized reveal is clipped to real ink anyway.
-    const BRUSH_RADIUS = Math.max(renderedW, renderedH) * 0.18;
-    const SPEED = Math.max(2.5, Math.max(renderedW, renderedH) * 0.009);
+    const BRUSH_RADIUS = Math.max(renderedW, renderedH) * 0.2;
+    // Time-based pen speed (px/sec) so the reveal is slow, hand-like, and
+    // framerate-independent. Scales with glyph size so big and small letters
+    // take a similar amount of time; the divisor sets the "how slow" feel
+    // (a full letter lands around ~2s rather than the old ~1s frame-rate sweep).
+    const PIXELS_PER_SEC = Math.max(80, Math.max(renderedW, renderedH) / 3.0);
 
     const ops = [];
     for (const stroke of data.strokes) {
@@ -861,13 +867,17 @@ export default function PracticeView({
     let opIdx = 0;
     let dist = 0;
     let prevPoint = null;
-    const PAUSE_FRAMES = 18;
-    let pauseCount = 0;
+    // Brief lift between strokes/dots, like a hand repositioning the pen.
+    const PAUSE_MS = 150;
+    let pauseElapsed = 0;
     // Completion fill: once the ordered sweep is done we ramp a full-glyph
     // reveal so every pixel of ink shows, even ink the authored spine paths
     // never pass through (wave crests, tails on connected forms, extremities).
-    const FILL_FRAMES = 14;
-    let fillCount = 0;
+    const FILL_MS = 350;
+    let fillElapsed = 0;
+    // Wall-clock timestamp of the previous frame; advancement is time-based so
+    // the speed is identical on 60Hz and 120Hz displays.
+    let lastTs = null;
 
     // Compositing canvas: glyph ink clipped to the revealed mask region.
     const compCanvas =
@@ -938,14 +948,19 @@ export default function PracticeView({
       }
     };
 
-    const animate = () => {
+    const animate = (ts) => {
       if (!animatingRef.current) return;
+      // Seconds elapsed since the previous frame, clamped so a backgrounded
+      // tab (which freezes rAF) doesn't teleport the pen on resume.
+      if (lastTs === null) lastTs = ts;
+      const dt = Math.min(0.05, (ts - lastTs) / 1000);
+      lastTs = ts;
       if (opIdx >= ops.length) {
         // Completion fill: ramp fillAlpha 0→1 so any ink not reached by the
         // ordered sweep fades into view, then leave the full glyph revealed.
-        if (fillCount < FILL_FRAMES) {
-          fillCount++;
-          drawFrame(fillCount / FILL_FRAMES);
+        if (fillElapsed < FILL_MS) {
+          fillElapsed += dt * 1000;
+          drawFrame(Math.min(1, fillElapsed / FILL_MS));
           animFrameRef.current = requestAnimationFrame(animate);
           return;
         }
@@ -972,7 +987,7 @@ export default function PracticeView({
           return;
         }
         if (dist < op.total) {
-          dist = Math.min(dist + SPEED, op.total);
+          dist = Math.min(dist + PIXELS_PER_SEC * dt, op.total);
           const nextPoint = pointAt(op.poly, op.lens, dist);
           paintSegment(prevPoint, nextPoint, BRUSH_RADIUS);
           prevPoint = nextPoint;
@@ -980,15 +995,15 @@ export default function PracticeView({
           animFrameRef.current = requestAnimationFrame(animate);
           return;
         }
-        if (pauseCount < PAUSE_FRAMES) {
-          pauseCount++;
+        if (pauseElapsed < PAUSE_MS) {
+          pauseElapsed += dt * 1000;
           animFrameRef.current = requestAnimationFrame(animate);
           return;
         }
         opIdx++;
         dist = 0;
         prevPoint = null;
-        pauseCount = 0;
+        pauseElapsed = 0;
         animFrameRef.current = requestAnimationFrame(animate);
       } else if (op.type === "dot") {
         const dp = op.point;
@@ -997,13 +1012,13 @@ export default function PracticeView({
         mCtx.fillStyle = "#000";
         mCtx.fill();
         drawFrame();
-        if (pauseCount < PAUSE_FRAMES) {
-          pauseCount++;
+        if (pauseElapsed < PAUSE_MS) {
+          pauseElapsed += dt * 1000;
           animFrameRef.current = requestAnimationFrame(animate);
           return;
         }
         opIdx++;
-        pauseCount = 0;
+        pauseElapsed = 0;
         animFrameRef.current = requestAnimationFrame(animate);
       }
     };
@@ -1265,12 +1280,12 @@ export default function PracticeView({
   }, []);
 
   const advanceReview = useCallback(
-    (score) => {
+    (score, { snoozed = false } = {}) => {
       const sess = reviewSessionRef.current;
       if (!sess || sess.finished) return;
       const item = sess.queue[sess.index];
-      const skipped = score == null;
-      const summary = [...sess.summary, { ...item, score, skipped }];
+      const skipped = score == null && !snoozed;
+      const summary = [...sess.summary, { ...item, score, skipped, snoozed }];
       const nextIndex = sess.index + 1;
       if (nextIndex >= sess.queue.length) {
         setReviewSession({ ...sess, summary, finished: true });
@@ -1286,6 +1301,30 @@ export default function PracticeView({
   );
 
   advanceReviewRef.current = advanceReview;
+
+  // Snooze the item currently being reviewed and move on, without
+  // touching its SM-2 mastery data.
+  const handleSnoozeCurrentItem = useCallback(() => {
+    const sess = reviewSessionRef.current;
+    if (!sess || sess.finished) return;
+    const item = sess.queue[sess.index];
+    snoozeDue(item.letterName, item.formKey);
+    setProgressVersion((v) => v + 1);
+    advanceReviewRef.current?.(null, { snoozed: true });
+  }, []);
+
+  // Snooze a single letter+form from the due-review dashboard grid.
+  const handleSnoozeItem = useCallback((letterName, formKey) => {
+    snoozeDue(letterName, formKey);
+    setProgressVersion((v) => v + 1);
+  }, []);
+
+  // Snooze every currently-due item at once (bulk "Reset due list").
+  const handleResetDueList = useCallback(() => {
+    if (!dueItems.length) return;
+    snoozeAllDue(dueItems);
+    setProgressVersion((v) => v + 1);
+  }, [dueItems]);
 
   // ─── Navigate to letter from review dashboard ──────────
 
@@ -2187,11 +2226,24 @@ export default function PracticeView({
             </div>
           )}
           <div style={styles.reviewHeader}>
-            {t("dashboardTitle")}
+            <span style={styles.reviewHeaderLeft}>
+              {t("dashboardTitle")}
+              {dueItems.length > 0 && (
+                <span style={styles.reviewCount}>
+                  {dueItems.length} {t("dashboardCount")}
+                </span>
+              )}
+            </span>
             {dueItems.length > 0 && (
-              <span style={styles.reviewCount}>
-                {dueItems.length} {t("dashboardCount")}
-              </span>
+              <button
+                className="btn-clear"
+                style={styles.reviewResetBtn}
+                onClick={handleResetDueList}
+                aria-label={t("ariaResetDueList")}
+                title={t("ariaResetDueList")}
+              >
+                {t("resetDueList")}
+              </button>
             )}
           </div>
           {dueItems.length === 0 ? (
@@ -2200,22 +2252,38 @@ export default function PracticeView({
             <>
               <div style={styles.reviewGrid}>
                 {dueItems.map(({ letterName, letterChar, formKey }) => (
-                  <button
+                  <div
                     key={`${letterName}-${formKey}`}
-                    className="btn-alpha"
-                    style={styles.reviewTile}
-                    onClick={() => goToReviewItem(letterName, formKey)}
-                    aria-label={`${letterName} ${t(FORM_NAMES[formKey] ?? formKey)}`}
-                    title={`${letterName} — ${t(FORM_NAMES[formKey] ?? formKey)}`}
+                    style={styles.reviewTileWrap}
                   >
-                    <span style={styles.reviewTileChar} lang="ar">
-                      {letterChar}
-                    </span>
-                    <span style={styles.reviewTileName}>{letterName}</span>
-                    <span style={styles.reviewTileForm}>
-                      {t(FORM_NAMES[formKey] ?? formKey)}
-                    </span>
-                  </button>
+                    <button
+                      className="btn-alpha"
+                      style={styles.reviewTile}
+                      onClick={() => goToReviewItem(letterName, formKey)}
+                      aria-label={`${letterName} ${t(FORM_NAMES[formKey] ?? formKey)}`}
+                      title={`${letterName} — ${t(FORM_NAMES[formKey] ?? formKey)}`}
+                    >
+                      <span style={styles.reviewTileChar} lang="ar">
+                        {letterChar}
+                      </span>
+                      <span style={styles.reviewTileName}>{letterName}</span>
+                      <span style={styles.reviewTileForm}>
+                        {t(FORM_NAMES[formKey] ?? formKey)}
+                      </span>
+                    </button>
+                    <button
+                      className="btn-clear"
+                      style={styles.reviewTileRemove}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSnoozeItem(letterName, formKey);
+                      }}
+                      aria-label={`${t("ariaRemoveDueItem")} ${letterName} ${t(FORM_NAMES[formKey] ?? formKey)}`}
+                      title={t("ariaRemoveDueItem")}
+                    >
+                      ×
+                    </button>
+                  </div>
                 ))}
               </div>
               <button
@@ -2229,7 +2297,7 @@ export default function PracticeView({
                   maxWidth: 520,
                 }}
               >
-                ▶ Start Review Session
+                {t("startReviewSession")}
               </button>
             </>
           )}
@@ -2282,16 +2350,27 @@ export default function PracticeView({
                 }}
               >
                 <span style={{ fontSize: 13, color: "var(--color-text-soft)" }}>
-                  Review {reviewSession.index + 1} of{" "}
+                  {t("reviewProgressLabel")} {reviewSession.index + 1} /{" "}
                   {reviewSession.queue.length}
                 </span>
-                <button
-                  className="btn-clear"
-                  onClick={exitReviewSession}
-                  style={{ fontSize: 12, padding: "4px 10px" }}
-                >
-                  Exit
-                </button>
+                <span style={{ display: "flex", gap: 6 }}>
+                  <button
+                    className="btn-clear"
+                    onClick={handleSnoozeCurrentItem}
+                    style={{ fontSize: 12, padding: "4px 10px" }}
+                    aria-label={t("ariaSnoozeItem")}
+                    title={t("ariaSnoozeItem")}
+                  >
+                    {t("btnSnooze")}
+                  </button>
+                  <button
+                    className="btn-clear"
+                    onClick={exitReviewSession}
+                    style={{ fontSize: 12, padding: "4px 10px" }}
+                  >
+                    {t("btnExit")}
+                  </button>
+                </span>
               </div>
               <div
                 style={{
@@ -2392,7 +2471,7 @@ export default function PracticeView({
               }}
             >
               <h3 style={{ marginBottom: 8, color: "var(--color-text)" }}>
-                Review complete
+                {t("reviewCompleteTitle")}
               </h3>
               <p
                 style={{
@@ -2401,8 +2480,7 @@ export default function PracticeView({
                   marginBottom: 12,
                 }}
               >
-                You reviewed {reviewSession.summary.length} item
-                {reviewSession.summary.length === 1 ? "" : "s"}.
+                {reviewSession.summary.length} {t("reviewedItemsLabel")}
               </p>
               <div
                 style={{
@@ -2421,19 +2499,22 @@ export default function PracticeView({
                       gap: 4,
                       padding: "4px 8px",
                       borderRadius: 6,
-                      background: item.skipped
-                        ? "var(--color-progress-badge-bg)"
-                        : item.score >= 4
-                          ? "rgba(90,158,78,0.15)"
-                          : "rgba(192,112,58,0.15)",
+                      background:
+                        item.snoozed || item.skipped
+                          ? "var(--color-progress-badge-bg)"
+                          : item.score >= 4
+                            ? "rgba(90,158,78,0.15)"
+                            : "rgba(192,112,58,0.15)",
                       color: "var(--color-text)",
                       fontSize: 13,
-                      opacity: item.skipped ? 0.55 : 1,
+                      opacity: item.skipped || item.snoozed ? 0.55 : 1,
                     }}
                     lang="ar"
                   >
                     {item.letterChar}
-                    {item.skipped ? (
+                    {item.snoozed ? (
+                      <span style={{ fontSize: 10, opacity: 0.7 }}>⏰</span>
+                    ) : item.skipped ? (
                       <span style={{ fontSize: 10, opacity: 0.6 }}>—</span>
                     ) : (
                       <span style={{ fontSize: 11, opacity: 0.8 }}>
@@ -2448,7 +2529,7 @@ export default function PracticeView({
                 onClick={exitReviewSession}
                 style={styles.btn}
               >
-                Done
+                {t("btnDone")}
               </button>
             </div>
           )}

@@ -201,6 +201,10 @@ export const UI = {
     dashboardCount: "letters due",
     ariaDashboardTab: "Review dashboard",
     ariaLetterTab: "Practice letters",
+    startReviewSession: "▶ Start Review Session",
+    resetDueList: "Reset due list",
+    ariaResetDueList: "Snooze all due items for 3 days",
+    ariaRemoveDueItem: "Remove from review queue",
 
     // Decks (Review sub-tab)
     subAutoReview: "Auto Review",
@@ -324,6 +328,13 @@ export const UI = {
     reviewResumeYes: "Resume",
     reviewResumeNo: "Start fresh",
     reviewSelfAssessed: "Self-assessed (no AI)",
+    btnSnooze: "Snooze",
+    ariaSnoozeItem: "Snooze this item for 3 days and move to next",
+    btnExit: "Exit",
+    btnDone: "Done",
+    reviewProgressLabel: "Review",
+    reviewCompleteTitle: "Review complete",
+    reviewedItemsLabel: "items reviewed",
 
     // Daily goal
     dailyGoalTitle: "Daily goal",
@@ -545,6 +556,10 @@ export const UI = {
     dashboardCount: "حروف مطلوبة",
     ariaDashboardTab: "لوحة المراجعة",
     ariaLetterTab: "تدريب الحروف",
+    startReviewSession: "▶ بدء جلسة المراجعة",
+    resetDueList: "إعادة تعيين قائمة المراجعة",
+    ariaResetDueList: "تأجيل جميع العناصر المطلوبة لمدة 3 أيام",
+    ariaRemoveDueItem: "إزالة من قائمة المراجعة",
 
     // Decks (Review sub-tab)
     subAutoReview: "المراجعة التلقائية",
@@ -667,6 +682,13 @@ export const UI = {
     reviewResumeYes: "استئناف",
     reviewResumeNo: "بدء من جديد",
     reviewSelfAssessed: "تقييم ذاتي (بدون ذكاء اصطناعي)",
+    btnSnooze: "تأجيل",
+    ariaSnoozeItem: "تأجيل هذا العنصر لمدة 3 أيام والانتقال للتالي",
+    btnExit: "خروج",
+    btnDone: "تم",
+    reviewProgressLabel: "مراجعة",
+    reviewCompleteTitle: "اكتملت المراجعة",
+    reviewedItemsLabel: "عناصر تمت مراجعتها",
 
     // Daily goal
     dailyGoalTitle: "Daily goal",

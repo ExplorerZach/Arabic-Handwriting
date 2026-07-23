@@ -655,6 +655,24 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '10px',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  reviewHeaderLeft: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+  },
+  reviewResetBtn: {
+    background: 'none',
+    border: '1px solid var(--color-border)',
+    borderRadius: '6px',
+    padding: '4px 10px',
+    fontSize: '11px',
+    textTransform: 'none',
+    letterSpacing: '0',
+    color: 'var(--color-accent)',
+    cursor: 'pointer',
   },
   reviewCount: {
     display: 'inline-block',
@@ -680,6 +698,9 @@ const styles = {
     gap: '8px',
     justifyContent: 'center',
   },
+  reviewTileWrap: {
+    position: 'relative',
+  },
   reviewTile: {
     display: 'flex',
     flexDirection: 'column',
@@ -693,6 +714,24 @@ const styles = {
     background: 'var(--color-surface)',
     cursor: 'pointer',
     transition: 'all .15s',
+  },
+  reviewTileRemove: {
+    position: 'absolute',
+    top: '-6px',
+    right: '-6px',
+    width: '18px',
+    height: '18px',
+    borderRadius: '50%',
+    border: '1px solid var(--color-border)',
+    background: 'var(--color-surface-solid)',
+    color: 'var(--color-text-muted)',
+    fontSize: '11px',
+    lineHeight: '16px',
+    padding: '0',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   reviewTileChar: {
     fontSize: '32px',
@@ -714,6 +753,7 @@ const styles = {
     letterSpacing: '.06em',
     textAlign: 'center',
   },
+
 
   /* ─── Score stars ─────────────────────────────────────── */
   scoreRow: {

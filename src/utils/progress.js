@@ -13,6 +13,8 @@
  *       interval: 1,          // days until next review (1 = tomorrow)
  *       easeFactor: 2.5,     // SM-2 ease factor (min 1.3)
  *       lastReview: null,    // YYYY-MM-DD (local date) of last AI review, or null
+ *       failedSinceLastPass: true, // transient flag — item stays due same-session on SM-2 fail
+ *       snoozedUntil: null,  // YYYY-MM-DD — hides item from due list until this date passes
  *     }
  *   }
  * }
@@ -26,6 +28,9 @@ const STORAGE_KEY = 'arabic_progress';
 const RECENCY_DAYS = 3;        // option 4: days between practices before re-surfacing
 const GRADUATION_THRESHOLD = 5; // option 5: drawings before interval starts growing
 const GRADUATION_STEP = 3;     // option 5: days added per graduation tier
+
+// Days a snoozed letter+form stays hidden from the due list.
+export const SNOOZE_DAYS = 3;
 
 // ─── In-memory cache ──────────────────────────────────────
 // localStorage.getItem + JSON.parse is cheap individually but called
@@ -237,6 +242,40 @@ export function updateSR(letterName, formKey, aiScore) {
 }
 
 /**
+ * Snooze a single letter+form so it drops out of the due list for a few
+ * days without touching its SM-2 mastery data (interval/easeFactor/score/
+ * lastReview are untouched — fully reversible, just hides it temporarily).
+ */
+export function snoozeDue(letterName, formKey, days = SNOOZE_DAYS) {
+  const data = load();
+  if (!data[letterName]) data[letterName] = {};
+  if (!data[letterName][formKey]) {
+    data[letterName][formKey] = { practiced: false, practiceCount: 0 };
+  }
+  data[letterName][formKey].snoozedUntil = addDaysLocal(todayLocal(), days);
+  save(data);
+  return data;
+}
+
+/**
+ * Snooze every item in a due-items list (e.g. the whole "Due for Review"
+ * queue) in a single load/save transaction.
+ */
+export function snoozeAllDue(dueItems, days = SNOOZE_DAYS) {
+  const data = load();
+  const until = addDaysLocal(todayLocal(), days);
+  for (const { letterName, formKey } of dueItems) {
+    if (!data[letterName]) data[letterName] = {};
+    if (!data[letterName][formKey]) {
+      data[letterName][formKey] = { practiced: false, practiceCount: 0 };
+    }
+    data[letterName][formKey].snoozedUntil = until;
+  }
+  save(data);
+  return data;
+}
+
+/**
  * Returns an array of { letterName, letterChar, formKey } for all letter+form
  * combos that are due for review today (lastReview + interval <= today, or
  * never reviewed). Dates are compared in local calendar days.
@@ -250,6 +289,10 @@ export function getDueLetters(LETTERS) {
     for (const [formKey] of Object.entries(letter.forms)) {
       const stored = data[letter.name]?.[formKey];
       if (!stored?.practiced) continue;
+
+      // Snoozed items are hidden regardless of any other due condition
+      // until their snooze period expires.
+      if (stored.snoozedUntil && stored.snoozedUntil > today) continue;
 
       // Items the user failed earlier today stay due — classic SM-2
       // re-shows them until they pass.
