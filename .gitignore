@@ -11,3 +11,4 @@ _app_code_formatted.txt
 *.log
 crush.json
 .worktrees
+vercel.txt
