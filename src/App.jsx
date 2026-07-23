@@ -3,6 +3,8 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import PracticeView from './components/PracticeView';
 import { UI } from './locales';
+import { isTauri } from './utils/env';
+import { maybeSendReminder } from './utils/notifications';
 
 export default function App() {
   const [apiKey, setApiKey] = useState(
@@ -56,7 +58,17 @@ export default function App() {
     });
   };
 
-  const skipLinkText = UI[locale]?.skipLink ?? 'Skip to canvas';
+  const t = (key) => UI[locale]?.[key] ?? key;
+
+  // Daily practice reminder (Tauri only)
+  useEffect(() => {
+    if (!isTauri) return;
+    maybeSendReminder(t);
+    const interval = setInterval(() => maybeSendReminder(t), 6 * 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [locale]);
+
+  const skipLinkText = t('skipLink');
 
   return (
     <>
@@ -72,8 +84,8 @@ export default function App() {
         onToggleDarkMode={toggleDarkMode}
         onToggleLocale={toggleLocale}
       />
-      <Analytics />
-      <SpeedInsights />
+      {!isTauri && <Analytics />}
+      {!isTauri && <SpeedInsights />}
     </>
   );
 }

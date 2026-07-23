@@ -290,7 +290,7 @@ export const UI = {
     statsWeaknesses: "Focus Areas",
     statsTimeline: "Progress (30 days)",
     freezeAvailable: "Freeze available",
-    freezeUsed: "Freeze used",
+    freezeUsed: "Freezes used",
     freezePreserved: "Streak preserved",
 
     // Tip jar
@@ -355,6 +355,17 @@ export const UI = {
     xpCardNextHint: "{done}/{need} XP to level {next}",
     ariaXpLevel: "Experience level and progress",
     ariaXpGain: "Experience gained",
+
+    // Download
+    downloadTitle: "Get the Desktop App",
+    downloadDesc: "Download for Windows, macOS, or Linux. The web version always stays free.",
+    downloadWindows: "Windows",
+    downloadMacOS: "macOS",
+    downloadLinux: "Linux",
+
+    // Notifications
+    notifReminderTitle: "Arabic Script Practice",
+    notifReminderBody: "Don't forget your daily practice! 5 minutes keeps your streaks alive.",
   },
 
   ar: {
@@ -662,6 +673,17 @@ export const UI = {
     affItalkiDesc: "تدرب مع ناطقين أصليين",
     affPreply: "مدرسو Preply",
     affPreplyDesc: "تدريب خط فردي",
+
+    // Download
+    downloadTitle: "حمّل التطبيق",
+    downloadDesc: "حمّل لنظام ويندوز أو ماك أو لينكس. النسخة الويب مجانية دائمًا.",
+    downloadWindows: "ويندوز",
+    downloadMacOS: "ماك",
+    downloadLinux: "لينكس",
+
+    // Notifications
+    notifReminderTitle: "مكتبة الخط",
+    notifReminderBody: "لا تنسَ تدريبك اليومي! ٥ دقائق تحافظ على استمراريتك.",
 
     // Login screen
     loginIntroPrefix:

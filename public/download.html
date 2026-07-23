@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arabic Script Practice — Desktop App</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Scheherazade+New:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #fdf0d0;
+      --bg-card: rgba(255, 255, 255, 0.7);
+      --text: #3d1800;
+      --text-muted: #9b6a30;
+      --text-soft: #6b4010;
+      --accent: #8b4513;
+      --accent-warm: #7a3a0e;
+      --border: rgba(180, 130, 60, 0.35);
+      --border-strong: rgba(180, 130, 60, 0.6);
+      --shadow: rgba(100, 60, 0, 0.12);
+      --shadow-deep: rgba(139, 69, 19, 0.3);
+      --btn-bg: linear-gradient(135deg, #8b4513, #c0703a);
+      --btn-text: #fff8ee;
+      --link: #8b4513;
+      --gradient-start: #fdf0d0;
+      --gradient-end: #eedfa8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a0e05;
+        --bg-card: rgba(35, 18, 5, 0.8);
+        --text: #f5e0b0;
+        --text-muted: #c0905a;
+        --text-soft: #d4a870;
+        --accent: #c0703a;
+        --accent-warm: #a0602a;
+        --border: rgba(192, 112, 58, 0.35);
+        --border-strong: rgba(192, 112, 58, 0.6);
+        --shadow: rgba(0, 0, 0, 0.4);
+        --shadow-deep: rgba(0, 0, 0, 0.5);
+        --btn-bg: linear-gradient(135deg, #7a3a0e, #c0703a);
+        --btn-text: #fff8ee;
+        --link: #d4905a;
+        --gradient-start: #1a0e05;
+        --gradient-end: #231008;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Georgia, serif;
+      background: linear-gradient(160deg, var(--gradient-start), var(--gradient-end));
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: var(--bg-card);
+      border-radius: 20px;
+      border: 1.5px solid var(--border);
+      padding: 40px 32px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 8px 32px var(--shadow);
+    }
+    .arabic {
+      font-size: 42px;
+      font-family: 'Amiri', 'Scheherazade New', serif;
+      color: var(--accent-warm);
+      margin-bottom: 4px;
+    }
+    h1 {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .btn {
+      padding: 14px 20px;
+      border-radius: 12px;
+      border: none;
+      font-family: Georgia, serif;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: opacity 0.12s, transform 0.1s, box-shadow 0.12s;
+    }
+    .btn:hover {
+      box-shadow: 0 4px 18px var(--shadow-deep);
+      filter: brightness(1.08);
+    }
+    .btn:active {
+      transform: scale(0.96);
+    }
+    .btn-primary {
+      background: var(--btn-bg);
+      color: var(--btn-text);
+    }
+    .btn-outline {
+      background: transparent;
+      color: var(--accent);
+      border: 1.5px solid var(--border);
+    }
+    .icon { font-size: 18px; }
+    .web-link {
+      display: block;
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .web-link a {
+      color: var(--link);
+    }
+    .footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .footer a {
+      color: var(--link);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="arabic" lang="ar">مكتبة الخط</div>
+    <h1>Arabic Script Practice</h1>
+    <p class="subtitle">Practice Arabic handwriting with AI-powered calligraphy feedback. Available on every platform.</p>
+
+    <div class="btn-group">
+      <a class="btn btn-primary" href="https://github.com/ExplorerZach/arabic-handwriting/releases/latest/download/Arabic-Script-Practice_1.0.0_x64.msi" target="_blank" rel="noreferrer">
+        <span class="icon">🪟</span> Download for Windows
+      </a>
+      <a class="btn btn-primary" href="https://github.com/ExplorerZach/arabic-handwriting/releases/latest/download/Arabic-Script-Practice_1.0.0_x64.dmg" target="_blank" rel="noreferrer">
+        <span class="icon">🍎</span> Download for macOS
+      </a>
+      <a class="btn btn-primary" href="https://github.com/ExplorerZach/arabic-handwriting/releases/latest/download/Arabic-Script-Practice_1.0.0_x86_64.AppImage" target="_blank" rel="noreferrer">
+        <span class="icon">🐧</span> Download for Linux
+      </a>
+    </div>
+
+    <a class="btn btn-outline" href="https://github.com/ExplorerZach/arabic-handwriting/releases/latest" target="_blank" rel="noreferrer">
+      View all releases on GitHub
+    </a>
+
+    <p class="web-link">
+      Also available on the web at <a href="https://www.writearabic.app">writearabic.app</a>
+    </p>
+
+    <p class="footer">
+      <a href="https://www.writearabic.app">← Back to the web app</a>
+    </p>
+  </div>
+</body>
+</html>

@@ -48,6 +48,7 @@ import LevelBadge from "./LevelBadge";
 import XpGainToast from "./XpGainToast";
 import UndoToast from "./UndoToast";
 import DeckManager from "./DeckManager";
+import { isTauri } from '../utils/env';
 import {
   getDecks,
   getDeck,
@@ -1183,13 +1184,29 @@ export default function PracticeView({
     return offscreen.toDataURL("image/png");
   }, [darkMode, paperTheme, practiceMode, currentWord, currentChar]);
 
-  const saveDrawing = useCallback(() => {
+  const saveDrawing = useCallback(async () => {
     if (!strokesRef.current.length) return;
     const dataURL = exportForSave();
     const name =
       practiceMode === "words"
         ? `arabic-${currentWord?.roman ?? "word"}`
         : `arabic-${letter.name.toLowerCase()}-${activeForm}`;
+
+    if (isTauri) {
+      const { save } = await import('@tauri-apps/plugin-dialog');
+      const { writeFile } = await import('@tauri-apps/plugin-fs');
+      const filePath = await save({
+        defaultPath: `${name}.png`,
+        filters: [{ name: 'PNG Image', extensions: ['png'] }],
+      });
+      if (!filePath) return;
+      const res = await fetch(dataURL);
+      const blob = await res.blob();
+      const buf = await blob.arrayBuffer();
+      await writeFile(filePath, new Uint8Array(buf));
+      return;
+    }
+
     const a = document.createElement("a");
     a.href = dataURL;
     a.download = `${name}.png`;
@@ -1200,6 +1217,10 @@ export default function PracticeView({
 
   const shareDrawing = useCallback(async () => {
     if (!strokesRef.current.length) return;
+    if (isTauri) {
+      saveDrawing();
+      return;
+    }
     const dataURL = exportForSave();
     const name =
       practiceMode === "words"
@@ -3338,6 +3359,25 @@ export default function PracticeView({
           dismissRef={deleteBtnRef}
         />
       )}
+      <div style={{ textAlign: 'center', padding: '12px 0 4px', fontSize: 12, color: 'var(--color-text-muted)' }}>
+        <button
+          onClick={() => {
+            const el = document.getElementById('download-footer-panel');
+            if (el) { el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+          }}
+          style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 12, fontFamily: 'Georgia,serif', textDecoration: 'underline', textUnderlineOffset: '2px' }}
+        >
+          {t('downloadTitle')}
+        </button>
+        <div id="download-footer-panel" style={{ display: 'none', marginTop: 8, padding: 12, borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-card-bg)', maxWidth: 280, margin: '8px auto 0' }}>
+          <p style={{ marginBottom: 8, fontSize: 11, lineHeight: 1.5 }}>{t('downloadDesc')}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <a href="https://github.com/ExplorerZach/arabic-handwriting/releases/latest/download/Arabic-Script-Practice_1.0.0_x64.msi" target="_blank" rel="noreferrer" style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-btn-alpha-bg)', color: 'var(--color-text)', fontSize: 12, textDecoration: 'none', fontFamily: 'Georgia,serif' }}>🪟 {t('downloadWindows')}</a>
+            <a href="https://github.com/ExplorerZach/arabic-handwriting/releases/latest/download/Arabic-Script-Practice_1.0.0_x64.dmg" target="_blank" rel="noreferrer" style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-btn-alpha-bg)', color: 'var(--color-text)', fontSize: 12, textDecoration: 'none', fontFamily: 'Georgia,serif' }}>🍎 {t('downloadMacOS')}</a>
+            <a href="https://github.com/ExplorerZach/arabic-handwriting/releases/latest/download/Arabic-Script-Practice_1.0.0_x86_64.AppImage" target="_blank" rel="noreferrer" style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-btn-alpha-bg)', color: 'var(--color-text)', fontSize: 12, textDecoration: 'none', fontFamily: 'Georgia,serif' }}>🐧 {t('downloadLinux')}</a>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

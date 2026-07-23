@@ -2,10 +2,11 @@
 
 ## Project Overview & Commands
 
-Arabic handwriting practice PWA (React 19 + Vite 8). Users draw Arabic letters
-or words on an HTML canvas (Apple Pencil / touch / mouse) and get AI calligraphy
-feedback via the OpenRouter vision API. Static site on Vercel — push to `main`
-auto-deploys.
+Arabic handwriting practice app — **PWA on the web** (React 19 + Vite 8) and
+**native desktop** (Tauri 2 + Rust). Users draw Arabic letters or words on an
+HTML canvas (Apple Pencil / touch / mouse) and get AI calligraphy feedback via
+the OpenRouter vision API. Web version on Vercel — push to `main` auto-deploys.
+Desktop version builds to .exe/.dmg/.AppImage binaries.
 
 Three modes: **Letters** (28 letters, up to 4 positional forms), **Words**
 (ligatures, vocabulary, phrases), **Review** (SM-2 spaced-repetition dashboard).
@@ -13,13 +14,19 @@ A guided **Lesson Mode** reorders letters by shape family. All roadmap phases
 complete except optional cloud sync.
 
 ```bash
-npm run dev       # Vite dev server → localhost:5173
-npm run build     # Production build → dist/  AND auto-updates sw.js
-npm run preview   # Preview production build locally
+npm run dev         # Vite dev server → localhost:5173
+npm run build       # Production build → dist/  AND auto-updates sw.js
+npm run preview     # Preview production build locally
+npm run tauri dev   # Native window with Vite HMR (requires Rust)
+npm run tauri build # Native binaries (.exe / .dmg / .AppImage)
 ```
 
 No test suite, linter, or formatter. Verify with `npm run build` (must exit
-zero) and manual browser testing.
+zero). For Tauri changes also verify `cargo check` in `src-tauri/` (must exit
+zero). Manual browser testing for visual regressions.
+
+**Prerequisites:** Rust (via `rustup`), Node.js, and platform build tools
+(MSVC on Windows, Xcode on macOS, webkit2gtk on Linux).
 
 **LSP:** `typescript-language-server` is pinned to **`4.3.4`** — do NOT upgrade
 to v5.x (crashes under Crush with `no handler for method:
@@ -28,13 +35,14 @@ window/workDoneProgress/create`). `jsconfig.json` configures `jsx: "react-jsx"`
 
 ## Architecture & Data Flow
 
-- `index.html` (Vite entry, fonts, SW registration), `src/main.jsx` (root, global.css), `src/App.jsx` (manages key/locale/dark props).
+- `index.html` (Vite entry, fonts), `src/main.jsx` (root, global.css, SW registration, hydration), `src/App.jsx` (manages key/locale/dark props).
 - `src/components/`: `LoginScreen.jsx` (API key/skip), `PracticeView.jsx` (main UI, canvas, drawing, nav, AI feedback), `DeckManager.jsx` (presentational deck list/editor/picker, Review sub-tab; bulk-add, word search, checkmark badges, roving tabindex), `UndoToast.jsx` (accessible interactive undo toast).
 - `src/data/`: `letters.js` (auto-gen positional forms), `lessonOrder.js` (shape families), `strokeOrder.js` (0-100 coords), `words.js`.
 - `src/locales/index.js` (UI strings + sole source of FORM_NAMES/FORM_SHORT/FORM_FULL/FORM_DESCRIPTIONS).
-- `src/utils/`: `api.js` (OpenRouter vision), `drawing.js` (pressure/brush), `progress.js` (SM-2; also exports `todayLocal`), `history.js` (feedback history), `decks.js` (study deck CRUD + `duplicateDeck`/`reorderDecks`/`setLastSession`/`bulkAddItems`/`restoreDeck`).
+- `src/utils/`: `api.js` (OpenRouter vision), `drawing.js` (pressure/brush), `progress.js` (SM-2; also exports `todayLocal`), `history.js` (feedback history), `decks.js` (study deck CRUD + `duplicateDeck`/`reorderDecks`/`setLastSession`/`bulkAddItems`/`restoreDeck`), `env.js` (Tauri runtime detection — `isTauri`).
 - `src/styles/`: `global.css` (CSS vars, breakpoints, hover/focus, RTL), `practiceStyles.js`, `loginStyles.js` (inline styles).
 - `public/` (sw.js, manifest.json, icons), `vercel.json` (headers), `scripts/bust-sw.js` (post-build cache-bust).
+- `src-tauri/` — Tauri Rust backend: `tauri.conf.json` (window, CSP, bundle targets), `Cargo.toml` (deps), `src/lib.rs` (plugin registration), `capabilities/default.json` (permissions).
 
 ### Data flow & key decisions
 
@@ -61,18 +69,39 @@ via tatweel (kashida `ـ`) joining in `letters.js` — don't hand-define them.
 **FORM_NAMES/FORM_SHORT/FORM_FULL/FORM_DESCRIPTIONS live only in
 `locales/index.js`** as locale keys — always pass through `t()`.
 
-## Service Worker — Automated
+## Tauri — Dual Target Architecture
+
+The same `src/` code compiles for both web and native desktop. Runtime detection: `import { isTauri } from './utils/env'` checks `window.__TAURI_INTERNALS__`. Use this to guard web-only or Tauri-only code paths.
+
+- **Web build** (`npm run build`): Vite produces `dist/` → Vercel serves it. SW, CSP headers, Vercel Analytics apply.
+- **Tauri build** (`npm run tauri build`): Rust compiles `src-tauri/` wrapping the Vite output into native binaries.
+- **Tauri dev** (`npm run tauri dev`): Launches a native window loading the Vite dev server at localhost:5173. HMR works.
+- **localStorage** works in both environments (Tauri WebView is a real browser engine). Web and Tauri have separate localStorage sandboxes — no data carry-over.
+- **Tauri CSP** is configured in `src-tauri/tauri.conf.json` → `app.security.csp`, separate from the web CSP in `vercel.json`.
+- **Plugins** are installed via `npm run tauri add <name>` (handles Cargo.toml, npm, and capabilities). Register in `src-tauri/src/lib.rs`.
+- **`src/utils/env.js`** is the single source of truth for `isTauri`. Import it anywhere you need platform branching.
+- **Tauri docs:** https://v2.tauri.app
+
+### Key web-only guards already in place
+
+- **Service Worker** (`src/main.jsx`): guarded with `if (!isTauri && 'serviceWorker' in navigator)` — SWs don't work on Tauri's `asset://` protocol.
+- **Vercel Analytics** (`src/App.jsx`): wrapped in `{!isTauri && <Analytics />}` — meaningless without Vercel context.
+
+## Service Worker — Web Only
 
 `npm run build` runs `vite build` then `scripts/bust-sw.js`, which bumps the
 `CACHE` version in `public/sw.js`, patches JS/CSS asset hashes, and copies it to
 the root `sw.js` (both stay in sync). **Don't manually edit `sw.js`** unless
 adding new files to the `ASSETS` precache list.
+SW registration is guarded with `isTauri` — it only runs in the browser.
 
 ## localStorage Keys — Do Not Rename
 
 Keys: `openrouter_key` (API key), `openrouter_model` (model ID), `brushScale` (brush size), `lessonMode` (`"true"`/`"false"`), `app_locale` (`"en"`/`"ar"`), `app_darkMode` (`"true"`/`"false"`), `arabic_progress` (SM-2 progress JSON), `arabic_feedback_history` (last 5 entries JSON), `arabic_decks` (user study decks JSON). Renaming silently loses user data.
 
 **Letter-name keys** must stay distinct (two pairs share romanizations): ح=`Hha`, ه=`Ha`, ط=`Tta`, ت=`Ta`. `progress.js` and `history.js` each have a `migrate()` that copies old `Ha`/`Ta` onto `Hha`/`Tta`. **Never rename these or remove the migration** without a forward migration.
+
+In Tauri, localStorage is backed by the system WebView (Edge on Windows, WebKit on macOS/Linux). It works identically to the browser but is sandboxed per-WebView-instance — no data carry-over between web and desktop. Future storage plugins (Store, Stronghold) may layer on top; never remove localStorage fallback.
 
 ## Localization
 
@@ -89,7 +118,7 @@ All UI strings in `src/locales/index.js` as `UI = { en: {...}, ar: {...} }`.
 - **Inline JS style objects** in `src/styles/` — no CSS modules, no Tailwind. Exception: `global.css` holds CSS color vars (light+dark), hover/active/focus classes (`.btn-nav`, `.btn-ai`, etc.), breakpoints (`<400`/`400–639`/`640–899`/`≥900`), and RTL rules.
 - Buttons get a `className` (interactive states) AND inline `style` (layout/colors) — keep both in sync. Compose with spread: `{...styles.btn, ...styles.btnClear}`.
 - Use CSS vars (`var(--color-primary)`), not hex literals, so dark mode works (`[data-theme="dark"]` on `<html>`).
-- Arabic text: set `lang="ar"`, `direction: "rtl"`, font `'Amiri','Scheherazade New',serif` (Google Fonts in `index.html`). `TATWEEL` (`ـ`, U+0640) generates connected forms — don't substitute it.
+- Arabic text: set `lang="ar"`, `direction: "rtl"`, font `'Amiri','Scheherazade New',serif` (loaded via Google Fonts in `index.html` or bundled locally for Tauri offline use). `TATWEEL` (`ـ`, U+0640) generates connected forms — don't substitute it.
 
 ## Canvas & Drawing
 
@@ -133,10 +162,8 @@ All UI strings in `src/locales/index.js` as `UI = { en: {...}, ar: {...} }`.
 
 ## Export / Share & PracticeView Props
 
-- `saveDrawing()` — full-res PNG via hidden `<a download>`; `shareDrawing()` —
-  `navigator.share({ files })`, falls back to download. Both gated on `hasStrokes`.
-- Props: `<PracticeView apiKey onClearKey locale darkMode onToggleDarkMode onToggleLocale />`
-  (`apiKey` is an OpenRouter key or `'skip'`).
+- `saveDrawing()` — full-res PNG via hidden `<a download>` (web) or native save dialog (Tauri, via `@tauri-apps/plugin-dialog`); `shareDrawing()` — `navigator.share({ files })`, falls back to download. Both gated on `hasStrokes`. Guard Tauri paths with `isTauri`.
+- Props: `<PracticeView apiKey onClearKey locale darkMode onToggleDarkMode onToggleLocale />` (`apiKey` is an OpenRouter key or `'skip'`).
 
 ## Conventions
 
@@ -181,7 +208,8 @@ not `.vercel.app` hosts). `writearabic.app` 307-redirects to `www`. DNS at
 
 Phases 1–5 complete (fonts/API/undo; hover/export/progress/history; lessons/
 comparison/scoring/animation/words; a11y/responsive/dark/i18n; SM-2/save-share/
-SW cache bust). **Pending:** cloud sync (optional, needs backend).
+SW cache bust). Tauri desktop target added (v1.0.0). **Pending:** cloud sync
+(optional, needs backend).
 
 ## Frontend Design Guidelines
 
