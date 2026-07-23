@@ -48,33 +48,55 @@ export default function DeckManager({
   }, [deckView]);
 
   const [gridFocusIdx, setGridFocusIdx] = useState(0);
+  // Tile refs for roving-tabindex focus movement (mirrors alphaBtnRefs in
+  // PracticeView). Indexed by position within the currently-rendered grid.
+  const tileRefs = useRef([]);
 
+  // Roving-tabindex grid nav: arrows move focus to the neighboring tile
+  // (Left/Right flip direction in RTL, mirroring handleAlphaKeyDown in
+  // PracticeView). Enter/Space are deliberately NOT handled here — native
+  // button activation toggles the item; preventDefault on keydown would
+  // suppress the click for both keys.
   const handleGridKeyDown = (e, items, idx) => {
     let next = idx;
-    if (e.key === "ArrowRight") next = (idx + 1) % items.length;
-    else if (e.key === "ArrowLeft") next = (idx - 1 + items.length) % items.length;
-    else if (e.key === "ArrowDown") next = Math.min(idx + 1, items.length - 1);
-    else if (e.key === "ArrowUp") next = Math.max(idx - 1, 0);
-    else if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      return; // let the button onClick fire
-    } else return;
+    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      const dir = e.key === "ArrowRight" ? 1 : -1;
+      const adjustedDir = locale === "ar" ? -dir : dir;
+      next = (idx + adjustedDir + items.length) % items.length;
+    } else if (e.key === "ArrowDown") {
+      next = Math.min(idx + 1, items.length - 1);
+    } else if (e.key === "ArrowUp") {
+      next = Math.max(idx - 1, 0);
+    } else {
+      return;
+    }
     e.preventDefault();
     setGridFocusIdx(next);
+    tileRefs.current[next]?.focus();
   };
 
   const editingDeck = editingId ? decks.find((d) => d.id === editingId) : null;
 
   const countLowScore = (deck) => {
     if (!deck.lastSession || !deck.lastSession.items) return 0;
+    // Only count entries still in the deck — items removed since the last
+    // session must not keep the ↻ Low button alive (spec edge case #4).
     return deck.lastSession.items.filter(
-      (e) => e.score == null || e.score <= 3
+      (e) =>
+        (e.score == null || e.score <= 3) &&
+        deck.items.some((i) => i.type === e.type && i.ref === e.ref)
     ).length;
   };
 
+  // lastSession.date is a local "YYYY-MM-DD" string. Parse it as a LOCAL
+  // date — new Date("YYYY-MM-DD") is UTC midnight, which renders as the
+  // previous day in timezones west of UTC.
   const formatDate = (dateStr) => {
     try {
-      return new Date(dateStr).toLocaleDateString(undefined, {
+      const [y, m, d] = String(dateStr).split("-").map(Number);
+      const date = new Date(y, m - 1, d);
+      if (Number.isNaN(date.getTime())) return dateStr;
+      return date.toLocaleDateString(undefined, {
         month: "short",
         day: "numeric",
       });
@@ -429,12 +451,15 @@ export default function DeckManager({
         </div>
 
         {pickerTab === "letters" && (
-          <div style={styles.deckPickerGrid} role="grid" aria-label={t("deckPickerLetters")}>
+          <div style={styles.deckPickerGrid} role="group" aria-label={t("deckPickerLetters")}>
             {LETTERS.map((l, idx) => {
               const selected = isInDeck("letter", l.name);
               return (
                 <div key={l.name} style={styles.deckPickerTileWrap}>
                   <button
+                    ref={(el) => {
+                      tileRefs.current[idx] = el;
+                    }}
                     className="btn-alpha"
                     style={{
                       ...styles.reviewTile,
@@ -444,7 +469,6 @@ export default function DeckManager({
                     onKeyDown={(e) => handleGridKeyDown(e, LETTERS, idx)}
                     tabIndex={idx === gridFocusIdx ? 0 : -1}
                     aria-pressed={selected}
-                    role="gridcell"
                   >
                     <span style={styles.reviewTileChar} lang="ar">{l.letter}</span>
                     <span style={styles.reviewTileName}>{l.name}</span>
@@ -457,12 +481,15 @@ export default function DeckManager({
         )}
 
         {pickerTab === "numbers" && (
-          <div style={styles.deckPickerGrid} role="grid" aria-label={t("deckPickerNumbers")}>
+          <div style={styles.deckPickerGrid} role="group" aria-label={t("deckPickerNumbers")}>
             {NUMBERS.map((n, idx) => {
               const selected = isInDeck("number", n.name);
               return (
                 <div key={n.name} style={styles.deckPickerTileWrap}>
                   <button
+                    ref={(el) => {
+                      tileRefs.current[idx] = el;
+                    }}
                     className="btn-alpha"
                     style={{
                       ...styles.reviewTile,
@@ -472,7 +499,6 @@ export default function DeckManager({
                     onKeyDown={(e) => handleGridKeyDown(e, NUMBERS, idx)}
                     tabIndex={idx === gridFocusIdx ? 0 : -1}
                     aria-pressed={selected}
-                    role="gridcell"
                   >
                     <span style={styles.reviewTileChar} lang="ar">{n.letter}</span>
                     <span style={styles.reviewTileName}>{n.name}</span>
@@ -485,12 +511,15 @@ export default function DeckManager({
         )}
 
         {pickerTab === "diacritics" && (
-          <div style={styles.deckPickerGrid} role="grid" aria-label={t("deckPickerDiacritics")}>
+          <div style={styles.deckPickerGrid} role="group" aria-label={t("deckPickerDiacritics")}>
             {DIACRITICS.map((d, idx) => {
               const selected = isInDeck("diacritic", d.name);
               return (
                 <div key={d.name} style={styles.deckPickerTileWrap}>
                   <button
+                    ref={(el) => {
+                      tileRefs.current[idx] = el;
+                    }}
                     className="btn-alpha"
                     style={{
                       ...styles.reviewTile,
@@ -500,7 +529,6 @@ export default function DeckManager({
                     onKeyDown={(e) => handleGridKeyDown(e, DIACRITICS, idx)}
                     tabIndex={idx === gridFocusIdx ? 0 : -1}
                     aria-pressed={selected}
-                    role="gridcell"
                   >
                     <span style={styles.reviewTileChar} lang="ar">{d.letter}</span>
                     <span style={styles.reviewTileName}>{d.name}</span>

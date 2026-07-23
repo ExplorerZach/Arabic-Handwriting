@@ -511,7 +511,11 @@ export default function PracticeView({
     const snapshot = JSON.parse(JSON.stringify(deck));
     deleteDeck(id);
     refreshDecks();
-    setUndoDelete({ deletedDeck: snapshot });
+    // timestamp lets the toast render use it as `key`: a second delete while
+    // the toast is up remounts UndoToast, restarting its auto-dismiss timer
+    // (and re-moving focus to the new Undo button) instead of letting the
+    // first delete's timer kill the second delete's undo window early.
+    setUndoDelete({ deletedDeck: snapshot, timestamp: Date.now() });
   }, [refreshDecks]);
 
   const handleUndoDelete = useCallback(() => {
@@ -1461,8 +1465,14 @@ export default function PracticeView({
   const buildLowScoreQueue = useCallback((deckId) => {
     const deck = getDeck(deckId);
     if (!deck || !deck.lastSession || !deck.lastSession.items) return [];
+    // Filter to entries still in the deck — items removed since the last
+    // session must not be re-practiced (spec edge case #4, no stale refs).
     return deck.lastSession.items
-      .filter((e) => e.score == null || e.score <= 3)
+      .filter(
+        (e) =>
+          (e.score == null || e.score <= 3) &&
+          deck.items.some((i) => i.type === e.type && i.ref === e.ref)
+      )
       .map((e) => ({ type: e.type, ref: e.ref, formKey: e.formKey }));
   }, []);
 
@@ -1949,8 +1959,12 @@ export default function PracticeView({
             style={{
               ...styles.lessonToggle,
               ...(lessonMode ? styles.lessonToggleActive : {}),
+              // Toggling lesson order mid-deck-session remaps letterIndex →
+              // letter and would misattribute the next score.
+              opacity: deckSession ? 0.35 : 1,
             }}
             onClick={toggleLessonMode}
+            disabled={!!deckSession}
             aria-pressed={lessonMode}
             aria-label={t("ariaLessonModeBtn")}
             title={
@@ -2653,8 +2667,9 @@ export default function PracticeView({
             </div>
           )}
 
-          {/* Word group selector */}
-          {practiceMode === "words" && (
+          {/* Word group selector — hidden during deck sessions so a mid-session
+              group click can't move the next score to a different word. */}
+          {practiceMode === "words" && !deckSession && (
             <div
               style={styles.formSwitcher}
               role="group"
@@ -2846,8 +2861,16 @@ export default function PracticeView({
           <div style={styles.controls}>
             <button
               className="btn-nav"
-              style={{ ...styles.btn, ...styles.btnNav }}
+              style={{
+                ...styles.btn,
+                ...styles.btnNav,
+                // Deck sessions are linear (Next advances the session queue);
+                // a free Prev would swap the displayed item without updating
+                // the session and misattribute the next score.
+                opacity: deckSession ? 0.35 : 1,
+              }}
               onClick={() => {
+                if (deckSession) return;
                 if (practiceMode === "words") {
                   const total = currentWordGroup.words.length;
                   selectWord(wordGroupIndex, (wordIndex - 1 + total) % total);
@@ -2855,6 +2878,7 @@ export default function PracticeView({
                   selectLetter((letterIndex - 1 + totalCount) % totalCount);
                 }
               }}
+              disabled={!!deckSession}
               aria-label={t("ariaPrevBtn")}
             >
               {t("btnPrev")}
@@ -3125,8 +3149,10 @@ export default function PracticeView({
             </div>
           )}
 
-          {/* Alphabet / numerals / lesson / word row */}
-          {reviewSession ? (
+          {/* Alphabet / numerals / lesson / word row — hidden during guided
+              review AND deck sessions so mid-session item clicks can't
+              misattribute the next score to a different letter/word. */}
+          {reviewSession || deckSession ? (
             <div
               style={{
                 padding: "8px 0",
@@ -3134,7 +3160,7 @@ export default function PracticeView({
                 fontSize: 13,
               }}
             >
-              Guided review session in progress
+              {deckSession ? t("deckSessionActive") : t("reviewSessionActive")}
             </div>
           ) : practiceMode !== "words" ? (
             <div
@@ -3223,6 +3249,7 @@ export default function PracticeView({
       )}
       {undoDelete && (
         <UndoToast
+          key={undoDelete.timestamp}
           message={t("undoDeleteMessage").replace("{name}", undoDelete.deletedDeck.name)}
           actionLabel={t("undo")}
           onUndo={handleUndoDelete}
