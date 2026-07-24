@@ -1,9 +1,16 @@
 name: Release
 on:
   push:
+    branches-ignore:
+      - '**'
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tagName:
+        description: 'Tag to build (e.g. v1.0.0)'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -42,7 +49,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ github.ref_name }}
+          tagName: ${{ inputs.tagName || github.ref_name }}
           releaseName: 'Arabic Script Practice v__VERSION__'
           releaseBody: 'See the assets to download and install.'
           releaseDraft: true
