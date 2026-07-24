@@ -9,6 +9,8 @@
  * at most one frozen day per month, never rolls over.
  */
 
+import { getItem, setItem } from './storage.js';
+
 const STORAGE_KEY = 'arabic_freezes';
 const MIGRATION_KEY = 'arabic_freezes_v2';
 
@@ -21,7 +23,7 @@ let cache = null;
 function load() {
   if (cache !== null) return cache;
   try {
-    cache = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"frozenDates":[]}');
+    cache = JSON.parse(getItem(STORAGE_KEY) || '{"frozenDates":[]}');
   } catch {
     cache = { frozenDates: [] };
   }
@@ -31,7 +33,7 @@ function load() {
 
 function save(data) {
   cache = data;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 // ─── One-time migration ───────────────────────────────────
@@ -40,10 +42,10 @@ function save(data) {
 // page. Clear those view-consumed entries once; reconcileFreezes() in
 // analytics.js re-establishes legitimate bridges on the next practice.
 if (typeof window !== 'undefined') {
-  if (!localStorage.getItem(MIGRATION_KEY)) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ frozenDates: [] }));
+  if (!getItem(MIGRATION_KEY)) {
+    setItem(STORAGE_KEY, JSON.stringify({ frozenDates: [] }));
     cache = { frozenDates: [] };
-    localStorage.setItem(MIGRATION_KEY, '1');
+    setItem(MIGRATION_KEY, '1');
   }
   window.addEventListener('storage', (e) => {
     if (e.key === STORAGE_KEY) cache = null;

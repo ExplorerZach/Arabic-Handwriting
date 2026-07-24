@@ -1,3 +1,5 @@
+import { getItem, setItem } from './storage.js';
+
 const GOAL_KEY = 'daily_goal';
 const DEFAULT_GOAL = 5;
 
@@ -11,7 +13,7 @@ function todayLocal() {
 
 /** Get the user's daily goal (default 5). */
 export function getDailyGoal() {
-  const raw = localStorage.getItem(GOAL_KEY);
+  const raw = getItem(GOAL_KEY);
   const n = raw ? parseInt(raw, 10) : DEFAULT_GOAL;
   return Number.isFinite(n) && n > 0 ? n : DEFAULT_GOAL;
 }
@@ -19,7 +21,7 @@ export function getDailyGoal() {
 /** Persist a new daily goal. */
 export function setDailyGoal(n) {
   const value = Math.max(1, parseInt(n, 10) || DEFAULT_GOAL);
-  localStorage.setItem(GOAL_KEY, String(value));
+  setItem(GOAL_KEY, String(value));
   return value;
 }
 

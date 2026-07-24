@@ -1,3 +1,5 @@
+import { getItem } from './storage.js';
+
 /**
  * Send the canvas drawing to OpenRouter for AI calligraphy feedback.
  *
@@ -18,7 +20,7 @@ export async function getAIFeedback(
   formDescription
 ) {
   const model =
-    localStorage.getItem('openrouter_model') || 'google/gemini-3-flash-preview';
+    getItem('openrouter_model') || 'google/gemini-3-flash-preview';
 
   const response = await fetch(
     'https://openrouter.ai/api/v1/chat/completions',

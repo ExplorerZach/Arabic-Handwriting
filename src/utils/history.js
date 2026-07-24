@@ -12,6 +12,8 @@
  * Max MAX_PER_SLOT entries per letter+form slot (oldest removed first).
  */
 
+import { getItem, setItem } from './storage.js';
+
 const STORAGE_KEY = 'arabic_feedback_history';
 const MAX_PER_SLOT = 5;
 
@@ -20,7 +22,7 @@ let cache = null;
 function load() {
   if (cache !== null) return cache;
   try {
-    cache = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    cache = JSON.parse(getItem(STORAGE_KEY) || '{}');
   } catch {
     cache = {};
   }
@@ -29,7 +31,7 @@ function load() {
 
 function save(data) {
   cache = data;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 if (typeof window !== 'undefined') {

@@ -49,6 +49,7 @@ import XpGainToast from "./XpGainToast";
 import UndoToast from "./UndoToast";
 import DeckManager from "./DeckManager";
 import { isTauri } from '../utils/env';
+import { getItem, setItem } from '../utils/storage';
 import {
   getDecks,
   getDeck,
@@ -113,13 +114,13 @@ export default function PracticeView({
   // Use a lazy initializer so we don't reference brushPack state before it's
   // declared below (TDZ). The effect further down keeps this ref in sync.
   const brushColorRef = useRef(
-    getBrushColor(localStorage.getItem("brush_pack") || "classic", darkMode),
+    getBrushColor(getItem("brush_pack") || "classic", darkMode),
   );
   // Mirrors paperTheme so redraw() can read the current theme without taking
   // it as a dep (which would invalidate the ResizeObserver on every theme
   // change). Kept in sync by the effect below.
   const paperThemeRef = useRef(
-    localStorage.getItem("app_theme") || "parchment",
+    getItem("app_theme") || "parchment",
   );
   // When the pointer leaves the canvas mid-stroke and re-enters without a
   // lift, the next pointermove would otherwise draw a straight line across
@@ -140,7 +141,7 @@ export default function PracticeView({
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [showHistory, setShowHistory] = useState(false);
   const [lessonMode, setLessonMode] = useState(
-    () => localStorage.getItem("lessonMode") === "true",
+    () => getItem("lessonMode") === "true",
   );
   const [showComparison, setShowComparison] = useState(false);
   const [animating, setAnimating] = useState(false);
@@ -153,28 +154,28 @@ export default function PracticeView({
   const [wordIndex, setWordIndex] = useState(0);
   const [hasStrokes, setHasStrokes] = useState(false);
   const [model, setModel] = useState(
-    () => localStorage.getItem("openrouter_model") || DEFAULT_MODEL,
+    () => getItem("openrouter_model") || DEFAULT_MODEL,
   );
   const [brushValue, setBrushValue] = useState(() => {
-    const v = parseFloat(localStorage.getItem("brushScale") || "1");
+    const v = parseFloat(getItem("brushScale") || "1");
     return Number.isFinite(v) ? v : 1;
   });
   const [templateScale, setTemplateScale] = useState(() => {
-    const v = parseFloat(localStorage.getItem("templateScale") || "1");
+    const v = parseFloat(getItem("templateScale") || "1");
     return Number.isFinite(v) ? v : 1;
   });
   const [paperTheme, setPaperTheme] = useState(
-    () => localStorage.getItem("app_theme") || "parchment",
+    () => getItem("app_theme") || "parchment",
   );
   const [brushPack, setBrushPack] = useState(
-    () => localStorage.getItem("brush_pack") || "classic",
+    () => getItem("brush_pack") || "classic",
   );
   const [dailyGoalState, setDailyGoalState] = useState(() => getDailyGoal());
   const [dailyGoalInput, setDailyGoalInput] = useState(() =>
     String(getDailyGoal()),
   );
   const [reduceMotion, setReduceMotion] = useState(() => {
-    const saved = localStorage.getItem("reduce_motion");
+    const saved = getItem("reduce_motion");
     const initial =
       saved !== null
         ? saved === "true"
@@ -187,14 +188,14 @@ export default function PracticeView({
     return initial;
   });
   const [highContrast, setHighContrast] = useState(
-    () => localStorage.getItem("high_contrast") === "true",
+    () => getItem("high_contrast") === "true",
   );
   const [celebrate, setCelebrate] = useState(false);
   const [xpGain, setXpGain] = useState(null); // { amount, key } | null
   const xpGainTimerRef = useRef(null);
   const appTitleRef = useRef(null);
   const [soundEnabled, setSoundEnabled] = useState(
-    () => localStorage.getItem("sound_enabled") === "true",
+    () => getItem("sound_enabled") === "true",
   );
   // Bumps on every write to progress/history so derived summaries recompute
   // without us having to pipe state through every helper.
@@ -280,7 +281,7 @@ export default function PracticeView({
       "data-high-contrast",
       String(highContrast),
     );
-    localStorage.setItem("high_contrast", String(highContrast));
+    setItem("high_contrast", String(highContrast));
   }, [highContrast]);
 
   useEffect(() => {
@@ -288,7 +289,7 @@ export default function PracticeView({
       "data-reduced-motion",
       String(reduceMotion),
     );
-    localStorage.setItem("reduce_motion", String(reduceMotion));
+    setItem("reduce_motion", String(reduceMotion));
   }, [reduceMotion]);
 
   useEffect(() => {
@@ -303,7 +304,7 @@ export default function PracticeView({
 
   const handleSoundToggle = (v) => {
     setSoundEnabled(v);
-    localStorage.setItem("sound_enabled", String(v));
+    setItem("sound_enabled", String(v));
   };
 
   const t = (key) => UI[locale][key] ?? key;
@@ -576,7 +577,7 @@ export default function PracticeView({
   const toggleLessonMode = useCallback(() => {
     setLessonMode((prev) => {
       const next = !prev;
-      localStorage.setItem("lessonMode", String(next));
+      setItem("lessonMode", String(next));
       return next;
     });
     setLetterIndex(0);
@@ -1837,7 +1838,7 @@ export default function PracticeView({
   const handleModelChange = (ev) => {
     const v = ev.target.value;
     setModel(v);
-    localStorage.setItem("openrouter_model", v);
+    setItem("openrouter_model", v);
   };
 
   const handleDailyGoalChange = (ev) => {
@@ -1888,7 +1889,7 @@ export default function PracticeView({
     const v = parseFloat(ev.target.value);
     const safe = Number.isFinite(v) ? v : 1;
     setTemplateScale(safe);
-    localStorage.setItem("templateScale", String(safe));
+    setItem("templateScale", String(safe));
     if (restGlyphRef.current) {
       restGlyphRef.current = null;
       setRestingGlyph(false);
@@ -1898,13 +1899,13 @@ export default function PracticeView({
 
   const handleThemeChange = (themeId) => {
     setPaperTheme(themeId);
-    localStorage.setItem("app_theme", themeId);
+    setItem("app_theme", themeId);
     redraw(strokesRef.current);
   };
 
   const handleBrushPackChange = (packId) => {
     setBrushPack(packId);
-    localStorage.setItem("brush_pack", packId);
+    setItem("brush_pack", packId);
     brushColorRef.current = getBrushColor(packId, darkMode);
     redraw(strokesRef.current);
   };

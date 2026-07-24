@@ -17,6 +17,8 @@
  * cross-tab `storage` events.
  */
 
+import { getItem, setItem } from './storage.js';
+
 const STORAGE_KEY = 'arabic_xp';
 
 // ─── In-memory cache ──────────────────────────────────────
@@ -25,7 +27,7 @@ let cache = null;
 function load() {
   if (cache !== null) return cache;
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"total":0}');
+    const parsed = JSON.parse(getItem(STORAGE_KEY) || '{"total":0}');
     cache = { total: Number(parsed?.total) || 0 };
   } catch {
     cache = { total: 0 };
@@ -35,7 +37,7 @@ function load() {
 
 function save(data) {
   cache = data;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 if (typeof window !== 'undefined') {

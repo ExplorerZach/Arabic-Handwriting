@@ -11,6 +11,8 @@
  * and UI preferences) is fair game.
  */
 
+import { getItem, setItem } from './storage.js';
+
 // Keys included in a backup. Order is cosmetic. `openrouter_key` is excluded
 // on purpose (see module comment).
 const BACKUP_KEYS = [
@@ -37,7 +39,7 @@ const VERSION = 1;
 export function buildBackup() {
   const data = {};
   for (const key of BACKUP_KEYS) {
-    const raw = localStorage.getItem(key);
+    const raw = getItem(key);
     if (raw === null) continue;
     data[key] = raw;
   }
@@ -85,7 +87,7 @@ export function applyBackup(parsed) {
   for (const key of BACKUP_KEYS) {
     const val = parsed.data[key];
     if (typeof val !== 'string') continue;
-    localStorage.setItem(key, val);
+    setItem(key, val);
     imported++;
   }
   return { ok: true, imported };

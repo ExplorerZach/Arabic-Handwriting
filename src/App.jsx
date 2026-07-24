@@ -5,16 +5,20 @@ import PracticeView from './components/PracticeView';
 import { UI } from './locales';
 import { isTauri } from './utils/env';
 import { maybeSendReminder } from './utils/notifications';
+import { getItem, setItem } from './utils/storage';
+import { getApiKey, setApiKey, removeApiKey } from './utils/secureStorage';
 
 export default function App() {
-  const [apiKey, setApiKey] = useState(
-    () => localStorage.getItem('openrouter_key') || ''
-  );
+  const [apiKey, setApiKeyState] = useState('');
+
+  useEffect(() => {
+    getApiKey().then(setApiKeyState);
+  }, []);
   const [locale, setLocale] = useState(
-    () => localStorage.getItem('app_locale') || 'en'
+    () => getItem('app_locale') || 'en'
   );
   const [darkMode, setDarkMode] = useState(
-    () => localStorage.getItem('app_darkMode') === 'true'
+    () => getItem('app_darkMode') === 'true'
   );
 
   // Sync dark mode to <html> attribute for CSS selectors
@@ -33,19 +37,17 @@ export default function App() {
   }, [locale]);
 
   const handleSetKey = (key) => {
-    localStorage.setItem('openrouter_key', key);
-    setApiKey(key);
+    setApiKey(key).then(() => setApiKeyState(key));
   };
 
   const handleClearKey = () => {
-    localStorage.removeItem('openrouter_key');
-    setApiKey('');
+    removeApiKey().then(() => setApiKeyState(''));
   };
 
   const toggleDarkMode = () => {
     setDarkMode((prev) => {
       const next = !prev;
-      localStorage.setItem('app_darkMode', String(next));
+      setItem('app_darkMode', String(next));
       return next;
     });
   };
@@ -53,7 +55,7 @@ export default function App() {
   const toggleLocale = () => {
     setLocale((prev) => {
       const next = prev === 'en' ? 'ar' : 'en';
-      localStorage.setItem('app_locale', next);
+      setItem('app_locale', next);
       return next;
     });
   };

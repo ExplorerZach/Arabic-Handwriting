@@ -211,6 +211,21 @@ comparison/scoring/animation/words; a11y/responsive/dark/i18n; SM-2/save-share/
 SW cache bust). Tauri desktop target added (v1.0.0). **Pending:** cloud sync
 (optional, needs backend).
 
+## Updater Signing
+
+Generate a keypair:
+  npx tauri signer generate -w ~/.tauri/arabic-script.key
+
+The public key goes in `tauri.conf.json` → `plugins.updater.pubkey`.
+The private key goes in GitHub Secrets as `TAURI_SIGNING_PRIVATE_KEY`.
+Optionally set `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` if password-protected.
+
+## Version Bumping
+
+**Bumping versions:** Before tagging a release, increment both
+`tauri.conf.json > version` and `src-tauri/Cargo.toml > version` to the same
+value.
+
 ## Frontend Design Guidelines
 
 Avoid generic "AI slop." Before coding UI, decide **purpose**, a **bold tone**

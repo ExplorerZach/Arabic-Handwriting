@@ -11,6 +11,7 @@
  */
 
 import { hasFreezeAvailable, consumeFreeze, getFrozenDates } from './freezes.js';
+import { getItem, setItem } from './storage.js';
 
 const DATES_KEY = 'arabic_practice_dates';
 
@@ -25,7 +26,7 @@ let datesCache = null;
 function loadDates() {
   if (datesCache !== null) return datesCache;
   try {
-    datesCache = JSON.parse(localStorage.getItem(DATES_KEY) || '{}');
+    datesCache = JSON.parse(getItem(DATES_KEY) || '{}');
   } catch {
     datesCache = {};
   }
@@ -34,7 +35,7 @@ function loadDates() {
 
 function saveDates(data) {
   datesCache = data;
-  localStorage.setItem(DATES_KEY, JSON.stringify(data));
+  setItem(DATES_KEY, JSON.stringify(data));
 }
 
 if (typeof window !== 'undefined') {

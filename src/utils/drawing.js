@@ -1,5 +1,7 @@
+import { getItem, setItem } from './storage.js';
+
 /** Brush scale factor — persisted in localStorage */
-let brushScale = parseFloat(localStorage.getItem('brushScale') || '1');
+let brushScale = parseFloat(getItem('brushScale') || '1');
 if (!Number.isFinite(brushScale)) brushScale = 1;
 
 /** Read the current brush scale (use in hot paths like calcLineWidth). */
@@ -14,7 +16,7 @@ export function getBrushScale() {
 export function setBrushScale(value) {
   const next = Number.isFinite(value) ? value : 1;
   brushScale = next;
-  localStorage.setItem('brushScale', String(next));
+  setItem('brushScale', String(next));
 }
 
 /**

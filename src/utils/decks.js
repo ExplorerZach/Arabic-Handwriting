@@ -29,6 +29,8 @@
  * other-tab edits.
  */
 
+import { getItem, setItem } from './storage.js';
+
 const STORAGE_KEY = 'arabic_decks';
 
 let cache = null;
@@ -46,7 +48,7 @@ function migrate(data) {
 function load() {
   if (cache !== null) return cache;
   try {
-    cache = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{"decks":[]}');
+    cache = JSON.parse(getItem(STORAGE_KEY) || '{"decks":[]}');
     cache = migrate(cache);
   } catch {
     cache = migrate({ decks: [] });
@@ -56,7 +58,7 @@ function load() {
 
 function save(data) {
   cache = data;
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 if (typeof window !== 'undefined') {
