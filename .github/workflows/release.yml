@@ -1,15 +1,10 @@
 name: Release
 on:
-  push:
-    branches-ignore:
-      - '**'
-    tags:
-      - 'v*'
   workflow_dispatch:
     inputs:
       tagName:
         description: 'Tag to build (e.g. v1.0.0)'
-        required: false
+        required: true
         type: string
 
 permissions:
@@ -33,6 +28,8 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ inputs.tagName }}
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - uses: dtolnay/rust-toolchain@stable
@@ -49,7 +46,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: ${{ inputs.tagName || github.ref_name }}
+          tagName: ${{ inputs.tagName }}
           releaseName: 'Arabic Script Practice v__VERSION__'
           releaseBody: 'See the assets to download and install.'
           releaseDraft: true
