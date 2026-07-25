@@ -226,6 +226,37 @@ Optionally set `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` if password-protected.
 `tauri.conf.json > version` and `src-tauri/Cargo.toml > version` to the same
 value.
 
+## Cutting a Release
+
+Releases are built by `.github/workflows/release.yml`, triggered by pushing a
+tag matching `v*` (or manually via `workflow_dispatch` with a `tagName` input).
+**The version bump alone does nothing — you must create AND push the tag:**
+
+```bash
+# after bumping versions + committing
+git tag v1.0.1
+git push origin v1.0.1
+```
+
+- The tag **must point at a commit that already contains the workflow file** —
+  tag runs use the workflow as it exists in the tagged commit. Re-pushing an
+  old tag runs the old workflow.
+- To re-tag: `git tag -d vX && git push origin :refs/tags/vX && git tag vX &&
+  git push origin vX` (deleting + re-pushing quickly can fire duplicate runs;
+  cancel one in the Actions tab).
+- The run builds 4 targets (win x64, mac x64, mac arm64, linux x64) and
+  publishes a **draft release** with all assets, signatures, and a merged
+  `latest.json` updater manifest. Review and publish the draft by hand.
+- **Never use flow-style YAML mappings with `${{ }}` in workflow files**
+  (`with: { targets: ${{ matrix.target }} }` is a hard YAML syntax error —
+  GitHub rejects the whole workflow with 0 jobs). Always use block style for
+  `with:` values containing expressions. Check a failed run's **Annotations**
+  for "Invalid workflow file" errors.
+- `vite.config.js` targets `safari15` (not the Tauri template's `safari13`) —
+  Vite 8/rolldown cannot downlevel destructuring to safari13. Don't lower it.
+- tauri-action needs `args: --target ${{ matrix.target }}` or every mac job
+  builds arm64 and overwrites each other's assets.
+
 ## Frontend Design Guidelines
 
 Avoid generic "AI slop." Before coding UI, decide **purpose**, a **bold tone**
