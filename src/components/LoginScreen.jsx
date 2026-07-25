@@ -1,17 +1,30 @@
 import { useState } from 'react';
 import styles from '../styles/loginStyles';
 import { UI } from '../locales';
+import { useDownloadLinks } from '../utils/downloads';
 
-const GH_RELEASES = 'https://github.com/ExplorerZach/arabic-handwriting/releases/latest';
-
-export default function LoginScreen({ onSave, onCancel, darkMode, onToggleDarkMode, locale = 'en' }) {
+export default function LoginScreen({
+  onSave,
+  onCancel,
+  darkMode,
+  onToggleDarkMode,
+  locale = 'en',
+}) {
   const [key, setKey] = useState('');
   const [showDownload, setShowDownload] = useState(false);
-  const t = (k) => UI[locale][k] ?? k;
+  const { links: dlLinks, fallback: dlFallback } = useDownloadLinks();
+  const t = k => UI[locale][k] ?? k;
 
   return (
     <div style={styles.root}>
-      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div
+        style={{
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+        }}
+      >
         <div style={styles.card}>
           <button
             onClick={onToggleDarkMode}
@@ -32,7 +45,9 @@ export default function LoginScreen({ onSave, onCancel, darkMode, onToggleDarkMo
           >
             {darkMode ? '☀️' : '🌙'}
           </button>
-          <div style={styles.arabic} lang="ar">{t('appTitle')}</div>
+          <div style={styles.arabic} lang="ar">
+            {t('appTitle')}
+          </div>
           <div style={styles.title}>{t('appSubtitle')}</div>
 
           <p style={styles.body}>
@@ -48,16 +63,14 @@ export default function LoginScreen({ onSave, onCancel, darkMode, onToggleDarkMo
             {t('loginIntroSuffix')}
           </p>
 
-          <p style={styles.note}>
-            {t('loginNote')}
-          </p>
+          <p style={styles.note}>{t('loginNote')}</p>
 
           <input
             style={styles.input}
             type="password"
             placeholder={t('loginPlaceholder')}
             value={key}
-            onChange={(e) => setKey(e.target.value)}
+            onChange={e => setKey(e.target.value)}
           />
 
           <button
@@ -89,10 +102,7 @@ export default function LoginScreen({ onSave, onCancel, darkMode, onToggleDarkMo
         </div>
 
         <div style={styles.footer}>
-          <button
-            onClick={() => setShowDownload((v) => !v)}
-            style={styles.downloadLink}
-          >
+          <button onClick={() => setShowDownload(v => !v)} style={styles.downloadLink}>
             {showDownload ? '▼' : '▶'} {t('downloadTitle')}
           </button>
 
@@ -100,7 +110,11 @@ export default function LoginScreen({ onSave, onCancel, darkMode, onToggleDarkMo
             <div style={styles.downloadPanel}>
               <p style={styles.downloadDesc}>{t('downloadDesc')}</p>
               <a
-                href={`${GH_RELEASES}/download/Arabic-Script-Practice_1.0.0_x64.msi`}
+                href={
+                  dlLinks.win ||
+                  dlFallback ||
+                  'https://github.com/ExplorerZach/arabic-handwriting/releases/latest'
+                }
                 style={styles.osBtn}
                 target="_blank"
                 rel="noreferrer"
@@ -108,7 +122,11 @@ export default function LoginScreen({ onSave, onCancel, darkMode, onToggleDarkMo
                 <span style={styles.osBtnIcon}>🪟</span> {t('downloadWindows')}
               </a>
               <a
-                href={`${GH_RELEASES}/download/Arabic-Script-Practice_1.0.0_x64.dmg`}
+                href={
+                  dlLinks.mac ||
+                  dlFallback ||
+                  'https://github.com/ExplorerZach/arabic-handwriting/releases/latest'
+                }
                 style={styles.osBtn}
                 target="_blank"
                 rel="noreferrer"
@@ -116,7 +134,11 @@ export default function LoginScreen({ onSave, onCancel, darkMode, onToggleDarkMo
                 <span style={styles.osBtnIcon}>🍎</span> {t('downloadMacOS')}
               </a>
               <a
-                href={`${GH_RELEASES}/download/Arabic-Script-Practice_1.0.0_x86_64.AppImage`}
+                href={
+                  dlLinks.linux ||
+                  dlFallback ||
+                  'https://github.com/ExplorerZach/arabic-handwriting/releases/latest'
+                }
                 style={styles.osBtn}
                 target="_blank"
                 rel="noreferrer"
