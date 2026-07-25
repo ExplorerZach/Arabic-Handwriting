@@ -1997,12 +1997,12 @@ export default function PracticeView({
             style={{
               ...styles.lessonToggle,
               ...(lessonMode ? styles.lessonToggleActive : {}),
-              // Toggling lesson order mid-deck-session remaps letterIndex →
-              // letter and would misattribute the next score.
-              opacity: deckSession ? 0.35 : 1,
+              // Toggling lesson order mid-session remaps letterIndex → letter
+              // and would misattribute the next score.
+              opacity: deckSession || reviewSession ? 0.35 : 1,
             }}
             onClick={toggleLessonMode}
-            disabled={!!deckSession}
+            disabled={!!(deckSession || reviewSession)}
             aria-pressed={lessonMode}
             aria-label={t('ariaLessonModeBtn')}
             title={lessonMode ? t('lessonToggleTitleOn') : t('lessonToggleTitleOff')}
@@ -2711,8 +2711,10 @@ export default function PracticeView({
                     style={{
                       ...styles.formBtn,
                       ...(isActive ? styles.formBtnActive : {}),
+                      ...(deckSession || reviewSession ? { opacity: 0.35 } : {}),
                     }}
                     onClick={() => selectForm(key)}
+                    disabled={!!(deckSession || reviewSession)}
                     aria-pressed={isActive}
                     aria-label={`${t(FORM_NAMES[key])} ${t('ariaFormBtn')}`}
                   >
@@ -2937,13 +2939,13 @@ export default function PracticeView({
               style={{
                 ...styles.btn,
                 ...styles.btnNav,
-                // Deck sessions are linear (Next advances the session queue);
-                // a free Prev would swap the displayed item without updating
-                // the session and misattribute the next score.
-                opacity: deckSession ? 0.35 : 1,
+                // Deck and review sessions are linear (Next advances the
+                // session queue); a free Prev would swap the displayed item
+                // without updating the session and misattribute the next score.
+                opacity: deckSession || reviewSession ? 0.35 : 1,
               }}
               onClick={() => {
-                if (deckSession) return;
+                if (deckSession || reviewSession) return;
                 if (practiceMode === 'words') {
                   const total = currentWordGroup.words.length;
                   selectWord(wordGroupIndex, (wordIndex - 1 + total) % total);
@@ -2951,7 +2953,7 @@ export default function PracticeView({
                   selectLetter((letterIndex - 1 + totalCount) % totalCount);
                 }
               }}
-              disabled={!!deckSession}
+              disabled={!!(deckSession || reviewSession)}
               aria-label={t('ariaPrevBtn')}
             >
               {t('btnPrev')}

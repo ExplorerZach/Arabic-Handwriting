@@ -8,22 +8,34 @@ HTML canvas (Apple Pencil / touch / mouse) and get AI calligraphy feedback via
 the OpenRouter vision API. Web version on Vercel — push to `main` auto-deploys.
 Desktop version builds to .exe/.dmg/.AppImage binaries.
 
-Three modes: **Letters** (28 letters, up to 4 positional forms), **Words**
-(ligatures, vocabulary, phrases), **Review** (SM-2 spaced-repetition dashboard).
-A guided **Lesson Mode** reorders letters by shape family. All roadmap phases
-complete except optional cloud sync.
+Modes: **Letters** (28 letters, up to 4 positional forms), **Numbers**,
+**Diacritics**, **Words** (ligatures, vocabulary, phrases), **Review**
+(SM-2 spaced-repetition dashboard + guided Auto Review sessions).
+A guided **Lesson Mode** reorders letters by shape family. Gamification layer:
+XP/levels, daily goal, streak freezes, analytics heatmap, sound effects.
 
 ```bash
-npm run dev         # Vite dev server → localhost:5173
-npm run build       # Production build → dist/  AND auto-updates sw.js
-npm run preview     # Preview production build locally
-npm run tauri dev   # Native window with Vite HMR (requires Rust)
-npm run tauri build # Native binaries (.exe / .dmg / .AppImage)
+npm run dev          # Vite dev server → localhost:5173
+npm run build        # Production build → dist/  AND auto-updates sw.js
+npm run preview      # Preview production build locally
+npm run tauri dev    # Native window with Vite HMR (requires Rust)
+npm run tauri build  # Native binaries (.exe / .dmg / .AppImage)
+npm run lint         # ESLint (npm run lint:fix to auto-fix)
+npm run format       # Prettier write (format:check for read-only check)
+npm run typecheck    # tsc -p jsconfig.json --noEmit
+npm run test:run     # Vitest single run (`npm test` = watch mode)
+npm run tauri:check  # cargo check in src-tauri/
 ```
 
-No test suite, linter, or formatter. Verify with `npm run build` (must exit
-zero). For Tauri changes also verify `cargo check` in `src-tauri/` (must exit
-zero). Manual browser testing for visual regressions.
+Toolchain: ESLint 10, Prettier, Vitest + Testing Library (jsdom), TypeScript
+for typechecking only (checkJs off — no TS source). Tests live in `__tests__/`
+dirs next to source (currently utils-only: `progress`, `decks`). **A
+pre-commit hook (simple-git-hooks → lint-staged) runs `eslint --fix` +
+`prettier --write` on staged files** — if a commit is rejected, fix the lint
+errors and commit again. Verify changes with `npm run lint`,
+`npm run typecheck`, `npm run test:run`, `npm run build` (all must exit zero);
+for Tauri changes also `npm run tauri:check`. Playwright MCP for
+visual/interaction regressions.
 
 **Prerequisites:** Rust (via `rustup`), Node.js, and platform build tools
 (MSVC on Windows, Xcode on macOS, webkit2gtk on Linux).
@@ -31,16 +43,17 @@ zero). Manual browser testing for visual regressions.
 **LSP:** `typescript-language-server` is pinned to **`4.3.4`** — do NOT upgrade
 to v5.x (crashes under Crush with `no handler for method:
 window/workDoneProgress/create`). `jsconfig.json` configures `jsx: "react-jsx"`
-+ `moduleResolution: "bundler"`; `checkJs` is off (no TypeScript here).
+
+- `moduleResolution: "bundler"`; `checkJs` is off (no TypeScript here).
 
 ## Architecture & Data Flow
 
 - `index.html` (Vite entry, fonts), `src/main.jsx` (root, global.css, SW registration, hydration), `src/App.jsx` (manages key/locale/dark props).
-- `src/components/`: `LoginScreen.jsx` (API key/skip), `PracticeView.jsx` (main UI, canvas, drawing, nav, AI feedback), `DeckManager.jsx` (presentational deck list/editor/picker, Review sub-tab; bulk-add, word search, checkmark badges, roving tabindex), `UndoToast.jsx` (accessible interactive undo toast).
-- `src/data/`: `letters.js` (auto-gen positional forms), `lessonOrder.js` (shape families), `strokeOrder.js` (0-100 coords), `words.js`.
+- `src/components/`: `LoginScreen.jsx` (API key/skip), `PracticeView.jsx` (main UI, canvas, drawing, nav, AI feedback), `DeckManager.jsx` (presentational deck list/editor/picker, Review sub-tab; bulk-add, word search, checkmark badges, roving tabindex), `UndoToast.jsx` (accessible interactive undo toast), `SettingsPanel.jsx`, `AnalyticsPanel.jsx`, `DailyGoalRing.jsx`, `LevelBadge.jsx`, `XpGainToast.jsx`, `AffiliateLinks.jsx`, `TipJarBanner.jsx`.
+- `src/data/`: `letters.js` (auto-gen positional forms), `numbers.js`, `diacritics.js`, `lessonOrder.js` (shape families), `strokeOrder.js` (0-100 coords), `words.js`.
 - `src/locales/index.js` (UI strings + sole source of FORM_NAMES/FORM_SHORT/FORM_FULL/FORM_DESCRIPTIONS).
-- `src/utils/`: `api.js` (OpenRouter vision), `drawing.js` (pressure/brush), `progress.js` (SM-2; also exports `todayLocal`), `history.js` (feedback history), `decks.js` (study deck CRUD + `duplicateDeck`/`reorderDecks`/`setLastSession`/`bulkAddItems`/`restoreDeck`), `env.js` (Tauri runtime detection — `isTauri`).
-- `src/styles/`: `global.css` (CSS vars, breakpoints, hover/focus, RTL), `practiceStyles.js`, `loginStyles.js` (inline styles).
+- `src/utils/`: `api.js` (OpenRouter vision), `drawing.js` (pressure/brush), `progress.js` (SM-2; also exports `todayLocal`), `history.js` (feedback history), `decks.js` (study deck CRUD + `duplicateDeck`/`reorderDecks`/`setLastSession`/`bulkAddItems`/`restoreDeck`), `env.js` (Tauri runtime detection — `isTauri`), `storage.js` (**unified storage layer** — `getItem`/`setItem`/`removeItem`; localStorage on web, mirrored into the Tauri Store plugin on desktop; every util + PracticeView reads/writes through it), `secureStorage.js` (API key: Stronghold vault on Tauri, `storage.js` on web), `xp.js`, `dailyGoal.js`, `freezes.js` (streak freezes), `analytics.js` (practice dates/heatmap), `sound.js`, `notifications.js`, `updater.js` (Tauri updater), `backup.js` (export/import of all data keys), `downloads.js`.
+- `src/styles/`: `global.css` (CSS vars, breakpoints, hover/focus, RTL), `practiceStyles.js`, `loginStyles.js` (inline styles), `themes.js` (named themes — `app_theme` key).
 - `public/` (sw.js, manifest.json, icons), `vercel.json` (headers), `scripts/bust-sw.js` (post-build cache-bust).
 - `src-tauri/` — Tauri Rust backend: `tauri.conf.json` (window, CSP, bundle targets), `Cargo.toml` (deps), `src/lib.rs` (plugin registration), `capabilities/default.json` (permissions).
 
@@ -48,7 +61,7 @@ window/workDoneProgress/create`). `jsconfig.json` configures `jsx: "react-jsx"`
 
 1. `App.jsx` reads `openrouter_key` → `LoginScreen` or `PracticeView`; manages
    `locale` + `darkMode`, passes as props (incl. to `LoginScreen`).
-2. `PracticeView` owns all practice state and is **one ~1100-line component** —
+2. `PracticeView` owns all practice state and is **one ~3400-line component** —
    new UI goes here unless it clearly warrants extraction. A `progressVersion`
    counter bumps on every successful AI write; `useMemo` hooks keyed to it
    recompute `progressSummary`/`completedCount`/`dueItems` in one pass.
@@ -61,7 +74,8 @@ window/workDoneProgress/create`). `jsconfig.json` configures `jsx: "react-jsx"`
 5. progress/history utils cache parsed JSON in module memory; writes go through
    `save()`. Cross-tab edits invalidate cache via a `storage` listener. Always
    use exported helpers (`getProgressSummary`/`getDueLetters`), never
-   `localStorage.getItem` directly.
+   `localStorage.getItem` directly — all storage reads/writes go through
+   `storage.js` (`getItem`/`setItem`).
 
 Other constraints: **no React Context / global state** (`apiKey`/`locale`/
 `darkMode` via props, rest local or localStorage). **Letter forms auto-generated**
@@ -97,11 +111,11 @@ SW registration is guarded with `isTauri` — it only runs in the browser.
 
 ## localStorage Keys — Do Not Rename
 
-Keys: `openrouter_key` (API key), `openrouter_model` (model ID), `brushScale` (brush size), `lessonMode` (`"true"`/`"false"`), `app_locale` (`"en"`/`"ar"`), `app_darkMode` (`"true"`/`"false"`), `arabic_progress` (SM-2 progress JSON), `arabic_feedback_history` (last 5 entries JSON), `arabic_decks` (user study decks JSON). Renaming silently loses user data.
+Keys: `openrouter_key` (API key — Stronghold vault on Tauri via `secureStorage.js`, plain storage on web), `openrouter_model` (model ID), `brushScale` (brush size), `brush_pack`, `lessonMode` (`"true"`/`"false"`), `app_locale` (`"en"`/`"ar"`), `app_darkMode` (`"true"`/`"false"`), `app_theme` (named theme from `themes.js`), `daily_goal`, `last_daily_reminder`, `arabic_progress` (SM-2 progress JSON), `arabic_feedback_history` (last 5 entries JSON), `arabic_decks` (user study decks JSON), `arabic_practice_dates` (heatmap), `arabic_xp`, `arabic_freezes` (streak freezes; `arabic_freezes_v2` is its migration flag). Renaming silently loses user data. `backup.js` → `BACKUP_KEYS` is the canonical export list — update it when adding a key.
 
 **Letter-name keys** must stay distinct (two pairs share romanizations): ح=`Hha`, ه=`Ha`, ط=`Tta`, ت=`Ta`. `progress.js` and `history.js` each have a `migrate()` that copies old `Ha`/`Ta` onto `Hha`/`Tta`. **Never rename these or remove the migration** without a forward migration.
 
-In Tauri, localStorage is backed by the system WebView (Edge on Windows, WebKit on macOS/Linux). It works identically to the browser but is sandboxed per-WebView-instance — no data carry-over between web and desktop. Future storage plugins (Store, Stronghold) may layer on top; never remove localStorage fallback.
+In Tauri, localStorage is backed by the system WebView (Edge on Windows, WebKit on macOS/Linux). It works identically to the browser but is sandboxed per-WebView-instance — no data carry-over between web and desktop. On desktop, `storage.js` additionally mirrors every write into the Tauri Store plugin (`app-data.json`) and `secureStorage.js` keeps the API key in a Stronghold vault — localStorage remains the source of truth on web; never remove the fallback.
 
 ## Localization
 
@@ -183,7 +197,7 @@ All UI strings in `src/locales/index.js` as `UI = { en: {...}, ar: {...} }`.
 - **Context7** — up-to-date docs for React 19, Vite 8, Pointer Events, Web Share,
   Service Workers, OpenRouter. Use `resolve-library-id` then `get-library-docs`
   (with a `topic`). Skip for stable APIs (canvas 2D, localStorage, basic CSS).
-- **Playwright** — manual browser verification (no test suite). Use for canvas
+- **Playwright** — manual browser verification alongside the Vitest suite. Use for canvas
   pointer behavior, animation cleanup, RTL flip, dark-mode repaint, PWA cache-
   bust, breakpoints. Flow: `npm run dev` → `browser_navigate` → `browser_snapshot`
   (prefer over screenshots for actions) → `browser_take_screenshot` for visuals.
@@ -214,7 +228,7 @@ SW cache bust). Tauri desktop target added (v1.0.0). **Pending:** cloud sync
 ## Updater Signing
 
 Generate a keypair:
-  npx tauri signer generate -w ~/.tauri/arabic-script.key
+npx tauri signer generate -w ~/.tauri/arabic-script.key
 
 The public key goes in `tauri.conf.json` → `plugins.updater.pubkey`.
 The private key goes in GitHub Secrets as `TAURI_SIGNING_PRIVATE_KEY`.
@@ -222,9 +236,16 @@ Optionally set `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` if password-protected.
 
 ## Version Bumping
 
-**Bumping versions:** Before tagging a release, increment both
-`tauri.conf.json > version` and `src-tauri/Cargo.toml > version` to the same
-value.
+**Bumping versions:** Before tagging a release, use the version-bump script:
+
+```bash
+node scripts/bump-version.js 1.0.1
+npm run tauri:check   # re-syncs Cargo.lock
+```
+
+This rewrites `package.json`, `src-tauri/tauri.conf.json`, and
+`src-tauri/Cargo.toml` to the given semver. Commit the lockfile with the bump.
+Then follow the tag/push steps under **Cutting a Release**.
 
 ## Cutting a Release
 
@@ -242,7 +263,7 @@ git push origin v1.0.1
   tag runs use the workflow as it exists in the tagged commit. Re-pushing an
   old tag runs the old workflow.
 - To re-tag: `git tag -d vX && git push origin :refs/tags/vX && git tag vX &&
-  git push origin vX` (deleting + re-pushing quickly can fire duplicate runs;
+git push origin vX` (deleting + re-pushing quickly can fire duplicate runs;
   cancel one in the Actions tab).
 - The run builds 4 targets (win x64, mac x64, mac arm64, linux x64) and
   publishes a **draft release** with all assets, signatures, and a merged
