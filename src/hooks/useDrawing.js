@@ -86,7 +86,6 @@ export default function useDrawing({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     redrawRef.current = redraw;
   }, [redraw]);
@@ -98,16 +97,9 @@ export default function useDrawing({
     countedDrawingRef.current = false;
     setFeedbackRef.current?.(null);
     setHasStrokes(false);
-    const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      ctx.save();
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.restore();
-    }
+    redraw([]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [redraw]);
 
   const undoStroke = useCallback(() => {
     const strokes = strokesRef.current;
