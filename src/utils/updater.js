@@ -14,6 +14,7 @@ export async function checkForUpdatesOnLaunch() {
       await relaunch();
     }
   } catch (e) {
+    // eslint-disable-next-line no-console
     console.error('Update check failed:', e);
   }
 }

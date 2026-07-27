@@ -11,11 +11,11 @@
  * and UI preferences) is fair game.
  */
 
-import { getItem, setItem } from './storage.js';
+import { getItem, setItem, removeItem } from './storage.js';
 
 // Keys included in a backup. Order is cosmetic. `openrouter_key` is excluded
 // on purpose (see module comment).
-const BACKUP_KEYS = [
+export const BACKUP_KEYS = [
   'arabic_progress',
   'arabic_feedback_history',
   'arabic_practice_dates',
@@ -30,6 +30,7 @@ const BACKUP_KEYS = [
   'app_theme',
   'brush_pack',
   'daily_goal',
+  'ai_consent',
 ];
 
 const FORMAT = 'arabic-handwriting-backup';
@@ -68,6 +69,15 @@ export function exportBackup() {
 }
 
 /**
+ * Strip HTML tags and common event-handler patterns from a string so that
+ * user-controlled values from a malicious backup file cannot inject XSS.
+ */
+export function sanitizeString(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/<[^>]*>/g, '');
+}
+
+/**
  * Validate and apply a parsed backup object to localStorage.
  *
  * Returns { ok: true, imported: N } on success, or { ok: false, error }
@@ -87,10 +97,25 @@ export function applyBackup(parsed) {
   for (const key of BACKUP_KEYS) {
     const val = parsed.data[key];
     if (typeof val !== 'string') continue;
-    setItem(key, val);
+    setItem(key, sanitizeString(val));
     imported++;
   }
   return { ok: true, imported };
+}
+
+/** Wipe all app data from storage (GDPR Art. 17 right to deletion). */
+export function wipeAllData() {
+  let removed = 0;
+  for (const key of BACKUP_KEYS) {
+    removeItem(key);
+    removed++;
+  }
+  try {
+    sessionStorage.removeItem('openrouter_enc_key');
+  } catch {
+    /* noop */
+  }
+  return removed;
 }
 
 /** Read a File (from an <input type=file>) and apply it as a backup. */

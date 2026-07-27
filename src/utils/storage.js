@@ -39,12 +39,32 @@ export function getItem(key) {
   return localStorage.getItem(key);
 }
 
+let _changeListeners = [];
+
+export function onChange(fn) {
+  _changeListeners.push(fn);
+  return () => {
+    _changeListeners = _changeListeners.filter(f => f !== fn);
+  };
+}
+
+function notifyChange(key, value) {
+  for (const fn of _changeListeners) {
+    try {
+      fn(key, value);
+    } catch {
+      /* noop */
+    }
+  }
+}
+
 export function setItem(key, value) {
   localStorage.setItem(key, value);
   if (isTauri && _hydrated && _cache !== null) {
     _cache[key] = value;
     ensureStore().then(s => s.set(key, value));
   }
+  notifyChange(key, value);
 }
 
 export function removeItem(key) {
@@ -52,5 +72,25 @@ export function removeItem(key) {
   if (isTauri && _hydrated && _cache !== null) {
     delete _cache[key];
     ensureStore().then(s => s.delete(key));
+  }
+  notifyChange(key, null);
+}
+
+/**
+ * Notify same-tab listeners that a key was written outside the normal
+ * setItem/removeItem flow (e.g. a cloud pull in sync.js). The data modules
+ * (progress.js, history.js, analytics.js, freezes.js, xp.js, decks.js) hold
+ * parsed JSON in module-level caches and only invalidate them on the
+ * cross-tab `storage` event — which never fires in the tab that made the
+ * write. Dispatching a synthetic `storage` event reuses those exact
+ * listeners, so a cloud merge takes effect instead of being clobbered by
+ * the next save() from a stale cache.
+ */
+export function notifyExternalWrite(key) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.dispatchEvent(new StorageEvent('storage', { key }));
+  } catch {
+    /* noop — StorageEvent constructor unsupported */
   }
 }

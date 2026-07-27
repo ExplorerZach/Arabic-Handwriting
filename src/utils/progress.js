@@ -26,9 +26,9 @@ import { getItem, setItem } from './storage.js';
 const STORAGE_KEY = 'arabic_progress';
 
 // Thresholds for non-AI scheduling fallbacks
-const RECENCY_DAYS = 3;        // option 4: days between practices before re-surfacing
+const RECENCY_DAYS = 3; // option 4: days between practices before re-surfacing
 const GRADUATION_THRESHOLD = 5; // option 5: drawings before interval starts growing
-const GRADUATION_STEP = 3;     // option 5: days added per graduation tier
+const GRADUATION_STEP = 3; // option 5: days added per graduation tier
 
 // Days a snoozed letter+form stays hidden from the due list.
 export const SNOOZE_DAYS = 3;
@@ -47,16 +47,21 @@ function load() {
   } catch {
     cache = {};
   }
+  if (cache._v === undefined) {
+    cache._v = 1;
+    setItem(STORAGE_KEY, JSON.stringify(cache));
+  }
   return cache;
 }
 
 function save(data) {
+  data._v = (data._v || 0) + 1;
   cache = data;
   setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
+  window.addEventListener('storage', e => {
     if (e.key === STORAGE_KEY) cache = null;
   });
 }
@@ -137,22 +142,22 @@ export function getProgress() {
 export function isLetterComplete(letterName, formKeys) {
   const data = load();
   const letterData = data[letterName] || {};
-  return formKeys.every((k) => letterData[k]?.practiced);
+  return formKeys.every(k => letterData[k]?.practiced);
 }
 
 /** Returns true if any form of the letter has been practiced. */
 export function isLetterStarted(letterName) {
   const data = load();
   const letterData = data[letterName] || {};
-  return Object.values(letterData).some((v) => v?.practiced);
+  return Object.values(letterData).some(v => v?.practiced);
 }
 
 /** Count how many letters have been fully completed (batched — one load()). */
 export function countCompleted(letters) {
   const data = load();
-  return letters.filter((l) => {
+  return letters.filter(l => {
     const letterData = data[l.name] || {};
-    return Object.keys(l.forms).every((k) => letterData[k]?.practiced);
+    return Object.keys(l.forms).every(k => letterData[k]?.practiced);
   }).length;
 }
 
@@ -166,8 +171,8 @@ export function getProgressSummary(letters) {
   for (const l of letters) {
     const letterData = data[l.name] || {};
     const formKeys = Object.keys(l.forms);
-    const started = formKeys.some((k) => letterData[k]?.practiced);
-    const complete = formKeys.every((k) => letterData[k]?.practiced);
+    const started = formKeys.some(k => letterData[k]?.practiced);
+    const complete = formKeys.every(k => letterData[k]?.practiced);
     summary[l.name] = { started, complete };
   }
   return summary;
@@ -177,7 +182,8 @@ export function getProgressSummary(letters) {
 export function setScore(letterName, formKey, score) {
   const data = load();
   if (!data[letterName]) data[letterName] = {};
-  if (!data[letterName][formKey]) data[letterName][formKey] = { practiced: false, practiceCount: 0 };
+  if (!data[letterName][formKey])
+    data[letterName][formKey] = { practiced: false, practiceCount: 0 };
   data[letterName][formKey].score = Math.max(1, Math.min(5, score));
   save(data);
   return data;

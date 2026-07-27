@@ -30,16 +30,21 @@ function loadDates() {
   } catch {
     datesCache = {};
   }
+  if (datesCache._v === undefined) {
+    datesCache._v = 1;
+    setItem(DATES_KEY, JSON.stringify(datesCache));
+  }
   return datesCache;
 }
 
 function saveDates(data) {
+  data._v = (data._v || 0) + 1;
   datesCache = data;
   setItem(DATES_KEY, JSON.stringify(data));
 }
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
+  window.addEventListener('storage', e => {
     if (e.key === DATES_KEY) datesCache = null;
   });
 }

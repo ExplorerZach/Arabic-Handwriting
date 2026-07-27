@@ -1,9 +1,9 @@
-import { useState, useEffect, useRef } from "react";
-import styles from "../styles/practiceStyles";
-import { LETTERS } from "../data/letters";
-import { NUMBERS } from "../data/numbers";
-import { DIACRITICS } from "../data/diacritics";
-import { WORD_GROUPS } from "../data/words";
+import { useState, useEffect, useRef } from 'react';
+import styles from '../styles/practiceStyles';
+import { LETTERS } from '../data/letters';
+import { NUMBERS } from '../data/numbers';
+import { DIACRITICS } from '../data/diacritics';
+import { WORD_GROUPS } from '../data/words';
 
 /**
  * Deck manager — presentational component for the "My Decks" sub-tab
@@ -23,7 +23,6 @@ import { WORD_GROUPS } from "../data/words";
 export default function DeckManager({
   t,
   locale,
-  darkMode,
   decks,
   onCreateDeck,
   onRenameDeck,
@@ -35,10 +34,10 @@ export default function DeckManager({
   onCopyDeck,
   onStartSession,
 }) {
-  const [deckView, setDeckView] = useState("list");
+  const [deckView, setDeckView] = useState('list');
   const [editingId, setEditingId] = useState(null);
-  const [pickerTab, setPickerTab] = useState("letters");
-  const [wordSearch, setWordSearch] = useState("");
+  const [pickerTab, setPickerTab] = useState('letters');
+  const [wordSearch, setWordSearch] = useState('');
 
   const paneHeaderRef = useRef(null);
 
@@ -58,14 +57,14 @@ export default function DeckManager({
   // button activation toggles the item; preventDefault on keydown would
   // suppress the click for both keys.
   const handleGridKeyDown = (e, items, idx) => {
-    let next = idx;
-    if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-      const dir = e.key === "ArrowRight" ? 1 : -1;
-      const adjustedDir = locale === "ar" ? -dir : dir;
+    let next;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      const dir = e.key === 'ArrowRight' ? 1 : -1;
+      const adjustedDir = locale === 'ar' ? -dir : dir;
       next = (idx + adjustedDir + items.length) % items.length;
-    } else if (e.key === "ArrowDown") {
+    } else if (e.key === 'ArrowDown') {
       next = Math.min(idx + 1, items.length - 1);
-    } else if (e.key === "ArrowUp") {
+    } else if (e.key === 'ArrowUp') {
       next = Math.max(idx - 1, 0);
     } else {
       return;
@@ -75,30 +74,30 @@ export default function DeckManager({
     tileRefs.current[next]?.focus();
   };
 
-  const editingDeck = editingId ? decks.find((d) => d.id === editingId) : null;
+  const editingDeck = editingId ? decks.find(d => d.id === editingId) : null;
 
-  const countLowScore = (deck) => {
+  const countLowScore = deck => {
     if (!deck.lastSession || !deck.lastSession.items) return 0;
     // Only count entries still in the deck — items removed since the last
     // session must not keep the ↻ Low button alive (spec edge case #4).
     return deck.lastSession.items.filter(
-      (e) =>
+      e =>
         (e.score == null || e.score <= 3) &&
-        deck.items.some((i) => i.type === e.type && i.ref === e.ref)
+        deck.items.some(i => i.type === e.type && i.ref === e.ref),
     ).length;
   };
 
   // lastSession.date is a local "YYYY-MM-DD" string. Parse it as a LOCAL
   // date — new Date("YYYY-MM-DD") is UTC midnight, which renders as the
   // previous day in timezones west of UTC.
-  const formatDate = (dateStr) => {
+  const formatDate = dateStr => {
     try {
-      const [y, m, d] = String(dateStr).split("-").map(Number);
+      const [y, m, d] = String(dateStr).split('-').map(Number);
       const date = new Date(y, m - 1, d);
       if (Number.isNaN(date.getTime())) return dateStr;
       return date.toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
+        month: 'short',
+        day: 'numeric',
       });
     } catch {
       return dateStr;
@@ -110,52 +109,58 @@ export default function DeckManager({
   // would fall through to the `return null` fallback — stranding the user
   // on a blank screen. Auto-return to the list view instead.
   useEffect(() => {
-    if (deckView !== "list" && editingId && !editingDeck) {
-      setDeckView("list");
+    if (deckView !== 'list' && editingId && !editingDeck) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDeckView('list');
       setEditingId(null);
     }
   }, [deckView, editingId, editingDeck]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setGridFocusIdx(0);
   }, [pickerTab]);
 
   useEffect(() => {
-    setWordSearch("");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setWordSearch('');
   }, [deckView]);
 
   const backToList = () => {
-    setDeckView("list");
+    setDeckView('list');
     setEditingId(null);
   };
 
   const handleNewDeck = () => {
-    const deck = onCreateDeck("");
+    const deck = onCreateDeck('');
     if (deck) {
       setEditingId(deck.id);
-      setDeckView("edit");
+      setDeckView('edit');
     }
   };
 
   // ─── Resolve an item ref to a display glyph + label ────
-  const resolveDisplay = (item) => {
-    if (item.type === "letter") {
-      const l = LETTERS.find((x) => x.name === item.ref);
+  const resolveDisplay = item => {
+    if (item.type === 'letter') {
+      const l = LETTERS.find(x => x.name === item.ref);
       return l ? { char: l.letter, label: `${l.name} — ${l.roman}` } : null;
     }
-    if (item.type === "number") {
-      const n = NUMBERS.find((x) => x.name === item.ref);
+    if (item.type === 'number') {
+      const n = NUMBERS.find(x => x.name === item.ref);
       return n ? { char: n.letter, label: `${n.name} — ${n.roman}` } : null;
     }
-    if (item.type === "diacritic") {
-      const d = DIACRITICS.find((x) => x.name === item.ref);
+    if (item.type === 'diacritic') {
+      const d = DIACRITICS.find(x => x.name === item.ref);
       return d ? { char: d.letter, label: `${d.name} — ${d.roman}` } : null;
     }
-    if (item.type === "word") {
+    if (item.type === 'word') {
       let found = null;
       for (const g of WORD_GROUPS) {
-        const w = g.words.find((x) => x.word === item.ref);
-        if (w) { found = { char: w.word, label: `${w.roman} — ${w.meaning}` }; break; }
+        const w = g.words.find(x => x.word === item.ref);
+        if (w) {
+          found = { char: w.word, label: `${w.roman} — ${w.meaning}` };
+          break;
+        }
       }
       return found;
     }
@@ -164,13 +169,13 @@ export default function DeckManager({
 
   const isInDeck = (type, ref) => {
     if (!editingDeck) return false;
-    return editingDeck.items.some((it) => it.type === type && it.ref === ref);
+    return editingDeck.items.some(it => it.type === type && it.ref === ref);
   };
 
   const toggleItem = (type, ref) => {
     if (!editingDeck) return;
     if (isInDeck(type, ref)) {
-      const item = editingDeck.items.find((it) => it.type === type && it.ref === ref);
+      const item = editingDeck.items.find(it => it.type === type && it.ref === ref);
       if (item) onRemoveItem(editingDeck.id, item.id);
     } else {
       onAddItem(editingDeck.id, { type, ref });
@@ -178,44 +183,51 @@ export default function DeckManager({
   };
 
   // ═══ Pane 1: Deck list ═════════════════════════════════
-  if (deckView === "list") {
+  if (deckView === 'list') {
     return (
       <div style={styles.reviewDash}>
-        <div style={{ ...styles.reviewHeader, justifyContent: "space-between" }}>
-          <span ref={paneHeaderRef} tabIndex={-1}>{t("deckListTitle")}</span>
+        <div style={{ ...styles.reviewHeader, justifyContent: 'space-between' }}>
+          <span ref={paneHeaderRef} tabIndex={-1}>
+            {t('deckListTitle')}
+          </span>
           <button
             className="btn-ai"
-            style={{ ...styles.btn, ...styles.btnAI, fontSize: 12, padding: "4px 10px" }}
+            style={{ ...styles.btn, ...styles.btnAI, fontSize: 12, padding: '4px 10px' }}
             onClick={handleNewDeck}
           >
-            ＋ {t("deckNew")}
+            ＋ {t('deckNew')}
           </button>
         </div>
         {decks.length === 0 ? (
           <div style={styles.reviewEmpty}>
-            <p style={{ marginBottom: 8 }}>{t("deckEmpty")}</p>
-            <p style={{ fontSize: 12, color: "var(--color-text-muted)", marginBottom: 12 }}>
-              {t("deckEmptyHint")}
+            <p style={{ marginBottom: 8 }}>{t('deckEmpty')}</p>
+            <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 12 }}>
+              {t('deckEmptyHint')}
             </p>
-            <button className="btn-ai" style={{ ...styles.btn, ...styles.btnAI }} onClick={handleNewDeck}>
-              {t("deckEmptyCta")}
+            <button
+              className="btn-ai"
+              style={{ ...styles.btn, ...styles.btnAI }}
+              onClick={handleNewDeck}
+            >
+              {t('deckEmptyCta')}
             </button>
           </div>
         ) : (
           decks.map((deck, deckIdx) => {
             const lowCount = countLowScore(deck);
             const lastDate = deck.lastSession ? formatDate(deck.lastSession.date) : null;
-            const avgScore = deck.lastSession && deck.lastSession.avgScore != null
-              ? `★${deck.lastSession.avgScore.toFixed(1)}`
-              : null;
+            const avgScore =
+              deck.lastSession && deck.lastSession.avgScore != null
+                ? `★${deck.lastSession.avgScore.toFixed(1)}`
+                : null;
             return (
               <div key={deck.id} style={styles.deckRow}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={styles.deckRowName}>{deck.name}</div>
                   <div style={styles.deckRowMeta}>
-                    {deck.items.length} {t("deckItemCount")}
-                    {lastDate && ` · ${t("deckLastPractice")} ${lastDate}`}
-                    {avgScore && ` · ${t("deckSessionAvg")} ${avgScore}`}
+                    {deck.items.length} {t('deckItemCount')}
+                    {lastDate && ` · ${t('deckLastPractice')} ${lastDate}`}
+                    {avgScore && ` · ${t('deckSessionAvg')} ${avgScore}`}
                   </div>
                 </div>
                 <div style={styles.deckRowActions}>
@@ -223,43 +235,46 @@ export default function DeckManager({
                     <button
                       className="btn-ai"
                       style={{ ...styles.btn, ...styles.btnAI, ...styles.deckRowActionSmall }}
-                      onClick={() => onStartSession(deck, "lowScore")}
-                      aria-label={t("deckRerunLow")}
-                      title={t("deckRerunLow")}
+                      onClick={() => onStartSession(deck, 'lowScore')}
+                      aria-label={t('deckRerunLow')}
+                      title={t('deckRerunLow')}
                     >
-                      ↻ {t("deckLowScoreStart")}
+                      ↻ {t('deckLowScoreStart')}
                     </button>
                   )}
                   <button
                     className="btn-ai"
                     style={{ ...styles.btn, ...styles.btnAI, ...styles.deckRowActionSmall }}
-                    onClick={() => onStartSession(deck, "full")}
+                    onClick={() => onStartSession(deck, 'full')}
                     disabled={deck.items.length === 0}
                   >
-                    ▶ {t("deckStart")}
+                    ▶ {t('deckStart')}
                   </button>
                   <button
                     className="btn-panel"
                     style={{ ...styles.btn, ...styles.deckRowActionSmall }}
                     onClick={() => onCopyDeck(deck.id)}
-                    aria-label={t("deckCopy")}
-                    title={t("deckCopy")}
+                    aria-label={t('deckCopy')}
+                    title={t('deckCopy')}
                   >
                     ⎘
                   </button>
                   <button
                     className="btn-panel"
                     style={{ ...styles.btn, ...styles.deckRowActionSmall }}
-                    onClick={() => { setEditingId(deck.id); setDeckView("edit"); }}
+                    onClick={() => {
+                      setEditingId(deck.id);
+                      setDeckView('edit');
+                    }}
                   >
-                    {t("deckEdit")}
+                    {t('deckEdit')}
                   </button>
                   <button
                     className="btn-clear"
                     style={{ ...styles.btn, ...styles.deckRowActionSmall }}
                     onClick={() => onReorderDecks(deckIdx, Math.max(0, deckIdx - 1))}
                     disabled={deckIdx === 0}
-                    aria-label={t("deckMoveUp")}
+                    aria-label={t('deckMoveUp')}
                   >
                     ↑
                   </button>
@@ -268,7 +283,7 @@ export default function DeckManager({
                     style={{ ...styles.btn, ...styles.deckRowActionSmall }}
                     onClick={() => onReorderDecks(deckIdx, Math.min(decks.length - 1, deckIdx + 1))}
                     disabled={deckIdx === decks.length - 1}
-                    aria-label={t("deckMoveDown")}
+                    aria-label={t('deckMoveDown')}
                   >
                     ↓
                   </button>
@@ -276,10 +291,10 @@ export default function DeckManager({
                     className="btn-clear"
                     style={{ ...styles.btn, ...styles.deckRowActionSmall }}
                     onClick={() => {
-                      if (window.confirm(t("deckDeleteConfirm"))) onDeleteDeck(deck.id);
+                      if (window.confirm(t('deckDeleteConfirm'))) onDeleteDeck(deck.id);
                     }}
                   >
-                    {t("deckDelete")}
+                    {t('deckDelete')}
                   </button>
                 </div>
               </div>
@@ -291,34 +306,51 @@ export default function DeckManager({
   }
 
   // ═══ Pane 2: Deck editor ═══════════════════════════════
-  if (deckView === "edit" && editingDeck) {
+  if (deckView === 'edit' && editingDeck) {
     return (
       <div style={styles.reviewDash}>
-        <div style={{ ...styles.reviewHeader, justifyContent: "space-between" }}>
-          <button ref={paneHeaderRef} tabIndex={-1} className="btn-clear" style={{ ...styles.btn, fontSize: 12, padding: "4px 10px" }} onClick={backToList}>
-            ← {t("deckBack")}
+        <div style={{ ...styles.reviewHeader, justifyContent: 'space-between' }}>
+          <button
+            ref={paneHeaderRef}
+            tabIndex={-1}
+            className="btn-clear"
+            style={{ ...styles.btn, fontSize: 12, padding: '4px 10px' }}
+            onClick={backToList}
+          >
+            ← {t('deckBack')}
           </button>
-          <button className="btn-nav" style={{ ...styles.btn, fontSize: 12, padding: "4px 10px" }} onClick={backToList}>
-            {t("deckDone")}
+          <button
+            className="btn-nav"
+            style={{ ...styles.btn, fontSize: 12, padding: '4px 10px' }}
+            onClick={backToList}
+          >
+            {t('deckDone')}
           </button>
         </div>
-        <label style={{ display: "block", marginBottom: 12 }}>
-          <span style={{ fontSize: 11, color: "var(--color-text-muted)", display: "block", marginBottom: 4 }}>
-            {t("deckNameLabel")}
+        <label style={{ display: 'block', marginBottom: 12 }}>
+          <span
+            style={{
+              fontSize: 11,
+              color: 'var(--color-text-muted)',
+              display: 'block',
+              marginBottom: 4,
+            }}
+          >
+            {t('deckNameLabel')}
           </span>
           <input
             type="text"
             value={editingDeck.name}
-            onChange={(e) => onRenameDeck(editingDeck.id, e.target.value)}
+            onChange={e => onRenameDeck(editingDeck.id, e.target.value)}
             style={{
-              width: "100%",
-              padding: "8px 10px",
+              width: '100%',
+              padding: '8px 10px',
               borderRadius: 8,
-              border: "1px solid var(--color-border)",
-              background: "var(--color-surface)",
-              color: "var(--color-text)",
+              border: '1px solid var(--color-border)',
+              background: 'var(--color-surface)',
+              color: 'var(--color-text)',
               fontSize: 15,
-              boxSizing: "border-box",
+              boxSizing: 'border-box',
             }}
           />
         </label>
@@ -327,83 +359,91 @@ export default function DeckManager({
             className="btn-panel"
             style={styles.deckBulkBtn}
             onClick={() => {
-              const items = LETTERS.map((l) => ({ type: "letter", ref: l.name }));
-              onAddItem(editingDeck.id, { type: "_bulk", ref: "_bulk", _bulk: items });
+              const items = LETTERS.map(l => ({ type: 'letter', ref: l.name }));
+              onAddItem(editingDeck.id, { type: '_bulk', ref: '_bulk', _bulk: items });
             }}
           >
-            {t("deckBulkAllLetters")}
+            {t('deckBulkAllLetters')}
           </button>
           <button
             className="btn-panel"
             style={styles.deckBulkBtn}
             onClick={() => {
-              const items = NUMBERS.map((n) => ({ type: "number", ref: n.name }));
-              onAddItem(editingDeck.id, { type: "_bulk", ref: "_bulk", _bulk: items });
+              const items = NUMBERS.map(n => ({ type: 'number', ref: n.name }));
+              onAddItem(editingDeck.id, { type: '_bulk', ref: '_bulk', _bulk: items });
             }}
           >
-            {t("deckBulkNumbers")}
+            {t('deckBulkNumbers')}
           </button>
           <button
             className="btn-panel"
             style={styles.deckBulkBtn}
             onClick={() => {
-              const items = WORD_GROUPS[1].words.map((w) => ({ type: "word", ref: w.word }));
-              onAddItem(editingDeck.id, { type: "_bulk", ref: "_bulk", _bulk: items });
+              const items = WORD_GROUPS[1].words.map(w => ({ type: 'word', ref: w.word }));
+              onAddItem(editingDeck.id, { type: '_bulk', ref: '_bulk', _bulk: items });
             }}
           >
-            {t("deckBulkCommonWords")}
+            {t('deckBulkCommonWords')}
           </button>
           <button
             className="btn-panel"
             style={styles.deckBulkBtn}
             onClick={() => {
-              const items = DIACRITICS.map((d) => ({ type: "diacritic", ref: d.name }));
-              onAddItem(editingDeck.id, { type: "_bulk", ref: "_bulk", _bulk: items });
+              const items = DIACRITICS.map(d => ({ type: 'diacritic', ref: d.name }));
+              onAddItem(editingDeck.id, { type: '_bulk', ref: '_bulk', _bulk: items });
             }}
           >
-            {t("deckBulkAllDiacritics")}
+            {t('deckBulkAllDiacritics')}
           </button>
         </div>
         <button
           className="btn-ai"
           style={{ ...styles.btn, ...styles.btnAI, marginBottom: 12 }}
-          onClick={() => setDeckView("picker")}
+          onClick={() => setDeckView('picker')}
         >
-          ＋ {t("deckAddItems")}
+          ＋ {t('deckAddItems')}
         </button>
         {editingDeck.items.length === 0 ? (
-          <div style={styles.reviewEmpty}>{t("deckEmpty")}</div>
+          <div style={styles.reviewEmpty}>{t('deckEmpty')}</div>
         ) : (
           editingDeck.items.map((item, idx) => {
             const disp = resolveDisplay(item);
             if (!disp) return null;
             return (
               <div key={item.id} style={styles.deckEditorItem}>
-                <span style={styles.deckEditorItemChar} lang="ar">{disp.char}</span>
+                <span style={styles.deckEditorItemChar} lang="ar">
+                  {disp.char}
+                </span>
                 <span style={styles.deckEditorItemLabel}>{disp.label}</span>
                 <button
                   className="btn-clear"
-                  style={{ ...styles.btn, fontSize: 11, padding: "2px 8px" }}
+                  style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}
                   onClick={() => onReorderItem(editingDeck.id, idx, Math.max(0, idx - 1))}
                   disabled={idx === 0}
-                  aria-label={t("deckMoveUp")}
+                  aria-label={t('deckMoveUp')}
                 >
                   ↑
                 </button>
                 <button
                   className="btn-clear"
-                  style={{ ...styles.btn, fontSize: 11, padding: "2px 8px" }}
-                  onClick={() => onReorderItem(editingDeck.id, idx, Math.min(editingDeck.items.length - 1, idx + 1))}
+                  style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}
+                  onClick={() =>
+                    onReorderItem(
+                      editingDeck.id,
+                      idx,
+                      Math.min(editingDeck.items.length - 1, idx + 1),
+                    )
+                  }
                   disabled={idx === editingDeck.items.length - 1}
-                  aria-label={t("deckMoveDown")}
+                  aria-label={t('deckMoveDown')}
                 >
                   ↓
                 </button>
                 <button
                   className="btn-clear"
-                  style={{ ...styles.btn, fontSize: 11, padding: "2px 8px" }}
+                  style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}
                   onClick={() => onRemoveItem(editingDeck.id, item.id)}
-                  aria-label={t("deckItemRemove")}
+                  aria-label={t('deckItemRemove')}
                 >
                   ✕
                 </button>
@@ -416,25 +456,35 @@ export default function DeckManager({
   }
 
   // ═══ Pane 3: Item picker ═══════════════════════════════
-  if (deckView === "picker" && editingDeck) {
+  if (deckView === 'picker' && editingDeck) {
     const subTabs = [
-      { key: "letters", label: t("deckPickerLetters") },
-      { key: "numbers", label: t("deckPickerNumbers") },
-      { key: "diacritics", label: t("deckPickerDiacritics") },
-      { key: "words", label: t("deckPickerWords") },
+      { key: 'letters', label: t('deckPickerLetters') },
+      { key: 'numbers', label: t('deckPickerNumbers') },
+      { key: 'diacritics', label: t('deckPickerDiacritics') },
+      { key: 'words', label: t('deckPickerWords') },
     ];
     return (
       <div style={styles.reviewDash}>
-        <div style={{ ...styles.reviewHeader, justifyContent: "space-between" }}>
-          <button ref={paneHeaderRef} tabIndex={-1} className="btn-clear" style={{ ...styles.btn, fontSize: 12, padding: "4px 10px" }} onClick={() => setDeckView("edit")}>
-            ← {t("deckBack")}
+        <div style={{ ...styles.reviewHeader, justifyContent: 'space-between' }}>
+          <button
+            ref={paneHeaderRef}
+            tabIndex={-1}
+            className="btn-clear"
+            style={{ ...styles.btn, fontSize: 12, padding: '4px 10px' }}
+            onClick={() => setDeckView('edit')}
+          >
+            ← {t('deckBack')}
           </button>
-          <button className="btn-nav" style={{ ...styles.btn, fontSize: 12, padding: "4px 10px" }} onClick={() => setDeckView("edit")}>
-            {t("deckDone")}
+          <button
+            className="btn-nav"
+            style={{ ...styles.btn, fontSize: 12, padding: '4px 10px' }}
+            onClick={() => setDeckView('edit')}
+          >
+            {t('deckDone')}
           </button>
         </div>
         <div style={styles.deckSubNav}>
-          {subTabs.map((st) => (
+          {subTabs.map(st => (
             <button
               key={st.key}
               className="btn-form"
@@ -450,27 +500,34 @@ export default function DeckManager({
           ))}
         </div>
 
-        {pickerTab === "letters" && (
-          <div style={styles.deckPickerGrid} role="group" aria-label={t("deckPickerLetters")}>
+        {pickerTab === 'letters' && (
+          <div style={styles.deckPickerGrid} role="group" aria-label={t('deckPickerLetters')}>
             {LETTERS.map((l, idx) => {
-              const selected = isInDeck("letter", l.name);
+              const selected = isInDeck('letter', l.name);
               return (
                 <div key={l.name} style={styles.deckPickerTileWrap}>
                   <button
-                    ref={(el) => {
+                    ref={el => {
                       tileRefs.current[idx] = el;
                     }}
                     className="btn-alpha"
                     style={{
                       ...styles.reviewTile,
-                      ...(selected ? { borderColor: "var(--color-accent)", background: "rgba(var(--color-accent-rgb, 192,112,58),0.12)" } : {}),
+                      ...(selected
+                        ? {
+                            borderColor: 'var(--color-accent)',
+                            background: 'rgba(var(--color-accent-rgb, 192,112,58),0.12)',
+                          }
+                        : {}),
                     }}
-                    onClick={() => toggleItem("letter", l.name)}
-                    onKeyDown={(e) => handleGridKeyDown(e, LETTERS, idx)}
+                    onClick={() => toggleItem('letter', l.name)}
+                    onKeyDown={e => handleGridKeyDown(e, LETTERS, idx)}
                     tabIndex={idx === gridFocusIdx ? 0 : -1}
                     aria-pressed={selected}
                   >
-                    <span style={styles.reviewTileChar} lang="ar">{l.letter}</span>
+                    <span style={styles.reviewTileChar} lang="ar">
+                      {l.letter}
+                    </span>
                     <span style={styles.reviewTileName}>{l.name}</span>
                   </button>
                   {selected && <span style={styles.deckPickerCheckmark}>✓</span>}
@@ -480,27 +537,34 @@ export default function DeckManager({
           </div>
         )}
 
-        {pickerTab === "numbers" && (
-          <div style={styles.deckPickerGrid} role="group" aria-label={t("deckPickerNumbers")}>
+        {pickerTab === 'numbers' && (
+          <div style={styles.deckPickerGrid} role="group" aria-label={t('deckPickerNumbers')}>
             {NUMBERS.map((n, idx) => {
-              const selected = isInDeck("number", n.name);
+              const selected = isInDeck('number', n.name);
               return (
                 <div key={n.name} style={styles.deckPickerTileWrap}>
                   <button
-                    ref={(el) => {
+                    ref={el => {
                       tileRefs.current[idx] = el;
                     }}
                     className="btn-alpha"
                     style={{
                       ...styles.reviewTile,
-                      ...(selected ? { borderColor: "var(--color-accent)", background: "rgba(var(--color-accent-rgb, 192,112,58),0.12)" } : {}),
+                      ...(selected
+                        ? {
+                            borderColor: 'var(--color-accent)',
+                            background: 'rgba(var(--color-accent-rgb, 192,112,58),0.12)',
+                          }
+                        : {}),
                     }}
-                    onClick={() => toggleItem("number", n.name)}
-                    onKeyDown={(e) => handleGridKeyDown(e, NUMBERS, idx)}
+                    onClick={() => toggleItem('number', n.name)}
+                    onKeyDown={e => handleGridKeyDown(e, NUMBERS, idx)}
                     tabIndex={idx === gridFocusIdx ? 0 : -1}
                     aria-pressed={selected}
                   >
-                    <span style={styles.reviewTileChar} lang="ar">{n.letter}</span>
+                    <span style={styles.reviewTileChar} lang="ar">
+                      {n.letter}
+                    </span>
                     <span style={styles.reviewTileName}>{n.name}</span>
                   </button>
                   {selected && <span style={styles.deckPickerCheckmark}>✓</span>}
@@ -510,27 +574,34 @@ export default function DeckManager({
           </div>
         )}
 
-        {pickerTab === "diacritics" && (
-          <div style={styles.deckPickerGrid} role="group" aria-label={t("deckPickerDiacritics")}>
+        {pickerTab === 'diacritics' && (
+          <div style={styles.deckPickerGrid} role="group" aria-label={t('deckPickerDiacritics')}>
             {DIACRITICS.map((d, idx) => {
-              const selected = isInDeck("diacritic", d.name);
+              const selected = isInDeck('diacritic', d.name);
               return (
                 <div key={d.name} style={styles.deckPickerTileWrap}>
                   <button
-                    ref={(el) => {
+                    ref={el => {
                       tileRefs.current[idx] = el;
                     }}
                     className="btn-alpha"
                     style={{
                       ...styles.reviewTile,
-                      ...(selected ? { borderColor: "var(--color-accent)", background: "rgba(var(--color-accent-rgb, 192,112,58),0.12)" } : {}),
+                      ...(selected
+                        ? {
+                            borderColor: 'var(--color-accent)',
+                            background: 'rgba(var(--color-accent-rgb, 192,112,58),0.12)',
+                          }
+                        : {}),
                     }}
-                    onClick={() => toggleItem("diacritic", d.name)}
-                    onKeyDown={(e) => handleGridKeyDown(e, DIACRITICS, idx)}
+                    onClick={() => toggleItem('diacritic', d.name)}
+                    onKeyDown={e => handleGridKeyDown(e, DIACRITICS, idx)}
                     tabIndex={idx === gridFocusIdx ? 0 : -1}
                     aria-pressed={selected}
                   >
-                    <span style={styles.reviewTileChar} lang="ar">{d.letter}</span>
+                    <span style={styles.reviewTileChar} lang="ar">
+                      {d.letter}
+                    </span>
                     <span style={styles.reviewTileName}>{d.name}</span>
                   </button>
                   {selected && <span style={styles.deckPickerCheckmark}>✓</span>}
@@ -540,21 +611,21 @@ export default function DeckManager({
           </div>
         )}
 
-        {pickerTab === "words" && (
+        {pickerTab === 'words' && (
           <input
             type="text"
             value={wordSearch}
-            onChange={(e) => setWordSearch(e.target.value)}
-            placeholder={t("deckSearchWords")}
+            onChange={e => setWordSearch(e.target.value)}
+            placeholder={t('deckSearchWords')}
             style={styles.deckSearchInput}
-            aria-label={t("deckSearchWords")}
+            aria-label={t('deckSearchWords')}
           />
         )}
 
-        {pickerTab === "words" && (
+        {pickerTab === 'words' && (
           <div>
             {WORD_GROUPS.map((g, gIdx) => {
-              const filtered = g.words.filter((w) => {
+              const filtered = g.words.filter(w => {
                 if (!wordSearch.trim()) return true;
                 const q = wordSearch.toLowerCase().trim();
                 return (
@@ -566,27 +637,49 @@ export default function DeckManager({
               if (filtered.length === 0) return null;
               return (
                 <div key={gIdx} style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 11, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: ".15em", marginBottom: 6 }}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: 'var(--color-text-muted)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '.15em',
+                      marginBottom: 6,
+                    }}
+                  >
                     {g.name}
                   </div>
                   {filtered.map((w, wIdx) => {
-                    const selected = isInDeck("word", w.word);
+                    const selected = isInDeck('word', w.word);
                     return (
                       <button
                         key={`${gIdx}-${wIdx}`}
                         className="btn-alpha"
                         style={{
                           ...styles.deckPickerWordRow,
-                          width: "100%",
-                          ...(selected ? { borderColor: "var(--color-accent)", background: "rgba(var(--color-accent-rgb, 192,112,58),0.12)" } : {}),
+                          width: '100%',
+                          ...(selected
+                            ? {
+                                borderColor: 'var(--color-accent)',
+                                background: 'rgba(var(--color-accent-rgb, 192,112,58),0.12)',
+                              }
+                            : {}),
                         }}
-                        onClick={() => toggleItem("word", w.word)}
+                        onClick={() => toggleItem('word', w.word)}
                         aria-pressed={selected}
                       >
-                        <span style={styles.deckPickerWordChar} lang="ar">{w.word}</span>
-                        <span style={styles.deckPickerWordMeta}>{w.roman} — {w.meaning}</span>
-                        <span style={{ fontSize: 16, color: selected ? "var(--color-accent)" : "var(--color-text-muted)" }}>
-                          {selected ? "✓" : "+"}
+                        <span style={styles.deckPickerWordChar} lang="ar">
+                          {w.word}
+                        </span>
+                        <span style={styles.deckPickerWordMeta}>
+                          {w.roman} — {w.meaning}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: 16,
+                            color: selected ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                          }}
+                        >
+                          {selected ? '✓' : '+'}
                         </span>
                       </button>
                     );

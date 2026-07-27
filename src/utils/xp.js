@@ -32,16 +32,21 @@ function load() {
   } catch {
     cache = { total: 0 };
   }
+  if (cache._v === undefined) {
+    cache._v = 1;
+    setItem(STORAGE_KEY, JSON.stringify(cache));
+  }
   return cache;
 }
 
 function save(data) {
+  data._v = (data._v || 0) + 1;
   cache = data;
   setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
+  window.addEventListener('storage', e => {
     if (e.key === STORAGE_KEY) cache = null;
   });
 }
@@ -101,8 +106,8 @@ export function awardXP(amount, _reason) {
 // Centralized so the call sites in PracticeView stay readable and the
 // numbers are tunable in one place.
 export const XP_AWARDS = {
-  PRACTICE: 10,                                // drew a letter/number/diacritic
-  SCORE: { 1: 0, 2: 5, 3: 15, 4: 25, 5: 40 },  // AI score bonus (1..5)
-  REVIEW_ON_TIME: 15,                          // reviewed a due item on its due date
-  REVIEW_SELF: 10,                             // self-assessed review (no AI)
+  PRACTICE: 10, // drew a letter/number/diacritic
+  SCORE: { 1: 0, 2: 5, 3: 15, 4: 25, 5: 40 }, // AI score bonus (1..5)
+  REVIEW_ON_TIME: 15, // reviewed a due item on its due date
+  REVIEW_SELF: 10, // self-assessed review (no AI)
 };

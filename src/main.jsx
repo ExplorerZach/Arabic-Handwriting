@@ -10,14 +10,15 @@ hydrate().then(() => {
   createRoot(document.getElementById('root')).render(
     <StrictMode>
       <App />
-    </StrictMode>
+    </StrictMode>,
   );
   checkForUpdatesOnLaunch();
 });
 
 if (!isTauri && 'serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => {
+    navigator.serviceWorker.register('/sw.js').catch(err => {
+      // eslint-disable-next-line no-console
       console.error('[SW] registration failed:', err);
     });
   });

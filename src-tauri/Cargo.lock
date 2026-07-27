@@ -116,6 +116,7 @@ name = "app"
 version = "1.0.1"
 dependencies = [
  "log",
+ "rand 0.8.7",
  "serde",
  "serde_json",
  "tauri",

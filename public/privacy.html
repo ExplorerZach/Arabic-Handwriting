@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Privacy Policy — Arabic Script Practice</title>
+    <meta name="robots" content="noindex" />
+    <style>
+      @font-face {
+        font-family: 'Amiri';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/amiri-400-latin.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+      @font-face {
+        font-family: 'Amiri';
+        font-style: normal;
+        font-weight: 700;
+        font-display: swap;
+        src: url('/fonts/amiri-700-latin.woff2') format('woff2');
+        unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+      }
+      :root {
+        --color-bg: #fdf0d0;
+        --color-text: #3d1800;
+        --color-text-muted: #9b6a30;
+        --color-primary: #5c2d00;
+        --color-accent: #8b4513;
+        --color-border: rgba(180, 130, 60, 0.35);
+        --color-card-bg: rgba(255, 255, 255, 0.7);
+        --color-shadow: rgba(100, 60, 0, 0.12);
+        --color-link: #8b4513;
+      }
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        background: linear-gradient(160deg, #fdf0d0, #eedfa8);
+        color: var(--color-text);
+        font-family: Georgia, serif;
+        line-height: 1.7;
+        min-height: 100vh;
+        padding: 40px 24px;
+      }
+      .container {
+        max-width: 680px;
+        margin: 0 auto;
+        background: var(--color-card-bg);
+        border-radius: 20px;
+        border: 1.5px solid var(--color-border);
+        padding: 48px 40px;
+        box-shadow: 0 8px 32px var(--color-shadow);
+      }
+      @media (max-width: 500px) {
+        .container { padding: 28px 22px; }
+        body { padding: 20px 12px; }
+      }
+      h1 {
+        font-family: 'Amiri', 'Georgia', serif;
+        font-size: 28px;
+        color: var(--color-primary);
+        text-align: center;
+        margin-bottom: 8px;
+      }
+      .lang-ar {
+        font-family: 'Amiri', 'Scheherazade New', serif;
+        direction: rtl;
+        text-align: right;
+      }
+      .subtitle {
+        text-align: center;
+        color: var(--color-text-muted);
+        font-size: 13px;
+        margin-bottom: 40px;
+      }
+      h2 {
+        font-size: 18px;
+        color: var(--color-accent);
+        margin-top: 36px;
+        margin-bottom: 10px;
+        padding-bottom: 6px;
+        border-bottom: 1px solid var(--color-border);
+      }
+      p, li { font-size: 14px; color: var(--color-text); }
+      ul { padding-left: 20px; }
+      ul li { margin-bottom: 6px; }
+      a { color: var(--color-link); }
+      .back-link {
+        display: inline-block;
+        margin-top: 32px;
+        font-size: 13px;
+        color: var(--color-text-muted);
+        text-decoration: none;
+      }
+      .back-link:hover { color: var(--color-accent); }
+      .updated {
+        text-align: center;
+        font-size: 12px;
+        color: var(--color-text-muted);
+        margin-top: 40px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="lang-ar">سياسة الخصوصية</h1>
+      <h1>Privacy Policy</h1>
+      <p class="subtitle">Arabic Script Practice &mdash; Last updated: July 2026</p>
+
+      <h2>1. Who We Are</h2>
+      <p>
+        Arabic Script Practice (&ldquo;the App&rdquo;) is a handwriting practice tool
+        available at <a href="https://www.writearabic.app">writearabic.app</a> and as a
+        downloadable desktop application. The App is maintained as an open-source project
+        at <a href="https://github.com/ExplorerZach/arabic-handwriting" target="_blank" rel="noopener">github.com/ExplorerZach/arabic-handwriting</a>.
+      </p>
+
+      <h2>2. Data Collected</h2>
+      <p>The App stores the following data <strong>exclusively on your device</strong> (in your browser's localStorage or the desktop app's local storage):</p>
+      <ul>
+        <li><strong>Practice data:</strong> handwriting scores, practice dates, spaced-repetition progress, XP, levels, and streak information.</li>
+        <li><strong>Settings:</strong> theme preference, brush size, locale (English/Arabic), dark/light mode, daily goal, sound preferences, and high-contrast/reduced-motion toggles.</li>
+        <li><strong>Study decks:</strong> user-created collections of letters, words, numbers, and diacritics for practice sessions.</li>
+        <li><strong>API key:</strong> your optional OpenRouter API key (stored encrypted on desktop via Stronghold; plaintext in localStorage on web).</li>
+      </ul>
+      <p>
+        <strong>No account is required</strong> &mdash; you can use the App without
+        providing any personal information. All data lives on your device and is never
+        uploaded to our servers.
+      </p>
+
+      <h2>3. AI Feedback (OpenRouter)</h2>
+      <p>
+        When you tap &ldquo;AI Feedback,&rdquo; your handwriting drawing is sent to
+        <a href="https://openrouter.ai" target="_blank" rel="noopener">OpenRouter</a>, a
+        third-party AI provider, for analysis. The drawing image, the letter name, and a
+        form description are transmitted to OpenRouter's servers. OpenRouter's privacy
+        policy is available at
+        <a href="https://openrouter.ai/privacy" target="_blank" rel="noopener">openrouter.ai/privacy</a>.
+        According to OpenRouter, they do not store prompt data or use it for model training
+        by default, but you should review their policy for the latest terms.
+      </p>
+      <p>
+        <strong>You control this:</strong> AI feedback is optional. You can use the App
+        in offline/skip mode without an API key, and no drawing data is sent externally.
+      </p>
+
+      <h2>4. Hosting &amp; Analytics (Vercel)</h2>
+      <p>
+        The web version is hosted on
+        <a href="https://vercel.com" target="_blank" rel="noopener">Vercel</a>, which may
+        collect standard server logs (IP address, user agent, request path) for operational
+        purposes. We use Vercel Analytics (privacy-focused, no cookies, no personal data
+        collection) to understand aggregate usage. Vercel's privacy policy is at
+        <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener">vercel.com/legal/privacy-policy</a>.
+        Vercel Analytics is disabled in the desktop app.
+      </p>
+
+      <h2>5. Data Retention</h2>
+      <p>
+        All practice data, settings, and history remain in your browser's localStorage
+        <strong>until you clear your browser data</strong> or use the &ldquo;Export/Import&rdquo;
+        tools in the Settings panel to manage it. The App itself never deletes your data
+        unless you explicitly use the deletion feature. OpenRouter claims not to retain
+        API prompt data.
+      </p>
+
+      <h2>6. Your Rights</h2>
+      <p>You have the following rights regarding your data:</p>
+      <ul>
+        <li><strong>Access &amp; portability:</strong> Use the &ldquo;Export progress&rdquo; button in Settings to download a complete JSON backup of all your data.</li>
+        <li><strong>Deletion:</strong> You can clear individual settings or your entire browser data at any time. A &ldquo;Delete All Data&rdquo; option is available in Settings.</li>
+        <li><strong>Withdraw consent:</strong> Remove your API key in Settings to stop AI feedback. Switch to skip/offline mode at any time.</li>
+        <li><strong>Rectification:</strong> You can re-practice any letter to update your scores.</li>
+      </ul>
+
+      <h2>7. Desktop App (Tauri)</h2>
+      <p>
+        The desktop version runs locally on your computer. The API key is encrypted
+        using the system keychain (Stronghold vault). No data is sent to us. The desktop
+        app's WebView does not use cookies or service workers. All data storage is
+        functionally identical to the web version.
+      </p>
+
+      <h2>8. Children's Privacy</h2>
+      <p>
+        The App is not directed at children under 13, and we do not knowingly collect
+        personal information from children. If you are a parent or guardian and believe
+        your child has provided us with personal data, please contact us.
+      </p>
+
+      <h2>9. Cookies</h2>
+      <p>
+        The App does not use cookies. All data is stored in localStorage or (on desktop)
+        the local filesystem. No tracking cookies, advertising cookies, or session cookies
+        are set by the App.
+      </p>
+
+      <h2>10. Contact</h2>
+      <p>
+        For privacy questions, data requests, or to report a concern:
+      </p>
+      <ul>
+        <li>Open an issue at <a href="https://github.com/ExplorerZach/arabic-handwriting/issues" target="_blank" rel="noopener">github.com/ExplorerZach/arabic-handwriting/issues</a></li>
+        <li>Or contact the maintainer via GitHub.</li>
+      </ul>
+
+      <a href="/" class="back-link">&larr; Back to the App</a>
+      <p class="updated">Last updated: July 25, 2026</p>
+    </div>
+  </body>
+</html>

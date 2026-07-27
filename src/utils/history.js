@@ -26,16 +26,21 @@ function load() {
   } catch {
     cache = {};
   }
+  if (cache._v === undefined) {
+    cache._v = 1;
+    setItem(STORAGE_KEY, JSON.stringify(cache));
+  }
   return cache;
 }
 
 function save(data) {
+  data._v = (data._v || 0) + 1;
   cache = data;
   setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
+  window.addEventListener('storage', e => {
     if (e.key === STORAGE_KEY) cache = null;
   });
 }

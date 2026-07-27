@@ -28,10 +28,15 @@ function load() {
     cache = { frozenDates: [] };
   }
   if (!cache || !Array.isArray(cache.frozenDates)) cache = { frozenDates: [] };
+  if (cache._v === undefined) {
+    cache._v = 1;
+    setItem(STORAGE_KEY, JSON.stringify(cache));
+  }
   return cache;
 }
 
 function save(data) {
+  data._v = (data._v || 0) + 1;
   cache = data;
   setItem(STORAGE_KEY, JSON.stringify(data));
 }
@@ -47,7 +52,7 @@ if (typeof window !== 'undefined') {
     cache = { frozenDates: [] };
     setItem(MIGRATION_KEY, '1');
   }
-  window.addEventListener('storage', (e) => {
+  window.addEventListener('storage', e => {
     if (e.key === STORAGE_KEY) cache = null;
   });
 }
@@ -66,7 +71,7 @@ function todayLocal() {
 /** True if no freeze has been consumed in the given month (YYYY-MM). */
 export function hasFreezeAvailable(monthStr) {
   const { frozenDates } = load();
-  return !frozenDates.some((d) => typeof d === 'string' && d.startsWith(monthStr));
+  return !frozenDates.some(d => typeof d === 'string' && d.startsWith(monthStr));
 }
 
 /**
@@ -95,7 +100,7 @@ export function getFreezeStatus() {
   const monthStr = todayLocal().slice(0, 7);
   const frozenDates = getFrozenDates();
   const usedThisMonth = frozenDates.filter(
-    (d) => typeof d === 'string' && d.startsWith(monthStr)
+    d => typeof d === 'string' && d.startsWith(monthStr),
   ).length;
   return {
     availableThisMonth: usedThisMonth === 0,

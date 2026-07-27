@@ -19,7 +19,9 @@ export function playSuccessTone() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
     osc.start();
     osc.stop(ctx.currentTime + 0.3);
-  } catch {}
+  } catch {
+    /* noop */
+  }
 }
 
 export default playSuccessTone;

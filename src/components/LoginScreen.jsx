@@ -2,6 +2,7 @@ import { useState } from 'react';
 import styles from '../styles/loginStyles';
 import { UI } from '../locales';
 import { useDownloadLinks } from '../utils/downloads';
+import AuthForm from './AuthForm';
 
 export default function LoginScreen({
   onSave,
@@ -12,6 +13,7 @@ export default function LoginScreen({
 }) {
   const [key, setKey] = useState('');
   const [showDownload, setShowDownload] = useState(false);
+  const [showAccount, setShowAccount] = useState(false);
   const { links: dlLinks, fallback: dlFallback } = useDownloadLinks();
   const t = k => UI[locale][k] ?? k;
 
@@ -99,6 +101,27 @@ export default function LoginScreen({
               {t('loginCancel')}
             </button>
           )}
+
+          {/* ── Account section ── */}
+          <div
+            style={{ marginTop: 24, borderTop: '1px solid var(--color-border)', paddingTop: 16 }}
+          >
+            <button
+              onClick={() => setShowAccount(v => !v)}
+              style={{
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: 13,
+                color: 'var(--color-text-muted)',
+                fontFamily: 'Georgia,serif',
+              }}
+            >
+              {showAccount ? '▼' : '▶'} {t('authSectionToggle')}
+            </button>
+
+            {showAccount && <AuthForm t={t} />}
+          </div>
         </div>
 
         <div style={styles.footer}>

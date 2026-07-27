@@ -13,3 +13,5 @@ crush.json
 .worktrees
 vercel.txt
 vercel.json
+.eslintcache
+node_modules/.cache

@@ -1,38 +1,53 @@
 import { useMemo } from 'react';
 import { UI } from '../locales';
-import { getStreaks, getScoreDistribution, getWeaknesses, getPracticeHeatmap, getProgressOverTime, getTotalSessions } from '../utils/analytics';
+import {
+  getStreaks,
+  getScoreDistribution,
+  getWeaknesses,
+  getPracticeHeatmap,
+  getProgressOverTime,
+  getTotalSessions,
+} from '../utils/analytics';
 import { getXPTotal, getLevelInfo } from '../utils/xp';
 import { getFreezeStatus } from '../utils/freezes';
 import { FORM_NAMES } from '../locales';
 import styles from '../styles/practiceStyles';
 
 export default function AnalyticsPanel({ locale, LETTERS, progress, progressVersion, onGoToItem }) {
-  const t = (key) => UI[locale][key] ?? key;
+  const t = key => UI[locale][key] ?? key;
 
   // All of these re-derive real data from localStorage. Cheap individually
   // but a handful of them are O(days × letters × forms) and the stats tab
   // re-renders on every unrelated PracticeView state change (pointer moves,
   // feedback flips, theme toggles). Memoize on progressVersion so they only
   // re-run when the underlying data actually changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const streaks = useMemo(() => getStreaks(), [progressVersion]);
-  const scoreDist = useMemo(() => getScoreDistribution(progress), [progress, progressVersion]);
-  const weaknesses = useMemo(() => getWeaknesses(LETTERS, progress), [LETTERS, progress, progressVersion]);
-  const { heatmap, max: heatMax } = useMemo(() => getPracticeHeatmap(LETTERS, progress), [LETTERS, progress, progressVersion]);
-  const timeline = useMemo(() => getProgressOverTime(LETTERS, progress, 30), [LETTERS, progress, progressVersion]);
+  const scoreDist = useMemo(() => getScoreDistribution(progress), [progress]);
+  const weaknesses = useMemo(() => getWeaknesses(LETTERS, progress), [LETTERS, progress]);
+  const { heatmap, max: heatMax } = useMemo(
+    () => getPracticeHeatmap(LETTERS, progress),
+    [LETTERS, progress],
+  );
+  const timeline = useMemo(() => getProgressOverTime(LETTERS, progress, 30), [LETTERS, progress]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const totalSessions = useMemo(() => getTotalSessions(), [progressVersion]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const freezeStatus = useMemo(() => getFreezeStatus(), [progressVersion]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const xpTotal = useMemo(() => getXPTotal(), [progressVersion]);
   const levelInfo = useMemo(() => getLevelInfo(xpTotal), [xpTotal]);
 
   const totalScoreCount = Object.values(scoreDist).reduce((a, b) => a + b, 0);
-  const avgScore = totalScoreCount > 0
-    ? Object.entries(scoreDist).reduce((sum, [k, v]) => sum + Number(k) * v, 0) / totalScoreCount
-    : 0;
+  const avgScore =
+    totalScoreCount > 0
+      ? Object.entries(scoreDist).reduce((sum, [k, v]) => sum + Number(k) * v, 0) / totalScoreCount
+      : 0;
 
   // Timeline Y-axis: scale to the busiest day in the window so a day with
   // 3 sessions is visibly taller than a day with 1, without letting a
   // single outlier flatten the rest.
-  const timelineMax = Math.max(1, ...timeline.map((pt) => pt.sessions));
+  const timelineMax = Math.max(1, ...timeline.map(pt => pt.sessions));
 
   return (
     <div style={styles.analyticsPanel}>
@@ -83,7 +98,13 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
           </div>
         </div>
         <div style={styles.analyticsFreezeRow}>
-          <span style={freezeStatus.availableThisMonth ? styles.analyticsFreezeAvailable : styles.analyticsFreezeUsed}>
+          <span
+            style={
+              freezeStatus.availableThisMonth
+                ? styles.analyticsFreezeAvailable
+                : styles.analyticsFreezeUsed
+            }
+          >
             {freezeStatus.usedThisMonth} {t('freezeUsed')}
           </span>
         </div>
@@ -96,8 +117,13 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
           <div style={styles.analyticsScoreBig}>
             {avgScore.toFixed(1)}
             <span style={styles.analyticsScoreStars}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <span key={n} style={n <= Math.round(avgScore) ? styles.starFilled : styles.starEmpty}>★</span>
+              {[1, 2, 3, 4, 5].map(n => (
+                <span
+                  key={n}
+                  style={n <= Math.round(avgScore) ? styles.starFilled : styles.starEmpty}
+                >
+                  ★
+                </span>
               ))}
             </span>
           </div>
@@ -108,7 +134,7 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
       <div style={styles.analyticsCard}>
         <div style={styles.analyticsCardTitle}>{t('statsScoreDist')}</div>
         <div style={styles.analyticsBarChart}>
-          {[1, 2, 3, 4, 5].map((n) => {
+          {[1, 2, 3, 4, 5].map(n => {
             const count = scoreDist[n];
             const pct = totalScoreCount > 0 ? (count / totalScoreCount) * 100 : 0;
             return (
@@ -128,7 +154,7 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
       <div style={styles.analyticsCard}>
         <div style={styles.analyticsCardTitle}>{t('statsHeatmap')}</div>
         <div style={styles.analyticsHeatmapGrid}>
-          {LETTERS.map((l) => {
+          {LETTERS.map(l => {
             const count = heatmap[l.name] || 0;
             const intensity = heatMax > 0 ? count / heatMax : 0;
             return (
@@ -155,16 +181,20 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
         <div style={styles.analyticsCard}>
           <div style={styles.analyticsCardTitle}>{t('statsWeaknesses')}</div>
           <div style={styles.analyticsWeakList}>
-            {weaknesses.map((w) => (
+            {weaknesses.map(w => (
               <button
                 key={`${w.letterName}-${w.formKey}`}
                 className="btn-alpha"
                 style={styles.analyticsWeakItem}
                 onClick={() => onGoToItem(w.letterName, w.formKey)}
               >
-                <span style={styles.analyticsWeakChar} lang="ar">{w.letterChar}</span>
+                <span style={styles.analyticsWeakChar} lang="ar">
+                  {w.letterChar}
+                </span>
                 <span style={styles.analyticsWeakName}>{w.letterName}</span>
-                <span style={styles.analyticsWeakForm}>{t(FORM_NAMES[w.formKey] ?? w.formKey)}</span>
+                <span style={styles.analyticsWeakForm}>
+                  {t(FORM_NAMES[w.formKey] ?? w.formKey)}
+                </span>
                 <span style={styles.analyticsWeakScore}>{w.score}★</span>
               </button>
             ))}
@@ -188,17 +218,19 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
                 title={`${pt.date}: ${pt.sessions} ${t('statsSessions')}${pt.frozen ? ' · ' + t('freezePreserved') : ''}`}
               >
                 <div style={styles.analyticsTimelineBarWrap}>
-                  {pt.practiced && (
-                    pt.frozen ? (
+                  {pt.practiced &&
+                    (pt.frozen ? (
                       <div style={styles.analyticsTimelineFrozenBar} />
                     ) : (
-                      <div style={{ ...styles.analyticsTimelineBar, height: `${Math.max(heightPct, 8)}%` }} />
-                    )
-                  )}
+                      <div
+                        style={{
+                          ...styles.analyticsTimelineBar,
+                          height: `${Math.max(heightPct, 8)}%`,
+                        }}
+                      />
+                    ))}
                 </div>
-                {i % 5 === 0 && (
-                  <span style={styles.analyticsTimelineLabel}>{pt.label}</span>
-                )}
+                {i % 5 === 0 && <span style={styles.analyticsTimelineLabel}>{pt.label}</span>}
               </div>
             );
           })}
