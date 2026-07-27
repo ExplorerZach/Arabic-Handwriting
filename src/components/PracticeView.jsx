@@ -455,30 +455,6 @@ export default function PracticeView({
     dClearCanvas();
   }, [dClearCanvas]);
 
-  // ─── Canvas sizing (HiDPI) ─────────────────────────────
-
-  useEffect(() => {
-    const canvas = dCanvasRef.current;
-    if (!canvas) return;
-    const resize = () => {
-      const rect = canvas.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      const dpr = devicePixelRatio || 1;
-      canvas.width = rect.width * dpr;
-      canvas.height = rect.height * dpr;
-      // setTransform (not scale — cumulative) so repeated resizes stay sane.
-      canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
-      dRedraw(dStrokesRef.current);
-    };
-    resize();
-    const observer = new ResizeObserver(resize);
-    observer.observe(canvas);
-    return () => observer.disconnect();
-    // practiceMode and !!rsReviewSession deps ensure the observer re-attaches
-    // when the canvas mounts again after being unmounted (e.g. switching modes).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dRedraw, practiceMode, rsReviewSession]);
-
   // ─── Theme/brush sync → repaint existing strokes ───────
   // Keeps the refs that redraw() reads in step with state. Repaints so
   // existing strokes pick up the new color/paper immediately, even though
@@ -638,6 +614,33 @@ export default function PracticeView({
     advanceReviewRef,
     exitReviewSessionRef,
   });
+
+  // ─── Canvas sizing (HiDPI) ─────────────────────────────
+  // Must stay below useReviewSession: the deps array reads rsReviewSession,
+  // so placing this effect above the hook puts it in the TDZ and crashes the
+  // first render with a ReferenceError (blank page in production).
+
+  useEffect(() => {
+    const canvas = dCanvasRef.current;
+    if (!canvas) return;
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect();
+      if (!rect.width || !rect.height) return;
+      const dpr = devicePixelRatio || 1;
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      // setTransform (not scale — cumulative) so repeated resizes stay sane.
+      canvas.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+      dRedraw(dStrokesRef.current);
+    };
+    resize();
+    const observer = new ResizeObserver(resize);
+    observer.observe(canvas);
+    return () => observer.disconnect();
+    // practiceMode and !!rsReviewSession deps ensure the observer re-attaches
+    // when the canvas mounts again after being unmounted (e.g. switching modes).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dRedraw, practiceMode, rsReviewSession]);
 
   // ─── Deck session ─────────────────────────────────────
 

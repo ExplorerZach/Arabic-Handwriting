@@ -26,6 +26,10 @@ export default [
       'no-console': 'warn',
       'no-empty': 'warn',
       'no-useless-assignment': 'warn',
+      // Catches TDZ render crashes (const/let read above its declaration) —
+      // the class of bug that once blanked production. functions:false keeps
+      // hoisted function-declaration call sites legal.
+      'no-use-before-define': ['error', { variables: true, functions: false }],
     },
   },
 
