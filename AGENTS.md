@@ -24,6 +24,8 @@ npm run tauri:check  # cargo check in src-tauri/
 
 Pre-commit hook runs `eslint --fix` + `prettier --write` on staged files.
 **LSP:** `typescript-language-server` pinned to **4.3.4** — do NOT upgrade.
+**opencode:** `opencode.json` (tracked) defines `/verify`, `/lint`, `/test` etc.
+slash commands mirroring these gates — keep it in sync with this section.
 
 **Visual checks:** the containerized Playwright MCP **cannot** reach this app
 (Chrome Private Network Access blocks `host.docker.internal` from a non-secure

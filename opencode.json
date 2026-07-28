@@ -1,0 +1,44 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "lsp": true,
+  "instructions": ["AGENTS.md"],
+  "formatter": true,
+  "command": {
+    "lint": {
+      "template": "Run `npm run lint` and report any errors. Do not fix anything — just report what fails and where.",
+      "description": "ESLint check (read-only)"
+    },
+    "lint:fix": {
+      "template": "Run `npm run lint:fix` to auto-fix ESLint issues.",
+      "description": "ESLint auto-fix"
+    },
+    "format": {
+      "template": "Run `npm run format` to auto-format with Prettier.",
+      "description": "Prettier write"
+    },
+    "format:check": {
+      "template": "Run `npm run format:check` and report any files that need formatting. Do not fix anything.",
+      "description": "Prettier check (read-only)"
+    },
+    "typecheck": {
+      "template": "Run `npm run typecheck` (tsc --noEmit) and report any type errors. Do not fix anything — just report what fails and where.",
+      "description": "TypeScript type check (read-only)"
+    },
+    "test": {
+      "template": "Run `npm run test:run` (Vitest single run) and report any failing tests. Do not fix anything — just report what fails and where.",
+      "description": "Run test suite"
+    },
+    "verify": {
+      "template": "Run `npm run lint && npm run typecheck && npm run test:run && npm run build`. If any step fails, stop and report the errors. Do not attempt to fix anything — only report what fails.",
+      "description": "Full verification pipeline"
+    },
+    "build": {
+      "template": "Run `npm run build` to produce a production build. Report any errors.",
+      "description": "Production build"
+    },
+    "tauri:check": {
+      "template": "Run `npm run tauri:check` and report any Rust compile errors.",
+      "description": "Cargo check for Tauri"
+    }
+  }
+}
