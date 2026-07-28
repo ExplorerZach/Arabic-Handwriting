@@ -29,18 +29,18 @@ first-class progress entries.
 
 ## User decisions captured
 
-| Decision | Choice |
-|---|---|
-| Manual curation vs. auto SM-2 | Named decks, all user-created, **no automation** inside decks |
-| Session semantics | Full pass over the deck, every time |
-| Item granularity | Per-letter (all 4 positional forms cycle within a letter item); numbers / diacritics / words are single-form items |
-| Existing SM-2 / Auto Review | Keep both side-by-side; do not remove SM-2 |
-| Decks UI placement | Sub-section inside the existing Review tab |
-| Items across decks | An item may appear in multiple decks (many-to-many) |
-| Mastery flag | None — drop mastery-skip; every session is a full pass |
-| Letter forms in session | Cycle all forms per letter, in order |
-| Deck progress linkage | Unified — deck practice writes to `arabic_progress` |
-| Implementation approach | B — Clean separation (dedicated deck-session state; words join `arabic_progress` as first-class; extract `DeckManager`) |
+| Decision                      | Choice                                                                                                                  |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Manual curation vs. auto SM-2 | Named decks, all user-created, **no automation** inside decks                                                           |
+| Session semantics             | Full pass over the deck, every time                                                                                     |
+| Item granularity              | Per-letter (all 4 positional forms cycle within a letter item); numbers / diacritics / words are single-form items      |
+| Existing SM-2 / Auto Review   | Keep both side-by-side; do not remove SM-2                                                                              |
+| Decks UI placement            | Sub-section inside the existing Review tab                                                                              |
+| Items across decks            | An item may appear in multiple decks (many-to-many)                                                                     |
+| Mastery flag                  | None — drop mastery-skip; every session is a full pass                                                                  |
+| Letter forms in session       | Cycle all forms per letter, in order                                                                                    |
+| Deck progress linkage         | Unified — deck practice writes to `arabic_progress`                                                                     |
+| Implementation approach       | B — Clean separation (dedicated deck-session state; words join `arabic_progress` as first-class; extract `DeckManager`) |
 
 ## Architecture
 
@@ -73,17 +73,17 @@ first-class progress entries.
 {
   decks: [
     {
-      id: "deck_1700000000000",
-      name: "My tricky letters",
-      createdAt: "2026-06-28T00:00:00.000Z",
+      id: 'deck_1700000000000',
+      name: 'My tricky letters',
+      createdAt: '2026-06-28T00:00:00.000Z',
       items: [
-        { id: "item_1", type: "letter",    ref: "Ba" },            // ref = letter.name
-        { id: "item_2", type: "number",    ref: "Num3" },          // ref = number.name
-        { id: "item_3", type: "diacritic", ref: "DiacriticFatha" },// ref = diacritic.name
-        { id: "item_4", type: "word",      ref: "سلام" }            // ref = word string
-      ]
-    }
-  ]
+        { id: 'item_1', type: 'letter', ref: 'Ba' }, // ref = letter.name
+        { id: 'item_2', type: 'number', ref: 'Num3' }, // ref = number.name
+        { id: 'item_3', type: 'diacritic', ref: 'DiacriticFatha' }, // ref = diacritic.name
+        { id: 'item_4', type: 'word', ref: 'سلام' }, // ref = word string
+      ],
+    },
+  ];
 }
 ```
 
@@ -203,12 +203,16 @@ from Auto Review only.
 `onStartSession(deck)` in PracticeView:
 
 ```js
-if (!deck.items.length) { /* show "deck empty" inline; don't enter */ return; }
+if (!deck.items.length) {
+  /* show "deck empty" inline; don't enter */ return;
+}
 const first = resolveDeckItem(deck.items[0]);
 setDeckSession({
-  deckId: deck.id, deckName: deck.name,
-  queue: deck.items.slice(),      // preserve deck order — no shuffle
-  index: 0, summary: [],
+  deckId: deck.id,
+  deckName: deck.name,
+  queue: deck.items.slice(), // preserve deck order — no shuffle
+  index: 0,
+  summary: [],
 });
 setPracticeMode(first.practiceMode);
 enterDeckItem(0);
@@ -221,12 +225,12 @@ session-progress bar shows), parallel to how `reviewSession` behaves today.
 
 Each `queue[index]` resolves to `{ glyph, name, roman, formKeys, practiceMode }`:
 
-| `type` | lookup | `formKeys` | `practiceMode` |
-|---|---|---|---|
-| `letter` | `LETTERS.find(l => l.name === ref)` | `Object.keys(letter.forms)` | `"letters"` |
-| `number` | `NUMBERS.find(n => n.name === ref)` | `["isolated"]` | `"numbers"` |
-| `diacritic` | `DIACRITICS.find(d => d.name === ref)` | `["isolated"]` | `"diacritics"` |
-| `word` | word-lookup map by `ref` | `["word"]` | `"words"` |
+| `type`      | lookup                                 | `formKeys`                  | `practiceMode` |
+| ----------- | -------------------------------------- | --------------------------- | -------------- |
+| `letter`    | `LETTERS.find(l => l.name === ref)`    | `Object.keys(letter.forms)` | `"letters"`    |
+| `number`    | `NUMBERS.find(n => n.name === ref)`    | `["isolated"]`              | `"numbers"`    |
+| `diacritic` | `DIACRITICS.find(d => d.name === ref)` | `["isolated"]`              | `"diacritics"` |
+| `word`      | word-lookup map by `ref`               | `["word"]`                  | `"words"`      |
 
 Null lookups (shouldn't happen with static data) are skipped with a console
 warning.
@@ -325,10 +329,10 @@ the reference implementation.)
   `decks` memo); Review tab sub-nav + `<DeckManager>` render; new handlers
   (`startDeckSession`, `enterDeckItem`, `advanceDeck`, `exitDeckSession`);
   `requestFeedback` progress-write guard gains `|| deckSessionRef.current`
-  + words branch writes progress when in a deck session; session-progress
-  bar + summary screen for `deckSession`; guard
-  `startReviewSession` / `enterReviewItem` to no-op when `deckSession`
-  active; fix diacritics routing in `enterReviewItem` / `goToReviewItem`.
+  - words branch writes progress when in a deck session; session-progress
+    bar + summary screen for `deckSession`; guard
+    `startReviewSession` / `enterReviewItem` to no-op when `deckSession`
+    active; fix diacritics routing in `enterReviewItem` / `goToReviewItem`.
 - **`src/locales/index.js`** — ~20 new UI keys added to **both** `en` and
   `ar`: `tabDecks`, `subAutoReview`, `subMyDecks`, `deckListTitle`,
   `deckNew`, `deckEmpty`, `deckStart`, `deckEdit`, `deckDelete`,

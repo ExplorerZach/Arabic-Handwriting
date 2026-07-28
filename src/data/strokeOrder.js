@@ -530,12 +530,12 @@ const STROKE_DATA = {
   // ── Eastern Arabic numerals (٠–٩) ───────────────────────
   // Single-glyph digits, no positional forms. Paths approximate the
   // Amiri/Scheherazade glyph shapes in the shared 0–100 space.
-  "٠": {
+  '٠': {
     // 0 (ṣifr) — small dot on the baseline
     strokes: [],
     dots: [{ x: 50, y: 50 }],
   },
-  "١": {
+  '١': {
     // 1 (wāḥid) — single vertical stroke, top to bottom
     strokes: [
       [
@@ -548,7 +548,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "٢": {
+  '٢': {
     // 2 (ithnān) — small hook opening up-right
     strokes: [
       [
@@ -562,7 +562,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "٣": {
+  '٣': {
     // 3 (thalātha) — three connected humps along the top
     strokes: [
       [
@@ -579,7 +579,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "٤": {
+  '٤': {
     // 4 (arbaʿa) — reversed-3 curl
     strokes: [
       [
@@ -596,7 +596,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "٥": {
+  '٥': {
     // 5 (khamsa) — small heart-shaped loop, open at top
     strokes: [
       [
@@ -612,7 +612,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "٦": {
+  '٦': {
     // 6 (sitta) — diagonal stroke down to a small base
     strokes: [
       [
@@ -625,7 +625,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "٧": {
+  '٧': {
     // 7 (sabʿa) — upward V (checkmark opening to the top)
     strokes: [
       [
@@ -638,7 +638,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "٨": {
+  '٨': {
     // 8 (thamāniya) — inverted V opening downward
     strokes: [
       [
@@ -651,7 +651,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "٩": {
+  '٩': {
     // 9 (tisʿa) — loop on top with a straight descending tail
     strokes: [
       [
@@ -673,7 +673,7 @@ const STROKE_DATA = {
   },
 
   // Diacritics
-  "◌َ": {
+  '◌َ': {
     // Fatha
     strokes: [
       [
@@ -683,7 +683,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "◌ِ": {
+  '◌ِ': {
     // Kasra
     strokes: [
       [
@@ -693,7 +693,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "◌ُ": {
+  '◌ُ': {
     // Damma
     strokes: [
       [
@@ -707,7 +707,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "◌ْ": {
+  '◌ْ': {
     // Sukun
     strokes: [
       [
@@ -720,7 +720,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "◌ّ": {
+  '◌ّ': {
     // Shadda
     strokes: [
       [
@@ -733,7 +733,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "◌ً": {
+  '◌ً': {
     // Fathatan
     strokes: [
       [
@@ -747,7 +747,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "◌ٍ": {
+  '◌ٍ': {
     // Kasratan
     strokes: [
       [
@@ -761,7 +761,7 @@ const STROKE_DATA = {
     ],
     dots: [],
   },
-  "◌ٌ": {
+  '◌ٌ': {
     // Dammatan
     strokes: [
       [

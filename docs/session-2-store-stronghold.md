@@ -28,6 +28,7 @@
 - `src/locales/index.js` — UI strings (add keys to both en and ar)
 
 **Every file that uses localStorage directly (use grep to find all):**
+
 - `src/App.jsx`
 - `src/components/PracticeView.jsx`
 - `src/components/SettingsPanel.jsx`
@@ -137,7 +138,7 @@ hydrate().then(() => {
   createRoot(document.getElementById('root')).render(
     <StrictMode>
       <App />
-    </StrictMode>
+    </StrictMode>,
   );
 });
 ```
@@ -153,6 +154,7 @@ Use grep to find every `localStorage.getItem`, `localStorage.setItem`, `localSto
 - `localStorage.removeItem('key')` → `removeItem('key')`
 
 Import `{ getItem, setItem, removeItem }` from the correct relative path in each file:
+
 - From `src/utils/*.js` → `'./storage.js'` (same dir)
 - From `src/App.jsx` → `'./utils/storage'`
 - From `src/components/*.jsx` → `'../utils/storage'`
@@ -207,7 +209,10 @@ export async function getApiKey() {
 }
 
 export async function setApiKey(key) {
-  if (!isTauri) { setItem(KEY_NAME, key); return; }
+  if (!isTauri) {
+    setItem(KEY_NAME, key);
+    return;
+  }
   const { Client } = await import('@tauri-apps/plugin-stronghold');
   const client = new Client(VAULT_NAME);
   const store = client.getStore();
@@ -216,7 +221,10 @@ export async function setApiKey(key) {
 }
 
 export async function removeApiKey() {
-  if (!isTauri) { removeItem(KEY_NAME); return; }
+  if (!isTauri) {
+    removeItem(KEY_NAME);
+    return;
+  }
   const { Client } = await import('@tauri-apps/plugin-stronghold');
   const client = new Client(VAULT_NAME);
   const store = client.getStore();
@@ -246,7 +254,7 @@ useEffect(() => {
 Update handlers:
 
 ```js
-const handleSetKey = (key) => {
+const handleSetKey = key => {
   setApiKey(key).then(() => setApiKeyState(key));
 };
 const handleClearKey = () => {

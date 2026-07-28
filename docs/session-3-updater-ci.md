@@ -106,7 +106,7 @@ Add a section to AGENTS.md:
 ## Updater Signing
 
 Generate a keypair:
-  npx tauri signer generate -w ~/.tauri/arabic-script.key
+npx tauri signer generate -w ~/.tauri/arabic-script.key
 
 The public key goes in `tauri.conf.json` → `plugins.updater.pubkey`.
 The private key goes in GitHub Secrets as `TAURI_SIGNING_PRIVATE_KEY`.

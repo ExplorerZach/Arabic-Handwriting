@@ -43,9 +43,9 @@ Description of the issue, why it happens, and any suggested fix.
 
 The deck-polish spec (`docs/superpowers/specs/2026-07-04-deck-polish-design.md`)
 describes replacing the old `window.confirm("Delete this deck?...")` dialog
-with an immediate delete + 6s undo toast, so the toast *is* the safety net.
+with an immediate delete + 6s undo toast, so the toast _is_ the safety net.
 The implementation plan's literal code for the Delete button kept the old
-`window.confirm(...)` wrapper unchanged, so today a delete requires *both* a
+`window.confirm(...)` wrapper unchanged, so today a delete requires _both_ a
 confirm dialog **and** offers an undo toast afterward — belt-and-suspenders,
 not broken, but redundant and inconsistent with the written design intent.
 
@@ -67,8 +67,8 @@ from `en`/`ar` too if nothing else references it.
 Selected picker tiles spread `{ ...styles.reviewTile, ...(selected ? {
 borderColor: ... } : {}) }`. `reviewTile` sets the shorthand `border: '1.5px
 solid var(--color-border)'`, and overriding just `borderColor` on top of a
-shorthand triggers React's dev warning: *"Removing a style property during
-rerender... don't mix shorthand and non-shorthand properties."* Cosmetic
+shorthand triggers React's dev warning: _"Removing a style property during
+rerender... don't mix shorthand and non-shorthand properties."_ Cosmetic
 (dev-console only, no visual bug), but worth cleaning up.
 
 Suggested fix: in the relevant style objects, split `border` into
@@ -81,7 +81,7 @@ property.
 - **Status:** Open
 - **Severity:** Low (a11y polish)
 - **Area:** `src/components/PracticeView.jsx` (`deleteBtnRef`, `<UndoToast
-  dismissRef={deleteBtnRef} />`)
+dismissRef={deleteBtnRef} />`)
 - **Found:** 2026-07-07 (spec-compliance review of Task 6, deck-polish plan)
 
 `deleteBtnRef` is declared (`useRef(null)`) and passed to `UndoToast` as

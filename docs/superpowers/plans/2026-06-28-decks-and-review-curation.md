@@ -15,10 +15,12 @@
 ## File Structure
 
 ### New files
+
 - **`src/utils/decks.js`** — CRUD util for the `arabic_decks` localStorage key. In-memory cache + `storage` listener (mirrors `progress.js`/`history.js`). Exports: `getDecks`, `createDeck`, `renameDeck`, `deleteDeck`, `getDeck`, `addDeckItem`, `removeDeckItem`, `reorderDeckItem`.
 - **`src/components/DeckManager.jsx`** — extracted presentational component (three panes: list / editor / picker). Receives `t`, `locale`, `darkMode`, `decks`, and CRUD + `onStartSession` handlers as props.
 
 ### Modified files
+
 - **`src/utils/backup.js`** — add `arabic_decks` to `BACKUP_KEYS` so decks survive export/import.
 - **`src/locales/index.js`** — ~24 new UI keys added to **both** `en` and `ar`.
 - **`src/styles/practiceStyles.js`** — new deck-related style entries (mirroring the existing `review*` styles).
@@ -30,6 +32,7 @@
 ## Task 1: `decks.js` util + backup key
 
 **Files:**
+
 - Create: `src/utils/decks.js`
 - Modify: `src/utils/backup.js:16-30` (the `BACKUP_KEYS` array)
 
@@ -89,7 +92,7 @@ function save(data) {
 }
 
 if (typeof window !== 'undefined') {
-  window.addEventListener('storage', (e) => {
+  window.addEventListener('storage', e => {
     if (e.key === STORAGE_KEY) cache = null;
   });
 }
@@ -124,7 +127,7 @@ export function createDeck(name) {
 /** Rename a deck by id. */
 export function renameDeck(id, name) {
   const data = load();
-  const deck = data.decks.find((d) => d.id === id);
+  const deck = data.decks.find(d => d.id === id);
   if (deck) {
     deck.name = name;
     save(data);
@@ -135,19 +138,19 @@ export function renameDeck(id, name) {
 /** Delete a deck by id. */
 export function deleteDeck(id) {
   const data = load();
-  data.decks = data.decks.filter((d) => d.id !== id);
+  data.decks = data.decks.filter(d => d.id !== id);
   save(data);
 }
 
 /** Get a single deck by id (or null). */
 export function getDeck(id) {
-  return load().decks.find((d) => d.id === id) || null;
+  return load().decks.find(d => d.id === id) || null;
 }
 
 /** Add an item `{ type, ref }` to a deck; returns the added item. */
 export function addDeckItem(deckId, item) {
   const data = load();
-  const deck = data.decks.find((d) => d.id === deckId);
+  const deck = data.decks.find(d => d.id === deckId);
   if (!deck) return null;
   const full = { id: uniqueId('item'), type: item.type, ref: item.ref };
   deck.items.push(full);
@@ -158,16 +161,16 @@ export function addDeckItem(deckId, item) {
 /** Remove an item from a deck by item id. */
 export function removeDeckItem(deckId, itemId) {
   const data = load();
-  const deck = data.decks.find((d) => d.id === deckId);
+  const deck = data.decks.find(d => d.id === deckId);
   if (!deck) return;
-  deck.items = deck.items.filter((it) => it.id !== itemId);
+  deck.items = deck.items.filter(it => it.id !== itemId);
   save(data);
 }
 
 /** Move an item within a deck from fromIdx to toIdx. */
 export function reorderDeckItem(deckId, fromIdx, toIdx) {
   const data = load();
-  const deck = data.decks.find((d) => d.id === deckId);
+  const deck = data.decks.find(d => d.id === deckId);
   if (!deck) return;
   const items = deck.items;
   if (fromIdx < 0 || fromIdx >= items.length) return;
@@ -218,6 +221,7 @@ git commit -m "Add decks util and include arabic_decks in backups"
 ## Task 2: Locale keys
 
 **Files:**
+
 - Modify: `src/locales/index.js` (add keys to both `en` and `ar` blocks)
 
 - [ ] **Step 1: Add English keys**
@@ -315,6 +319,7 @@ git commit -m "Add deck UI locale keys (en + ar)"
 ## Task 3: Deck styles
 
 **Files:**
+
 - Modify: `src/styles/practiceStyles.js` (add new entries before `export default styles` at line 1125)
 
 - [ ] **Step 1: Add deck style entries**
@@ -441,6 +446,7 @@ git commit -m "Add deck style entries"
 ## Task 4: `DeckManager.jsx` component
 
 **Files:**
+
 - Create: `src/components/DeckManager.jsx`
 
 This is a presentational component with three panes controlled by a local `deckView` state: `"list"` (default), `"edit"`, `"picker"`.
@@ -448,12 +454,12 @@ This is a presentational component with three panes controlled by a local `deckV
 - [ ] **Step 1: Create `src/components/DeckManager.jsx`**
 
 ```jsx
-import { useState } from "react";
-import styles from "../styles/practiceStyles";
-import { LETTERS } from "../data/letters";
-import { NUMBERS } from "../data/numbers";
-import { DIACRITICS } from "../data/diacritics";
-import { WORD_GROUPS } from "../data/words";
+import { useState } from 'react';
+import styles from '../styles/practiceStyles';
+import { LETTERS } from '../data/letters';
+import { NUMBERS } from '../data/numbers';
+import { DIACRITICS } from '../data/diacritics';
+import { WORD_GROUPS } from '../data/words';
 
 /**
  * Deck manager — presentational component for the "My Decks" sub-tab
@@ -482,44 +488,47 @@ export default function DeckManager({
   onReorderItem,
   onStartSession,
 }) {
-  const [deckView, setDeckView] = useState("list");
+  const [deckView, setDeckView] = useState('list');
   const [editingId, setEditingId] = useState(null);
-  const [pickerTab, setPickerTab] = useState("letters");
+  const [pickerTab, setPickerTab] = useState('letters');
 
-  const editingDeck = editingId ? decks.find((d) => d.id === editingId) : null;
+  const editingDeck = editingId ? decks.find(d => d.id === editingId) : null;
 
   const backToList = () => {
-    setDeckView("list");
+    setDeckView('list');
     setEditingId(null);
   };
 
   const handleNewDeck = () => {
-    const deck = onCreateDeck("Untitled");
+    const deck = onCreateDeck('Untitled');
     if (deck) {
       setEditingId(deck.id);
-      setDeckView("edit");
+      setDeckView('edit');
     }
   };
 
   // ─── Resolve an item ref to a display glyph + label ────
-  const resolveDisplay = (item) => {
-    if (item.type === "letter") {
-      const l = LETTERS.find((x) => x.name === item.ref);
+  const resolveDisplay = item => {
+    if (item.type === 'letter') {
+      const l = LETTERS.find(x => x.name === item.ref);
       return l ? { char: l.letter, label: `${l.name} — ${l.roman}` } : null;
     }
-    if (item.type === "number") {
-      const n = NUMBERS.find((x) => x.name === item.ref);
+    if (item.type === 'number') {
+      const n = NUMBERS.find(x => x.name === item.ref);
       return n ? { char: n.letter, label: `${n.name} — ${n.roman}` } : null;
     }
-    if (item.type === "diacritic") {
-      const d = DIACRITICS.find((x) => x.name === item.ref);
+    if (item.type === 'diacritic') {
+      const d = DIACRITICS.find(x => x.name === item.ref);
       return d ? { char: d.letter, label: `${d.name} — ${d.roman}` } : null;
     }
-    if (item.type === "word") {
+    if (item.type === 'word') {
       let found = null;
       for (const g of WORD_GROUPS) {
-        const w = g.words.find((x) => x.word === item.ref);
-        if (w) { found = { char: w.word, label: `${w.roman} — ${w.meaning}` }; break; }
+        const w = g.words.find(x => x.word === item.ref);
+        if (w) {
+          found = { char: w.word, label: `${w.roman} — ${w.meaning}` };
+          break;
+        }
       }
       return found;
     }
@@ -528,13 +537,13 @@ export default function DeckManager({
 
   const isInDeck = (type, ref) => {
     if (!editingDeck) return false;
-    return editingDeck.items.some((it) => it.type === type && it.ref === ref);
+    return editingDeck.items.some(it => it.type === type && it.ref === ref);
   };
 
   const toggleItem = (type, ref) => {
     if (!editingDeck) return;
     if (isInDeck(type, ref)) {
-      const item = editingDeck.items.find((it) => it.type === type && it.ref === ref);
+      const item = editingDeck.items.find(it => it.type === type && it.ref === ref);
       if (item) onRemoveItem(editingDeck.id, item.id);
     } else {
       onAddItem(editingDeck.id, { type, ref });
@@ -542,58 +551,65 @@ export default function DeckManager({
   };
 
   // ═══ Pane 1: Deck list ═════════════════════════════════
-  if (deckView === "list") {
+  if (deckView === 'list') {
     return (
       <div style={styles.reviewDash}>
-        <div style={{ ...styles.reviewHeader, justifyContent: "space-between" }}>
-          <span>{t("deckListTitle")}</span>
+        <div style={{ ...styles.reviewHeader, justifyContent: 'space-between' }}>
+          <span>{t('deckListTitle')}</span>
           <button
             className="btn-ai"
-            style={{ ...styles.btn, ...styles.btnAI, fontSize: 12, padding: "4px 10px" }}
+            style={{ ...styles.btn, ...styles.btnAI, fontSize: 12, padding: '4px 10px' }}
             onClick={handleNewDeck}
           >
-            ＋ {t("deckNew")}
+            ＋ {t('deckNew')}
           </button>
         </div>
         {decks.length === 0 ? (
           <div style={styles.reviewEmpty}>
-            <p style={{ marginBottom: 12 }}>{t("deckEmpty")}</p>
-            <button className="btn-ai" style={{ ...styles.btn, ...styles.btnAI }} onClick={handleNewDeck}>
-              {t("deckEmptyCta")}
+            <p style={{ marginBottom: 12 }}>{t('deckEmpty')}</p>
+            <button
+              className="btn-ai"
+              style={{ ...styles.btn, ...styles.btnAI }}
+              onClick={handleNewDeck}
+            >
+              {t('deckEmptyCta')}
             </button>
           </div>
         ) : (
-          decks.map((deck) => (
+          decks.map(deck => (
             <div key={deck.id} style={styles.deckRow}>
               <div style={{ flex: 1 }}>
                 <div style={styles.deckRowName}>{deck.name}</div>
                 <div style={styles.deckRowCount}>
-                  {deck.items.length} {t("deckItemCount")}
+                  {deck.items.length} {t('deckItemCount')}
                 </div>
               </div>
               <button
                 className="btn-ai"
-                style={{ ...styles.btn, ...styles.btnAI, fontSize: 12, padding: "4px 10px" }}
+                style={{ ...styles.btn, ...styles.btnAI, fontSize: 12, padding: '4px 10px' }}
                 onClick={() => onStartSession(deck)}
                 disabled={deck.items.length === 0}
               >
-                ▶ {t("deckStart")}
+                ▶ {t('deckStart')}
               </button>
               <button
                 className="btn-panel"
-                style={{ ...styles.btn, fontSize: 12, padding: "4px 10px" }}
-                onClick={() => { setEditingId(deck.id); setDeckView("edit"); }}
+                style={{ ...styles.btn, fontSize: 12, padding: '4px 10px' }}
+                onClick={() => {
+                  setEditingId(deck.id);
+                  setDeckView('edit');
+                }}
               >
-                {t("deckEdit")}
+                {t('deckEdit')}
               </button>
               <button
                 className="btn-clear"
-                style={{ ...styles.btn, fontSize: 12, padding: "4px 10px" }}
+                style={{ ...styles.btn, fontSize: 12, padding: '4px 10px' }}
                 onClick={() => {
-                  if (window.confirm(t("deckDeleteConfirm"))) onDeleteDeck(deck.id);
+                  if (window.confirm(t('deckDeleteConfirm'))) onDeleteDeck(deck.id);
                 }}
               >
-                {t("deckDelete")}
+                {t('deckDelete')}
               </button>
             </div>
           ))
@@ -603,77 +619,100 @@ export default function DeckManager({
   }
 
   // ═══ Pane 2: Deck editor ═══════════════════════════════
-  if (deckView === "edit" && editingDeck) {
+  if (deckView === 'edit' && editingDeck) {
     return (
       <div style={styles.reviewDash}>
-        <div style={{ ...styles.reviewHeader, justifyContent: "space-between" }}>
-          <button className="btn-clear" style={{ ...styles.btn, fontSize: 12, padding: "4px 10px" }} onClick={backToList}>
-            ← {t("deckBack")}
+        <div style={{ ...styles.reviewHeader, justifyContent: 'space-between' }}>
+          <button
+            className="btn-clear"
+            style={{ ...styles.btn, fontSize: 12, padding: '4px 10px' }}
+            onClick={backToList}
+          >
+            ← {t('deckBack')}
           </button>
-          <button className="btn-nav" style={{ ...styles.btn, fontSize: 12, padding: "4px 10px" }} onClick={backToList}>
-            {t("deckDone")}
+          <button
+            className="btn-nav"
+            style={{ ...styles.btn, fontSize: 12, padding: '4px 10px' }}
+            onClick={backToList}
+          >
+            {t('deckDone')}
           </button>
         </div>
-        <label style={{ display: "block", marginBottom: 12 }}>
-          <span style={{ fontSize: 11, color: "var(--color-text-muted)", display: "block", marginBottom: 4 }}>
-            {t("deckNameLabel")}
+        <label style={{ display: 'block', marginBottom: 12 }}>
+          <span
+            style={{
+              fontSize: 11,
+              color: 'var(--color-text-muted)',
+              display: 'block',
+              marginBottom: 4,
+            }}
+          >
+            {t('deckNameLabel')}
           </span>
           <input
             type="text"
             value={editingDeck.name}
-            onChange={(e) => onRenameDeck(editingDeck.id, e.target.value)}
+            onChange={e => onRenameDeck(editingDeck.id, e.target.value)}
             style={{
-              width: "100%",
-              padding: "8px 10px",
+              width: '100%',
+              padding: '8px 10px',
               borderRadius: 8,
-              border: "1px solid var(--color-border)",
-              background: "var(--color-surface)",
-              color: "var(--color-text)",
+              border: '1px solid var(--color-border)',
+              background: 'var(--color-surface)',
+              color: 'var(--color-text)',
               fontSize: 15,
-              boxSizing: "border-box",
+              boxSizing: 'border-box',
             }}
           />
         </label>
         <button
           className="btn-ai"
           style={{ ...styles.btn, ...styles.btnAI, marginBottom: 12 }}
-          onClick={() => setDeckView("picker")}
+          onClick={() => setDeckView('picker')}
         >
-          ＋ {t("deckAddItems")}
+          ＋ {t('deckAddItems')}
         </button>
         {editingDeck.items.length === 0 ? (
-          <div style={styles.reviewEmpty}>{t("deckEmpty")}</div>
+          <div style={styles.reviewEmpty}>{t('deckEmpty')}</div>
         ) : (
           editingDeck.items.map((item, idx) => {
             const disp = resolveDisplay(item);
             if (!disp) return null;
             return (
               <div key={item.id} style={styles.deckEditorItem}>
-                <span style={styles.deckEditorItemChar} lang="ar">{disp.char}</span>
+                <span style={styles.deckEditorItemChar} lang="ar">
+                  {disp.char}
+                </span>
                 <span style={styles.deckEditorItemLabel}>{disp.label}</span>
                 <button
                   className="btn-clear"
-                  style={{ ...styles.btn, fontSize: 11, padding: "2px 8px" }}
+                  style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}
                   onClick={() => onReorderItem(editingDeck.id, idx, Math.max(0, idx - 1))}
                   disabled={idx === 0}
-                  aria-label={t("deckMoveUp")}
+                  aria-label={t('deckMoveUp')}
                 >
                   ↑
                 </button>
                 <button
                   className="btn-clear"
-                  style={{ ...styles.btn, fontSize: 11, padding: "2px 8px" }}
-                  onClick={() => onReorderItem(editingDeck.id, idx, Math.min(editingDeck.items.length - 1, idx + 1))}
+                  style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}
+                  onClick={() =>
+                    onReorderItem(
+                      editingDeck.id,
+                      idx,
+                      Math.min(editingDeck.items.length - 1, idx + 1),
+                    )
+                  }
                   disabled={idx === editingDeck.items.length - 1}
-                  aria-label={t("deckMoveDown")}
+                  aria-label={t('deckMoveDown')}
                 >
                   ↓
                 </button>
                 <button
                   className="btn-clear"
-                  style={{ ...styles.btn, fontSize: 11, padding: "2px 8px" }}
+                  style={{ ...styles.btn, fontSize: 11, padding: '2px 8px' }}
                   onClick={() => onRemoveItem(editingDeck.id, item.id)}
-                  aria-label={t("deckItemRemove")}
+                  aria-label={t('deckItemRemove')}
                 >
                   ✕
                 </button>
@@ -686,25 +725,33 @@ export default function DeckManager({
   }
 
   // ═══ Pane 3: Item picker ═══════════════════════════════
-  if (deckView === "picker" && editingDeck) {
+  if (deckView === 'picker' && editingDeck) {
     const subTabs = [
-      { key: "letters", label: t("deckPickerLetters") },
-      { key: "numbers", label: t("deckPickerNumbers") },
-      { key: "diacritics", label: t("deckPickerDiacritics") },
-      { key: "words", label: t("deckPickerWords") },
+      { key: 'letters', label: t('deckPickerLetters') },
+      { key: 'numbers', label: t('deckPickerNumbers') },
+      { key: 'diacritics', label: t('deckPickerDiacritics') },
+      { key: 'words', label: t('deckPickerWords') },
     ];
     return (
       <div style={styles.reviewDash}>
-        <div style={{ ...styles.reviewHeader, justifyContent: "space-between" }}>
-          <button className="btn-clear" style={{ ...styles.btn, fontSize: 12, padding: "4px 10px" }} onClick={() => setDeckView("edit")}>
-            ← {t("deckBack")}
+        <div style={{ ...styles.reviewHeader, justifyContent: 'space-between' }}>
+          <button
+            className="btn-clear"
+            style={{ ...styles.btn, fontSize: 12, padding: '4px 10px' }}
+            onClick={() => setDeckView('edit')}
+          >
+            ← {t('deckBack')}
           </button>
-          <button className="btn-nav" style={{ ...styles.btn, fontSize: 12, padding: "4px 10px" }} onClick={() => setDeckView("edit")}>
-            {t("deckDone")}
+          <button
+            className="btn-nav"
+            style={{ ...styles.btn, fontSize: 12, padding: '4px 10px' }}
+            onClick={() => setDeckView('edit')}
+          >
+            {t('deckDone')}
           </button>
         </div>
         <div style={styles.deckSubNav}>
-          {subTabs.map((st) => (
+          {subTabs.map(st => (
             <button
               key={st.key}
               className="btn-form"
@@ -720,22 +767,29 @@ export default function DeckManager({
           ))}
         </div>
 
-        {pickerTab === "letters" && (
+        {pickerTab === 'letters' && (
           <div style={styles.deckPickerGrid}>
-            {LETTERS.map((l) => {
-              const selected = isInDeck("letter", l.name);
+            {LETTERS.map(l => {
+              const selected = isInDeck('letter', l.name);
               return (
                 <button
                   key={l.name}
                   className="btn-alpha"
                   style={{
                     ...styles.reviewTile,
-                    ...(selected ? { borderColor: "var(--color-accent)", background: "rgba(var(--color-accent-rgb, 192,112,58),0.12)" } : {}),
+                    ...(selected
+                      ? {
+                          borderColor: 'var(--color-accent)',
+                          background: 'rgba(var(--color-accent-rgb, 192,112,58),0.12)',
+                        }
+                      : {}),
                   }}
-                  onClick={() => toggleItem("letter", l.name)}
+                  onClick={() => toggleItem('letter', l.name)}
                   aria-pressed={selected}
                 >
-                  <span style={styles.reviewTileChar} lang="ar">{l.letter}</span>
+                  <span style={styles.reviewTileChar} lang="ar">
+                    {l.letter}
+                  </span>
                   <span style={styles.reviewTileName}>{l.name}</span>
                 </button>
               );
@@ -743,22 +797,29 @@ export default function DeckManager({
           </div>
         )}
 
-        {pickerTab === "numbers" && (
+        {pickerTab === 'numbers' && (
           <div style={styles.deckPickerGrid}>
-            {NUMBERS.map((n) => {
-              const selected = isInDeck("number", n.name);
+            {NUMBERS.map(n => {
+              const selected = isInDeck('number', n.name);
               return (
                 <button
                   key={n.name}
                   className="btn-alpha"
                   style={{
                     ...styles.reviewTile,
-                    ...(selected ? { borderColor: "var(--color-accent)", background: "rgba(var(--color-accent-rgb, 192,112,58),0.12)" } : {}),
+                    ...(selected
+                      ? {
+                          borderColor: 'var(--color-accent)',
+                          background: 'rgba(var(--color-accent-rgb, 192,112,58),0.12)',
+                        }
+                      : {}),
                   }}
-                  onClick={() => toggleItem("number", n.name)}
+                  onClick={() => toggleItem('number', n.name)}
                   aria-pressed={selected}
                 >
-                  <span style={styles.reviewTileChar} lang="ar">{n.letter}</span>
+                  <span style={styles.reviewTileChar} lang="ar">
+                    {n.letter}
+                  </span>
                   <span style={styles.reviewTileName}>{n.name}</span>
                 </button>
               );
@@ -766,22 +827,29 @@ export default function DeckManager({
           </div>
         )}
 
-        {pickerTab === "diacritics" && (
+        {pickerTab === 'diacritics' && (
           <div style={styles.deckPickerGrid}>
-            {DIACRITICS.map((d) => {
-              const selected = isInDeck("diacritic", d.name);
+            {DIACRITICS.map(d => {
+              const selected = isInDeck('diacritic', d.name);
               return (
                 <button
                   key={d.name}
                   className="btn-alpha"
                   style={{
                     ...styles.reviewTile,
-                    ...(selected ? { borderColor: "var(--color-accent)", background: "rgba(var(--color-accent-rgb, 192,112,58),0.12)" } : {}),
+                    ...(selected
+                      ? {
+                          borderColor: 'var(--color-accent)',
+                          background: 'rgba(var(--color-accent-rgb, 192,112,58),0.12)',
+                        }
+                      : {}),
                   }}
-                  onClick={() => toggleItem("diacritic", d.name)}
+                  onClick={() => toggleItem('diacritic', d.name)}
                   aria-pressed={selected}
                 >
-                  <span style={styles.reviewTileChar} lang="ar">{d.letter}</span>
+                  <span style={styles.reviewTileChar} lang="ar">
+                    {d.letter}
+                  </span>
                   <span style={styles.reviewTileName}>{d.name}</span>
                 </button>
               );
@@ -789,31 +857,53 @@ export default function DeckManager({
           </div>
         )}
 
-        {pickerTab === "words" && (
+        {pickerTab === 'words' && (
           <div>
             {WORD_GROUPS.map((g, gIdx) => (
               <div key={gIdx} style={{ marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "var(--color-text-muted)", textTransform: "uppercase", letterSpacing: ".15em", marginBottom: 6 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: 'var(--color-text-muted)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '.15em',
+                    marginBottom: 6,
+                  }}
+                >
                   {g.name}
                 </div>
                 {g.words.map((w, wIdx) => {
-                  const selected = isInDeck("word", w.word);
+                  const selected = isInDeck('word', w.word);
                   return (
                     <button
                       key={`${gIdx}-${wIdx}`}
                       className="btn-alpha"
                       style={{
                         ...styles.deckPickerWordRow,
-                        width: "100%",
-                        ...(selected ? { borderColor: "var(--color-accent)", background: "rgba(var(--color-accent-rgb, 192,112,58),0.12)" } : {}),
+                        width: '100%',
+                        ...(selected
+                          ? {
+                              borderColor: 'var(--color-accent)',
+                              background: 'rgba(var(--color-accent-rgb, 192,112,58),0.12)',
+                            }
+                          : {}),
                       }}
-                      onClick={() => toggleItem("word", w.word)}
+                      onClick={() => toggleItem('word', w.word)}
                       aria-pressed={selected}
                     >
-                      <span style={styles.deckPickerWordChar} lang="ar">{w.word}</span>
-                      <span style={styles.deckPickerWordMeta}>{w.roman} — {w.meaning}</span>
-                      <span style={{ fontSize: 16, color: selected ? "var(--color-accent)" : "var(--color-text-muted)" }}>
-                        {selected ? "✓" : "+"}
+                      <span style={styles.deckPickerWordChar} lang="ar">
+                        {w.word}
+                      </span>
+                      <span style={styles.deckPickerWordMeta}>
+                        {w.roman} — {w.meaning}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 16,
+                          color: selected ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                        }}
+                      >
+                        {selected ? '✓' : '+'}
                       </span>
                     </button>
                   );
@@ -848,6 +938,7 @@ git commit -m "Add DeckManager presentational component"
 ## Task 5: Wire decks into PracticeView (state, session machine, render)
 
 **Files:**
+
 - Modify: `src/components/PracticeView.jsx`
 
 This is the core wiring task: imports, state/refs/memos, the deck session state machine (`resolveDeckItem`, `enterDeckItem`, `advanceDeck`, `exitDeckSession`, `startDeckSession`), CRUD handlers, cross-tab storage listener, the Review tab sub-nav, and the `<DeckManager>` render. After this task, the Decks sub-tab is fully navigable and sessions can start (but AI-feedback wiring comes in Task 6, and the session progress bar / summary UI comes in Task 7).
@@ -857,13 +948,13 @@ This is the core wiring task: imports, state/refs/memos, the deck session state 
 At the top of `src/components/PracticeView.jsx`, after the existing `WORD_GROUPS` import (line 22), add the `ALL_WORDS` import:
 
 ```js
-import { ALL_WORDS } from "../data/words";
+import { ALL_WORDS } from '../data/words';
 ```
 
 After line 45 (`import XpGainToast from "./XpGainToast";`), add:
 
 ```js
-import DeckManager from "./DeckManager";
+import DeckManager from './DeckManager';
 import {
   getDecks,
   createDeck,
@@ -872,7 +963,7 @@ import {
   addDeckItem,
   removeDeckItem,
   reorderDeckItem,
-} from "../utils/decks";
+} from '../utils/decks';
 ```
 
 - [ ] **Step 2: Add state, refs, and memos**
@@ -880,36 +971,36 @@ import {
 Find the "Guided review session state" block (around line 186-196). After the `useEffect` syncing `reviewSessionRef` (line 196), insert:
 
 ```js
-  // Deck session state (separate from reviewSession — no SM-2, full-pass)
-  const [deckSession, setDeckSession] = useState(null);
-  // { deckId, deckName, queue: DeckItem[], index, summary: [{item, formKey, score, skipped, letterChar, name}], finished? }
-  const deckSessionRef = useRef(null);
-  const advanceDeckRef = useRef(null);
-  useEffect(() => {
-    deckSessionRef.current = deckSession;
-  }, [deckSession]);
+// Deck session state (separate from reviewSession — no SM-2, full-pass)
+const [deckSession, setDeckSession] = useState(null);
+// { deckId, deckName, queue: DeckItem[], index, summary: [{item, formKey, score, skipped, letterChar, name}], finished? }
+const deckSessionRef = useRef(null);
+const advanceDeckRef = useRef(null);
+useEffect(() => {
+  deckSessionRef.current = deckSession;
+}, [deckSession]);
 
-  // Review sub-tab ("auto" = existing dashboard, "decks" = DeckManager)
-  const [reviewSubTab, setReviewSubTab] = useState("auto");
+// Review sub-tab ("auto" = existing dashboard, "decks" = DeckManager)
+const [reviewSubTab, setReviewSubTab] = useState('auto');
 
-  // Decks version counter — bumped on every deck CRUD write so the `decks`
-  // memo recomputes. Separate from progressVersion so deck edits don't
-  // needlessly re-memoize progress summaries.
-  const [decksVersion, setDecksVersion] = useState(0);
-  const decks = useMemo(() => getDecks(), [decksVersion]);
+// Decks version counter — bumped on every deck CRUD write so the `decks`
+// memo recomputes. Separate from progressVersion so deck edits don't
+// needlessly re-memoize progress summaries.
+const [decksVersion, setDecksVersion] = useState(0);
+const decks = useMemo(() => getDecks(), [decksVersion]);
 
-  // Map word string -> { word, roman, meaning, hint, group, groupIndex, wordIndex }
-  // so a deck item with type:"word" can resolve to the right
-  // wordGroupIndex + wordIndex that the existing derivation expects.
-  const wordLookup = useMemo(() => {
-    const m = new Map();
-    WORD_GROUPS.forEach((g, gIdx) => {
-      g.words.forEach((w, wIdx) => {
-        if (!m.has(w.word)) m.set(w.word, { ...w, group: g.name, groupIndex: gIdx, wordIndex: wIdx });
-      });
+// Map word string -> { word, roman, meaning, hint, group, groupIndex, wordIndex }
+// so a deck item with type:"word" can resolve to the right
+// wordGroupIndex + wordIndex that the existing derivation expects.
+const wordLookup = useMemo(() => {
+  const m = new Map();
+  WORD_GROUPS.forEach((g, gIdx) => {
+    g.words.forEach((w, wIdx) => {
+      if (!m.has(w.word)) m.set(w.word, { ...w, group: g.name, groupIndex: gIdx, wordIndex: wIdx });
     });
-    return m;
-  }, []);
+  });
+  return m;
+}, []);
 ```
 
 - [ ] **Step 3: Add CRUD handlers + cross-tab storage listener**
@@ -917,50 +1008,68 @@ Find the "Guided review session state" block (around line 186-196). After the `u
 Near other `useCallback` handlers (e.g. after `switchPracticeMode` around line 440), insert:
 
 ```js
-  const refreshDecks = useCallback(() => setDecksVersion((v) => v + 1), []);
+const refreshDecks = useCallback(() => setDecksVersion(v => v + 1), []);
 
-  const handleCreateDeck = useCallback((name) => {
+const handleCreateDeck = useCallback(
+  name => {
     const deck = createDeck(name);
     refreshDecks();
     return deck;
-  }, [refreshDecks]);
+  },
+  [refreshDecks],
+);
 
-  const handleRenameDeck = useCallback((id, name) => {
+const handleRenameDeck = useCallback(
+  (id, name) => {
     renameDeck(id, name);
     refreshDecks();
-  }, [refreshDecks]);
+  },
+  [refreshDecks],
+);
 
-  const handleDeleteDeck = useCallback((id) => {
+const handleDeleteDeck = useCallback(
+  id => {
     deleteDeck(id);
     refreshDecks();
-  }, [refreshDecks]);
+  },
+  [refreshDecks],
+);
 
-  const handleAddDeckItem = useCallback((deckId, item) => {
+const handleAddDeckItem = useCallback(
+  (deckId, item) => {
     addDeckItem(deckId, item);
     refreshDecks();
-  }, [refreshDecks]);
+  },
+  [refreshDecks],
+);
 
-  const handleRemoveDeckItem = useCallback((deckId, itemId) => {
+const handleRemoveDeckItem = useCallback(
+  (deckId, itemId) => {
     removeDeckItem(deckId, itemId);
     refreshDecks();
-  }, [refreshDecks]);
+  },
+  [refreshDecks],
+);
 
-  const handleReorderDeckItem = useCallback((deckId, fromIdx, toIdx) => {
+const handleReorderDeckItem = useCallback(
+  (deckId, fromIdx, toIdx) => {
     reorderDeckItem(deckId, fromIdx, toIdx);
     refreshDecks();
-  }, [refreshDecks]);
+  },
+  [refreshDecks],
+);
 ```
 
 And near the existing online/offline `useEffect` (around line 509), add a cross-tab storage listener:
 
 ```js
-  useEffect(() => {
-    const onStorage = (e) => {
-      if (e.key === "arabic_decks") setDecksVersion((v) => v + 1);
-    };
-    window.addEventListener("storage", onStorage);
-    return () => window.removeEventListener("storage", onStorage);
-  }, []);
+useEffect(() => {
+  const onStorage = e => {
+    if (e.key === 'arabic_decks') setDecksVersion(v => v + 1);
+  };
+  window.addEventListener('storage', onStorage);
+  return () => window.removeEventListener('storage', onStorage);
+}, []);
 ```
 
 - [ ] **Step 4: Add the deck session state machine**
@@ -968,52 +1077,72 @@ And near the existing online/offline `useEffect` (around line 509), add a cross-
 After `goToAnalyticsItem` (around line 1227), insert the deck session helpers. **Order matters:** `resolveDeckItem` first, then `enterDeckItem`, then `startDeckSession` (which references `enterDeckItem`), then `advanceDeck`, then `exitDeckSession`. The `advanceDeckRef.current = advanceDeck` assignment runs on every render (mirroring the `advanceReviewRef` pattern at line 1155) so the `setTimeout` auto-advance always calls the latest version with the current `activeForm`.
 
 ```js
-  // ─── Deck session helpers ─────────────────────────────
-  // Resolve a deck item { type, ref } to the data needed to render +
-  // practice it. Returns null if the ref can't be found (shouldn't happen
-  // with static data, but guard anyway).
-  const resolveDeckItem = useCallback((item) => {
+// ─── Deck session helpers ─────────────────────────────
+// Resolve a deck item { type, ref } to the data needed to render +
+// practice it. Returns null if the ref can't be found (shouldn't happen
+// with static data, but guard anyway).
+const resolveDeckItem = useCallback(
+  item => {
     if (!item) return null;
-    if (item.type === "letter") {
-      const l = LETTERS.find((x) => x.name === item.ref);
+    if (item.type === 'letter') {
+      const l = LETTERS.find(x => x.name === item.ref);
       if (!l) return null;
       return {
-        glyph: l.letter, name: l.name, roman: l.roman,
-        formKeys: Object.keys(l.forms), practiceMode: "letters", obj: l,
+        glyph: l.letter,
+        name: l.name,
+        roman: l.roman,
+        formKeys: Object.keys(l.forms),
+        practiceMode: 'letters',
+        obj: l,
       };
     }
-    if (item.type === "number") {
-      const n = NUMBERS.find((x) => x.name === item.ref);
+    if (item.type === 'number') {
+      const n = NUMBERS.find(x => x.name === item.ref);
       if (!n) return null;
       return {
-        glyph: n.letter, name: n.name, roman: n.roman,
-        formKeys: ["isolated"], practiceMode: "numbers", obj: n,
+        glyph: n.letter,
+        name: n.name,
+        roman: n.roman,
+        formKeys: ['isolated'],
+        practiceMode: 'numbers',
+        obj: n,
       };
     }
-    if (item.type === "diacritic") {
-      const d = DIACRITICS.find((x) => x.name === item.ref);
+    if (item.type === 'diacritic') {
+      const d = DIACRITICS.find(x => x.name === item.ref);
       if (!d) return null;
       return {
-        glyph: d.letter, name: d.name, roman: d.roman,
-        formKeys: ["isolated"], practiceMode: "diacritics", obj: d,
+        glyph: d.letter,
+        name: d.name,
+        roman: d.roman,
+        formKeys: ['isolated'],
+        practiceMode: 'diacritics',
+        obj: d,
       };
     }
-    if (item.type === "word") {
+    if (item.type === 'word') {
       const w = wordLookup.get(item.ref);
       if (!w) return null;
       return {
-        glyph: w.word, name: w.word, roman: w.roman,
-        formKeys: ["word"], practiceMode: "words", obj: w,
+        glyph: w.word,
+        name: w.word,
+        roman: w.roman,
+        formKeys: ['word'],
+        practiceMode: 'words',
+        obj: w,
       };
     }
     return null;
-  }, [wordLookup]);
+  },
+  [wordLookup],
+);
 
-  // Enter a specific deck queue index: resolve the item, set the right
-  // practiceMode + indices + first form, clear the canvas. Mirrors
-  // enterReviewItem but handles all four item types + lesson-mode index
-  // mapping for letters.
-  const enterDeckItem = useCallback((idx, itemArg) => {
+// Enter a specific deck queue index: resolve the item, set the right
+// practiceMode + indices + first form, clear the canvas. Mirrors
+// enterReviewItem but handles all four item types + lesson-mode index
+// mapping for letters.
+const enterDeckItem = useCallback(
+  (idx, itemArg) => {
     const sess = deckSessionRef.current;
     if (!sess) return;
     const item = itemArg || sess.queue[idx];
@@ -1021,11 +1150,11 @@ After `goToAnalyticsItem` (around line 1227), insert the deck session helpers. *
     const resolved = resolveDeckItem(item);
     if (!resolved) return;
     setPracticeMode(resolved.practiceMode);
-    if (resolved.practiceMode === "words") {
+    if (resolved.practiceMode === 'words') {
       setWordGroupIndex(resolved.obj.groupIndex);
       setWordIndex(resolved.obj.wordIndex);
-    } else if (resolved.practiceMode === "letters") {
-      const alphIdx = LETTERS.findIndex((l) => l.name === item.ref);
+    } else if (resolved.practiceMode === 'letters') {
+      const alphIdx = LETTERS.findIndex(l => l.name === item.ref);
       if (lessonMode) {
         const lessonIdx = lessonToAlpha.indexOf(alphIdx);
         setLetterIndex(lessonIdx !== -1 ? lessonIdx : 0);
@@ -1034,8 +1163,8 @@ After `goToAnalyticsItem` (around line 1227), insert the deck session helpers. *
       }
     } else {
       // numbers or diacritics — index into activeSet
-      const set = resolved.practiceMode === "numbers" ? NUMBERS : DIACRITICS;
-      const idxInSet = set.findIndex((x) => x.name === item.ref);
+      const set = resolved.practiceMode === 'numbers' ? NUMBERS : DIACRITICS;
+      const idxInSet = set.findIndex(x => x.name === item.ref);
       setLetterIndex(idxInSet);
     }
     setFormIndex(resolved.formKeys[0]);
@@ -1044,12 +1173,15 @@ After `goToAnalyticsItem` (around line 1227), insert the deck session helpers. *
     setShowHistory(false);
     alphaBtnRefs.current = [];
     clearCanvas();
-  }, [resolveDeckItem, lessonMode, lessonToAlpha, clearCanvas]);
+  },
+  [resolveDeckItem, lessonMode, lessonToAlpha, clearCanvas],
+);
 
-  const startDeckSession = useCallback((deck) => {
+const startDeckSession = useCallback(
+  deck => {
     if (reviewSessionRef.current) return; // conflict guard — can't start during auto review
     if (!deck || !deck.items || deck.items.length === 0) return;
-    setReviewSubTab("decks");
+    setReviewSubTab('decks');
     setDeckSession({
       deckId: deck.id,
       deckName: deck.name,
@@ -1059,12 +1191,15 @@ After `goToAnalyticsItem` (around line 1227), insert the deck session helpers. *
       finished: false,
     });
     enterDeckItem(0, deck.items[0]);
-  }, [enterDeckItem]);
+  },
+  [enterDeckItem],
+);
 
-  // Advance the deck session. For letters, cycle through forms first; on
-  // the last form, advance to the next queue item. For non-letters, advance
-  // to the next item immediately.
-  const advanceDeck = useCallback((score) => {
+// Advance the deck session. For letters, cycle through forms first; on
+// the last form, advance to the next queue item. For non-letters, advance
+// to the next item immediately.
+const advanceDeck = useCallback(
+  score => {
     const sess = deckSessionRef.current;
     if (!sess || sess.finished) return;
     const item = sess.queue[sess.index];
@@ -1083,10 +1218,17 @@ After `goToAnalyticsItem` (around line 1227), insert the deck session helpers. *
     const currentFormIdx = formKeys.indexOf(activeForm);
     const isLastForm = currentFormIdx === -1 || currentFormIdx === formKeys.length - 1;
     const skipped = score == null;
-    const summary = [...sess.summary, {
-      item, formKey: activeForm, score, skipped,
-      letterChar: resolved.glyph, name: resolved.name,
-    }];
+    const summary = [
+      ...sess.summary,
+      {
+        item,
+        formKey: activeForm,
+        score,
+        skipped,
+        letterChar: resolved.glyph,
+        name: resolved.name,
+      },
+    ];
     if (!isLastForm) {
       setDeckSession({ ...sess, summary });
       setFormIndex(formKeys[currentFormIdx + 1]);
@@ -1103,26 +1245,31 @@ After `goToAnalyticsItem` (around line 1227), insert the deck session helpers. *
         enterDeckItem(nextIndex);
       }
     }
-  }, [activeForm, resolveDeckItem, enterDeckItem, clearCanvas]);
+  },
+  [activeForm, resolveDeckItem, enterDeckItem, clearCanvas],
+);
 
-  advanceDeckRef.current = advanceDeck;
+advanceDeckRef.current = advanceDeck;
 
-  const exitDeckSession = useCallback(() => {
-    setDeckSession(null);
-    setFeedback(null);
-    setShowComparison(false);
-    setShowHistory(false);
-    clearCanvas();
-  }, [clearCanvas]);
+const exitDeckSession = useCallback(() => {
+  setDeckSession(null);
+  setFeedback(null);
+  setShowComparison(false);
+  setShowHistory(false);
+  clearCanvas();
+}, [clearCanvas]);
 ```
 
 - [ ] **Step 5: Add the Review tab sub-nav + DeckManager render**
 
 Find the "Review dashboard" block (line 1746-1814). Change line 1747 from:
+
 ```jsx
       {practiceMode === "review" && !reviewSession && (
 ```
+
 to:
+
 ```jsx
       {practiceMode === "review" && !reviewSession && !deckSession && (
 ```
@@ -1130,51 +1277,63 @@ to:
 Immediately inside the `<div style={styles.reviewDash}>` (after the opening tag, before the `showResumePrompt` block at line 1749), insert the sub-nav:
 
 ```jsx
-          {/* Sub-nav: Auto Review vs My Decks */}
-          <div style={styles.deckSubNav}>
-            <button
-              className="btn-form"
-              style={{ ...styles.deckSubNavBtn, ...(reviewSubTab === "auto" ? styles.deckSubNavBtnActive : {}) }}
-              onClick={() => setReviewSubTab("auto")}
-              aria-pressed={reviewSubTab === "auto"}
-            >
-              {t("subAutoReview")}
-            </button>
-            <button
-              className="btn-form"
-              style={{ ...styles.deckSubNavBtn, ...(reviewSubTab === "decks" ? styles.deckSubNavBtnActive : {}) }}
-              onClick={() => setReviewSubTab("decks")}
-              aria-pressed={reviewSubTab === "decks"}
-            >
-              {t("subMyDecks")}
-            </button>
-          </div>
+{
+  /* Sub-nav: Auto Review vs My Decks */
+}
+<div style={styles.deckSubNav}>
+  <button
+    className="btn-form"
+    style={{
+      ...styles.deckSubNavBtn,
+      ...(reviewSubTab === 'auto' ? styles.deckSubNavBtnActive : {}),
+    }}
+    onClick={() => setReviewSubTab('auto')}
+    aria-pressed={reviewSubTab === 'auto'}
+  >
+    {t('subAutoReview')}
+  </button>
+  <button
+    className="btn-form"
+    style={{
+      ...styles.deckSubNavBtn,
+      ...(reviewSubTab === 'decks' ? styles.deckSubNavBtnActive : {}),
+    }}
+    onClick={() => setReviewSubTab('decks')}
+    aria-pressed={reviewSubTab === 'decks'}
+  >
+    {t('subMyDecks')}
+  </button>
+</div>;
 ```
 
 Now wrap the existing Auto Review content (the `showResumePrompt` block + `reviewHeader` + due-items grid/empty + Start button — everything from the `showResumePrompt` check through the closing `</>` at line 1812) in a `reviewSubTab === "auto"` condition, and add the DeckManager render for `reviewSubTab === "decks"` after it:
 
 ```jsx
-          {reviewSubTab === "auto" && (
-            <>
-              {/* existing showResumePrompt block (lines 1749-1766) */}
-              {/* existing reviewHeader + dueItems grid/empty + Start button (lines 1767-1811) */}
-            </>
-          )}
-          {reviewSubTab === "decks" && (
-            <DeckManager
-              t={t}
-              locale={locale}
-              darkMode={darkMode}
-              decks={decks}
-              onCreateDeck={handleCreateDeck}
-              onRenameDeck={handleRenameDeck}
-              onDeleteDeck={handleDeleteDeck}
-              onAddItem={handleAddDeckItem}
-              onRemoveItem={handleRemoveDeckItem}
-              onReorderItem={handleReorderDeckItem}
-              onStartSession={startDeckSession}
-            />
-          )}
+{
+  reviewSubTab === 'auto' && (
+    <>
+      {/* existing showResumePrompt block (lines 1749-1766) */}
+      {/* existing reviewHeader + dueItems grid/empty + Start button (lines 1767-1811) */}
+    </>
+  );
+}
+{
+  reviewSubTab === 'decks' && (
+    <DeckManager
+      t={t}
+      locale={locale}
+      darkMode={darkMode}
+      decks={decks}
+      onCreateDeck={handleCreateDeck}
+      onRenameDeck={handleRenameDeck}
+      onDeleteDeck={handleDeleteDeck}
+      onAddItem={handleAddDeckItem}
+      onRemoveItem={handleRemoveDeckItem}
+      onReorderItem={handleReorderDeckItem}
+      onStartSession={startDeckSession}
+    />
+  );
+}
 ```
 
 - [ ] **Step 6: Run build to verify it exits zero**
@@ -1194,6 +1353,7 @@ git commit -m "Wire DeckManager + deck session state machine into PracticeView"
 ## Task 6: Wire deck session into `requestFeedback` + Next button
 
 **Files:**
+
 - Modify: `src/components/PracticeView.jsx`
 
 This task makes deck sessions write to `arabic_progress` (unified), excludes deck sessions from `updateSR` (no SM-2), adds auto-advance after AI feedback, and adds a deck branch to the Next button (with skip-mode support).
@@ -1201,6 +1361,7 @@ This task makes deck sessions write to `arabic_progress` (unified), excludes dec
 - [ ] **Step 1: Update the `requestFeedback` progress-write block**
 
 Find the `requestFeedback` function (line 1285). The progress-write block starts at line 1332:
+
 ```js
       if (practiceMode === "letters" || isNumbersMode || isDiacriticsMode || reviewSessionRef.current) {
 ```
@@ -1208,63 +1369,62 @@ Find the `requestFeedback` function (line 1285). The progress-write block starts
 Replace the entire block from line 1332 through line 1359 (the closing `}` of the `if` block, before `setFeedback({ text: cleanText, score });` at line 1360) with:
 
 ```js
-      const inDeck = !!deckSessionRef.current;
-      const progressName = (practiceMode === "words" && inDeck) ? currentWord.word : letter.name;
-      const progressForm = (practiceMode === "words" && inDeck) ? "word" : activeForm;
-      if (practiceMode === "letters" || isNumbersMode || isDiacriticsMode || reviewSessionRef.current || inDeck) {
-        if (!countedDrawingRef.current) {
-          countedDrawingRef.current = true;
-          markPracticed(progressName, progressForm);
-        }
-        if (score) {
-          const inReview = !!reviewSessionRef.current;
-          const onTime = !inReview || isReviewOnTime(progressName, progressForm);
-          setScore(progressName, progressForm, score);
-          // SM-2 scheduling only for non-deck paths (regular practice +
-          // Auto Review). Deck sessions are full-pass, no SM-2.
-          if (!inDeck) {
-            updateSR(progressName, progressForm, score);
-          }
-          addXP(XP_AWARDS.SCORE[score] || 0, "score");
-          if (inReview && onTime) addXP(XP_AWARDS.REVIEW_ON_TIME, "review-on-time");
-          if (score >= 4) {
-            setCelebrate(true);
-            setTimeout(() => setCelebrate(false), 850);
-            if (soundEnabled) playSuccessTone();
-          }
-        }
-        addFeedbackEntry(progressName, progressForm, cleanText);
-        setProgressVersion((v) => v + 1);
-      }
+const inDeck = !!deckSessionRef.current;
+const progressName = practiceMode === 'words' && inDeck ? currentWord.word : letter.name;
+const progressForm = practiceMode === 'words' && inDeck ? 'word' : activeForm;
+if (
+  practiceMode === 'letters' ||
+  isNumbersMode ||
+  isDiacriticsMode ||
+  reviewSessionRef.current ||
+  inDeck
+) {
+  if (!countedDrawingRef.current) {
+    countedDrawingRef.current = true;
+    markPracticed(progressName, progressForm);
+  }
+  if (score) {
+    const inReview = !!reviewSessionRef.current;
+    const onTime = !inReview || isReviewOnTime(progressName, progressForm);
+    setScore(progressName, progressForm, score);
+    // SM-2 scheduling only for non-deck paths (regular practice +
+    // Auto Review). Deck sessions are full-pass, no SM-2.
+    if (!inDeck) {
+      updateSR(progressName, progressForm, score);
+    }
+    addXP(XP_AWARDS.SCORE[score] || 0, 'score');
+    if (inReview && onTime) addXP(XP_AWARDS.REVIEW_ON_TIME, 'review-on-time');
+    if (score >= 4) {
+      setCelebrate(true);
+      setTimeout(() => setCelebrate(false), 850);
+      if (soundEnabled) playSuccessTone();
+    }
+  }
+  addFeedbackEntry(progressName, progressForm, cleanText);
+  setProgressVersion(v => v + 1);
+}
 ```
 
 - [ ] **Step 2: Add deck-session auto-advance**
 
 Find the existing auto-advance block (lines 1362-1370):
+
 ```js
-      if (
-        score &&
-        reviewSessionRef.current &&
-        !reviewSessionRef.current.finished
-      ) {
-        setTimeout(() => {
-          advanceReviewRef.current?.(score);
-        }, 1400);
-      }
+if (score && reviewSessionRef.current && !reviewSessionRef.current.finished) {
+  setTimeout(() => {
+    advanceReviewRef.current?.(score);
+  }, 1400);
+}
 ```
 
 Immediately after it, add the parallel deck-session auto-advance:
 
 ```js
-      if (
-        score &&
-        deckSessionRef.current &&
-        !deckSessionRef.current.finished
-      ) {
-        setTimeout(() => {
-          advanceDeckRef.current?.(score);
-        }, 1400);
-      }
+if (score && deckSessionRef.current && !deckSessionRef.current.finished) {
+  setTimeout(() => {
+    advanceDeckRef.current?.(score);
+  }, 1400);
+}
 ```
 
 - [ ] **Step 3: Add a deck branch to the Next button**
@@ -1334,6 +1494,7 @@ git commit -m "Wire deck session into AI feedback + Next button"
 ## Task 7: Render deck session UI
 
 **Files:**
+
 - Modify: `src/components/PracticeView.jsx`
 
 This task renders the deck session progress bar + summary screen, parallel to the existing `reviewSession` UI, and updates the "practice UI hidden" guard so the canvas shows during a deck session.
@@ -1341,12 +1502,14 @@ This task renders the deck session progress bar + summary screen, parallel to th
 - [ ] **Step 1: Update the "practice UI hidden" guard**
 
 Find line 1829:
+
 ```jsx
       {((practiceMode !== "review" && practiceMode !== "stats") ||
         reviewSession) && (
 ```
 
 Change to also show during a deck session:
+
 ```jsx
       {((practiceMode !== "review" && practiceMode !== "stats") ||
         reviewSession ||
@@ -1358,55 +1521,57 @@ Change to also show during a deck session:
 Find the review-session progress bar (lines 1832-1873), which renders when `reviewSession && !reviewSession.finished`. Immediately after that block's closing `)}` (line 1873), add the parallel deck-session progress bar:
 
 ```jsx
-          {deckSession && !deckSession.finished && (
-            <div style={{ width: "100%", maxWidth: 520, padding: "8px 12px" }}>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: 6,
-                }}
-              >
-                <span style={{ fontSize: 13, color: "var(--color-text-soft)" }}>
-                  {t("deckSessionProgress")} {deckSession.index + 1} {t("deckSessionOf")}{" "}
-                  {deckSession.queue.length}
-                  {(() => {
-                    const item = deckSession.queue[deckSession.index];
-                    const resolved = resolveDeckItem(item);
-                    if (!resolved || resolved.formKeys.length <= 1) return null;
-                    const fIdx = resolved.formKeys.indexOf(activeForm);
-                    return ` · ${resolved.name} · ${t("deckSessionForm")} ${fIdx + 1}/${resolved.formKeys.length}`;
-                  })()}
-                </span>
-                <button
-                  className="btn-clear"
-                  onClick={exitDeckSession}
-                  style={{ fontSize: 12, padding: "4px 10px" }}
-                >
-                  Exit
-                </button>
-              </div>
-              <div
-                style={{
-                  height: 6,
-                  background: "var(--color-progress-badge-bg)",
-                  borderRadius: 99,
-                  overflow: "hidden",
-                }}
-              >
-                <div
-                  style={{
-                    width: `${(deckSession.index / deckSession.queue.length) * 100}%`,
-                    height: "100%",
-                    background: "var(--color-accent)",
-                    borderRadius: 99,
-                    transition: "width 0.25s ease",
-                  }}
-                />
-              </div>
-            </div>
-          )}
+{
+  deckSession && !deckSession.finished && (
+    <div style={{ width: '100%', maxWidth: 520, padding: '8px 12px' }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 6,
+        }}
+      >
+        <span style={{ fontSize: 13, color: 'var(--color-text-soft)' }}>
+          {t('deckSessionProgress')} {deckSession.index + 1} {t('deckSessionOf')}{' '}
+          {deckSession.queue.length}
+          {(() => {
+            const item = deckSession.queue[deckSession.index];
+            const resolved = resolveDeckItem(item);
+            if (!resolved || resolved.formKeys.length <= 1) return null;
+            const fIdx = resolved.formKeys.indexOf(activeForm);
+            return ` · ${resolved.name} · ${t('deckSessionForm')} ${fIdx + 1}/${resolved.formKeys.length}`;
+          })()}
+        </span>
+        <button
+          className="btn-clear"
+          onClick={exitDeckSession}
+          style={{ fontSize: 12, padding: '4px 10px' }}
+        >
+          Exit
+        </button>
+      </div>
+      <div
+        style={{
+          height: 6,
+          background: 'var(--color-progress-badge-bg)',
+          borderRadius: 99,
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          style={{
+            width: `${(deckSession.index / deckSession.queue.length) * 100}%`,
+            height: '100%',
+            background: 'var(--color-accent)',
+            borderRadius: 99,
+            transition: 'width 0.25s ease',
+          }}
+        />
+      </div>
+    </div>
+  );
+}
 ```
 
 - [ ] **Step 3: Add the deck session summary screen**
@@ -1414,79 +1579,72 @@ Find the review-session progress bar (lines 1832-1873), which renders when `revi
 Find the review-session summary screen (lines 1875-1947), which renders when `reviewSession?.finished`. Immediately after that block's closing `)}` (line 1947), add the parallel deck-session summary:
 
 ```jsx
-          {deckSession?.finished && (
-            <div
-              style={{
-                width: "100%",
-                maxWidth: 520,
-                padding: 16,
-                background: "var(--color-card-bg)",
-                borderRadius: 12,
-                border: "1px solid var(--color-border)",
-                marginTop: 8,
-              }}
-            >
-              <h3 style={{ marginBottom: 8, color: "var(--color-text)" }}>
-                {t("deckSessionComplete")}
-              </h3>
-              <p
-                style={{
-                  fontSize: 14,
-                  color: "var(--color-text-soft)",
-                  marginBottom: 12,
-                }}
-              >
-                {t("deckSessionReviewed")} {deckSession.summary.length}{" "}
-                {t("deckSessionItems")}.
-              </p>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 12,
-                  flexWrap: "wrap",
-                  marginBottom: 12,
-                }}
-              >
-                {deckSession.summary.map((entry, i) => (
-                  <span
-                    key={i}
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                      padding: "4px 8px",
-                      borderRadius: 6,
-                      background: entry.skipped
-                        ? "var(--color-progress-badge-bg)"
-                        : entry.score >= 4
-                          ? "rgba(90,158,78,0.15)"
-                          : "rgba(192,112,58,0.15)",
-                      color: "var(--color-text)",
-                      fontSize: 13,
-                      opacity: entry.skipped ? 0.55 : 1,
-                    }}
-                    lang="ar"
-                  >
-                    {entry.letterChar}
-                    {entry.skipped ? (
-                      <span style={{ fontSize: 10, opacity: 0.6 }}>—</span>
-                    ) : (
-                      <span style={{ fontSize: 11, opacity: 0.8 }}>
-                        ★{entry.score}
-                      </span>
-                    )}
-                  </span>
-                ))}
-              </div>
-              <button
-                className="btn-nav"
-                onClick={exitDeckSession}
-                style={styles.btn}
-              >
-                {t("deckDone")}
-              </button>
-            </div>
-          )}
+{
+  deckSession?.finished && (
+    <div
+      style={{
+        width: '100%',
+        maxWidth: 520,
+        padding: 16,
+        background: 'var(--color-card-bg)',
+        borderRadius: 12,
+        border: '1px solid var(--color-border)',
+        marginTop: 8,
+      }}
+    >
+      <h3 style={{ marginBottom: 8, color: 'var(--color-text)' }}>{t('deckSessionComplete')}</h3>
+      <p
+        style={{
+          fontSize: 14,
+          color: 'var(--color-text-soft)',
+          marginBottom: 12,
+        }}
+      >
+        {t('deckSessionReviewed')} {deckSession.summary.length} {t('deckSessionItems')}.
+      </p>
+      <div
+        style={{
+          display: 'flex',
+          gap: 12,
+          flexWrap: 'wrap',
+          marginBottom: 12,
+        }}
+      >
+        {deckSession.summary.map((entry, i) => (
+          <span
+            key={i}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '4px 8px',
+              borderRadius: 6,
+              background: entry.skipped
+                ? 'var(--color-progress-badge-bg)'
+                : entry.score >= 4
+                  ? 'rgba(90,158,78,0.15)'
+                  : 'rgba(192,112,58,0.15)',
+              color: 'var(--color-text)',
+              fontSize: 13,
+              opacity: entry.skipped ? 0.55 : 1,
+            }}
+            lang="ar"
+          >
+            {entry.letterChar}
+            {entry.skipped ? (
+              <span style={{ fontSize: 10, opacity: 0.6 }}>—</span>
+            ) : (
+              <span style={{ fontSize: 11, opacity: 0.8 }}>★{entry.score}</span>
+            )}
+          </span>
+        ))}
+      </div>
+      <button className="btn-nav" onClick={exitDeckSession} style={styles.btn}>
+        {t('deckDone')}
+      </button>
+    </div>
+  );
+}
 ```
 
 - [ ] **Step 4: Run build to verify**
@@ -1506,6 +1664,7 @@ git commit -m "Render deck session progress bar + summary screen"
 ## Task 8: Diacritics routing fix + conflict guard for Auto Review
 
 **Files:**
+
 - Modify: `src/components/PracticeView.jsx`
 
 This task fixes the pre-existing bug where `enterReviewItem`/`goToReviewItem` silently no-op on diacritics (they only handle `Num`-prefixed names), and adds the reverse conflict guard so Auto Review can't start during a deck session (the deck→auto guard was already added in Task 5's `startDeckSession`).
@@ -1604,18 +1763,18 @@ Find `goToReviewItem` (line 1159-1192). It currently has a `Num` branch (with `s
 Find `startReviewSession` (line 1118-1128). Add a guard at the top that no-ops if a deck session is active:
 
 ```js
-  const startReviewSession = useCallback(() => {
-    if (deckSessionRef.current) return; // can't start auto review during a deck session
-    if (!dueItems.length) return;
-    const queue = dueItems.slice();
-    // Fisher-Yates shuffle
-    for (let i = queue.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [queue[i], queue[j]] = [queue[j], queue[i]];
-    }
-    setReviewSession({ queue, index: 0, summary: [] });
-    enterReviewItem(queue[0].letterName, queue[0].formKey);
-  }, [dueItems, enterReviewItem]);
+const startReviewSession = useCallback(() => {
+  if (deckSessionRef.current) return; // can't start auto review during a deck session
+  if (!dueItems.length) return;
+  const queue = dueItems.slice();
+  // Fisher-Yates shuffle
+  for (let i = queue.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [queue[i], queue[j]] = [queue[j], queue[i]];
+  }
+  setReviewSession({ queue, index: 0, summary: [] });
+  enterReviewItem(queue[0].letterName, queue[0].formKey);
+}, [dueItems, enterReviewItem]);
 ```
 
 - [ ] **Step 4: Run build to verify**
@@ -1635,6 +1794,7 @@ git commit -m "Fix diacritics review routing + add auto-review conflict guard"
 ## Task 9: Update AGENTS.md + final build + Playwright verification
 
 **Files:**
+
 - Modify: `AGENTS.md`
 
 - [ ] **Step 1: Add `arabic_decks` to the localStorage keys list**
@@ -1724,6 +1884,7 @@ If any flow fails, fix the code and re-run `npm run build` before committing. Us
 ## Self-Review Notes
 
 **Spec coverage check:**
+
 - Named decks, all user-created, no automation → Tasks 1, 4, 5 (no SM-2 in deck path — Task 6 gates `updateSR` on `!inDeck`).
 - Full-pass session semantics → Task 5 (`advanceDeck` walks the whole queue).
 - Per-letter (all forms cycle) → Task 5 Step 4 (form cycling in `advanceDeck`).

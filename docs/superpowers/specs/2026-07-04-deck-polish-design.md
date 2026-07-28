@@ -28,18 +28,18 @@ a subagent-friendly plan grouped by file ownership (Approach B).
 
 ## User decisions captured
 
-| Decision | Choice |
-|---|---|
-| Polish focus areas | All five: session completeness, deck-building efficiency, progress insight, a11y & keyboard, visual refinement |
-| Session modes | Full-pass (default) + low-score re-run (items that scored ≤3 or were skipped in the last completed session) |
-| Low-score threshold | `score == null || score <= 3` (out of 5) |
-| Per-deck stats depth | Last completed session only (one session deep, no history) |
-| Stats storage location | On the deck object (`arabic_decks`), not derived from `arabic_progress` (progress is keyed by item ref, not by deck) |
-| Mid-session exit | Confirm dialog before exiting (session has unfinished progress) |
-| Restart location | On the summary screen (not mid-session) |
-| Implementation approach | B — Subagent-friendly by file ownership (groups 1-4 parallel, 5 after 1-3, 6 after 4+5, 7 last) |
-| Undo delete | Immediate delete + transient accessible toast with 6s undo window; one undo slot |
-| Deck-building wins | Bulk-add presets, duplicate deck, undo delete, reorder decks in list, search/filter words |
+| Decision                | Choice                                                                                                               |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Polish focus areas      | All five: session completeness, deck-building efficiency, progress insight, a11y & keyboard, visual refinement       |
+| Session modes           | Full-pass (default) + low-score re-run (items that scored ≤3 or were skipped in the last completed session)          |
+| Low-score threshold     | `score == null                                                                                                       |     | score <= 3` (out of 5) |
+| Per-deck stats depth    | Last completed session only (one session deep, no history)                                                           |
+| Stats storage location  | On the deck object (`arabic_decks`), not derived from `arabic_progress` (progress is keyed by item ref, not by deck) |
+| Mid-session exit        | Confirm dialog before exiting (session has unfinished progress)                                                      |
+| Restart location        | On the summary screen (not mid-session)                                                                              |
+| Implementation approach | B — Subagent-friendly by file ownership (groups 1-4 parallel, 5 after 1-3, 6 after 4+5, 7 last)                      |
+| Undo delete             | Immediate delete + transient accessible toast with 6s undo window; one undo slot                                     |
+| Deck-building wins      | Bulk-add presets, duplicate deck, undo delete, reorder decks in list, search/filter words                            |
 
 ## Architecture
 
@@ -111,12 +111,13 @@ The existing `deckSession` gains a `mode` field:
 
 ```js
 setDeckSession({
-  deckId, deckName,
-  queue,            // derived from mode (see below)
+  deckId,
+  deckName,
+  queue, // derived from mode (see below)
   index: 0,
   summary: [],
   finished: false,
-  mode: "full",     // NEW — "full" | "lowScore"
+  mode: 'full', // NEW — "full" | "lowScore"
 });
 ```
 
@@ -129,7 +130,7 @@ setDeckSession({
 #### Letter form handling in `"lowScore"` mode
 
 `lastSession.items` records one entry per form. A low-score re-run practices
-only the *forms* that scored low — not all four forms of the letter. Each
+only the _forms_ that scored low — not all four forms of the letter. Each
 low-score `lastSession` entry expands into its own queue item carrying an
 optional `formKey` constraint:
 
@@ -137,8 +138,8 @@ optional `formKey` constraint:
 queue = lowScoreEntries.map(e => ({
   type: e.type,
   ref: e.ref,
-  formKey: e.formKey,   // optional — constrains forms to just this one
-}))
+  formKey: e.formKey, // optional — constrains forms to just this one
+}));
 ```
 
 `resolveDeckItem` + `enterDeckItem` + `advanceDeck` honor `formKey` when
@@ -175,12 +176,12 @@ Restructure the summary to a clearer hierarchy with restart actions:
 - **Subtitle:** deck name + item count + average score (mean of non-skipped;
   `—` if all skipped).
   - **Score chips:** keep the existing color tiers (green ≥4, orange <4, gray
-  skipped). Tighten spacing, add a subtle border per color tier, and show the
-  **form name** under letters that have multiple forms (e.g. `ب isolated ★4`)
-  so low-score re-run context is visible. Form names reuse the existing
-  `FORM_SHORT` locale keys via `t(FORM_SHORT[formKey])` — no new locale key
-  needed for form names. Skipped chips get `aria-label` ("skipped") and a
-  `title=` tooltip.
+    skipped). Tighten spacing, add a subtle border per color tier, and show the
+    **form name** under letters that have multiple forms (e.g. `ب isolated ★4`)
+    so low-score re-run context is visible. Form names reuse the existing
+    `FORM_SHORT` locale keys via `t(FORM_SHORT[formKey])` — no new locale key
+    needed for form names. Skipped chips get `aria-label` ("skipped") and a
+    `title=` tooltip.
 - **Three buttons** (was one):
   - `Run again` — full pass, rebuilds queue from `deck.items`.
   - `Re-run low scores (N)` — low-score mode, N = count of qualifying entries
@@ -193,21 +194,32 @@ Both restart buttons call a single `restartDeckSession(mode)` helper in
 PracticeView:
 
 ```js
-const restartDeckSession = useCallback((mode) => {
-  const sess = deckSessionRef.current;
-  if (!sess) return;
-  if (mode === "full") {
-    const deck = getDeck(sess.deckId);
-    if (!deck || !deck.items.length) return;
-    setDeckSession({ ...sess, queue: deck.items.slice(), index: 0, summary: [], finished: false, mode: "full" });
-    enterDeckItem(0, deck.items[0]);
-  } else { // "lowScore"
-    const queue = buildLowScoreQueue(sess.deckId);
-    if (!queue.length) return;
-    setDeckSession({ ...sess, queue, index: 0, summary: [], finished: false, mode: "lowScore" });
-    enterDeckItem(0, queue[0]);
-  }
-}, [enterDeckItem]);
+const restartDeckSession = useCallback(
+  mode => {
+    const sess = deckSessionRef.current;
+    if (!sess) return;
+    if (mode === 'full') {
+      const deck = getDeck(sess.deckId);
+      if (!deck || !deck.items.length) return;
+      setDeckSession({
+        ...sess,
+        queue: deck.items.slice(),
+        index: 0,
+        summary: [],
+        finished: false,
+        mode: 'full',
+      });
+      enterDeckItem(0, deck.items[0]);
+    } else {
+      // "lowScore"
+      const queue = buildLowScoreQueue(sess.deckId);
+      if (!queue.length) return;
+      setDeckSession({ ...sess, queue, index: 0, summary: [], finished: false, mode: 'lowScore' });
+      enterDeckItem(0, queue[0]);
+    }
+  },
+  [enterDeckItem],
+);
 ```
 
 `buildLowScoreQueue(deckId)` reads `getDeck(deckId).lastSession.items`, filters
@@ -317,7 +329,7 @@ Small presentational component, reusable (props, no deck-specific logic):
   dismiss/undo, focus returns to the deck row's Delete button (managed by the
   parent via a ref).
 - **Timer:** `useEffect` in the component starts a `setTimeout(onDismiss,
-  duration)`. Cleared on unmount. No pause-on-hover (keeps it simple; 6s is
+duration)`. Cleared on unmount. No pause-on-hover (keeps it simple; 6s is
   enough and hover is unreliable on touch).
 - **Styling:** lives in `practiceStyles.js` as `undoToast`, `undoToastMessage`,
   `undoToastAction`, `undoToastDismiss` entries.
@@ -400,7 +412,7 @@ logic lives in **PracticeView**:
     outside sub-tab conditional. Wired to `undoDelete` state + handlers.
   - **`startDeckSession`/`exitDeckSession`** clear `undoDelete`.
   - **`<DeckManager>`** render passes new props; `onStartSession={(deck, mode)
-    => startDeckSession(deck, mode)}`.
+=> startDeckSession(deck, mode)}`.
   - **Imports:** `UndoToast`, new `decks.js` exports, `todayLocal` from
     `progress.js`.
 
@@ -420,15 +432,15 @@ logic lives in **PracticeView**:
 
 ### Parallelization (Approach B)
 
-| Group | Files | Depends on |
-|---|---|---|
-| 1 | `decks.js` | nothing |
-| 2 | `locales/index.js` | nothing |
-| 3 | `practiceStyles.js` | nothing |
-| 4 | `UndoToast.jsx` | nothing — can start immediately with inline styles; switch to `practiceStyles.js` entries once Group 3 lands |
-| 5 | `DeckManager.jsx` | 1 (new utils + schema), 2 (locale keys), 3 (styles) |
-| 6 | `PracticeView.jsx` | 1, 2, 3, 4, 5 (integrates everything) |
-| 7 | `AGENTS.md` | all (docs reflect final state) |
+| Group | Files               | Depends on                                                                                                   |
+| ----- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| 1     | `decks.js`          | nothing                                                                                                      |
+| 2     | `locales/index.js`  | nothing                                                                                                      |
+| 3     | `practiceStyles.js` | nothing                                                                                                      |
+| 4     | `UndoToast.jsx`     | nothing — can start immediately with inline styles; switch to `practiceStyles.js` entries once Group 3 lands |
+| 5     | `DeckManager.jsx`   | 1 (new utils + schema), 2 (locale keys), 3 (styles)                                                          |
+| 6     | `PracticeView.jsx`  | 1, 2, 3, 4, 5 (integrates everything)                                                                        |
+| 7     | `AGENTS.md`         | all (docs reflect final state)                                                                               |
 
 Groups 1, 2, 3, 4 run in parallel. 5 after 1+2+3. 6 after 4+5. 7 last.
 
@@ -464,7 +476,7 @@ Groups 1, 2, 3, 4 run in parallel. 5 after 1+2+3. 6 after 4+5. 7 last.
 12. **`setLastSession` write timing:** Only on `finished: true` in
     `advanceDeck`. Mid-session exit (even with confirm) writes nothing — the
     session didn't complete, stats shouldn't update. Matches "last session
-    only" = last *completed* session.
+    only" = last _completed_ session.
 
 ## Verification
 
@@ -472,16 +484,16 @@ Groups 1, 2, 3, 4 run in parallel. 5 after 1+2+3. 6 after 4+5. 7 last.
   test suite).
 - **Manual Playwright browser testing** (per AGENTS.md MCP guidance):
 
-| Area | Checks |
-|---|---|
-| Data layer | `migrate()` adds `order`+`lastSession:null`; `getDecks()` sorts by `order`; `duplicateDeck`/`reorderDecks`/`setLastSession`/`bulkAddItems`/`restoreDeck` work; cross-tab `storage` invalidates cache. |
-| Session modes | Full pass (unchanged); low-score start disabled when no `lastSession`; low-score re-run queues only ≤3/skipped forms; letter form constraint; restart both modes from summary. |
-| Session UI | Header shows deck name + mode chip; Exit confirms mid-session; summary shows avg + form-name chips + 3 buttons; `lastSession` written on finish only. |
-| Deck-building | Bulk-add buttons populate correct items; "all added" disabled state; words search filters by roman/meaning/word; empty groups collapse; duplicate deck creates " copy"; deck reorder updates list + persists. |
-| Undo delete | Delete → toast appears → Undo restores (stats + items); toast auto-dismisses at 6s; ✕ dismisses; second delete replaces toast; starting a session clears toast. |
-| A11y | Roving tabindex on letter grid (arrow keys, Enter/Space toggle); focus moves to pane heading on view change; Undo button receives focus on toast appear; score chips have `aria-label`s; `role="status"`+`aria-live` on toast. |
-| Visual | Score chips color tiers + borders; checkmark badges on selected picker tiles; deck row meta line; dark mode rendering; RTL flip (Arabic locale) for all new UI. |
-| Regression | Existing Auto Review unchanged; existing deck CRUD unchanged; existing full-pass sessions unchanged; `arabic_progress` writes still happen; conflict guards still fire. |
+| Area          | Checks                                                                                                                                                                                                                         |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Data layer    | `migrate()` adds `order`+`lastSession:null`; `getDecks()` sorts by `order`; `duplicateDeck`/`reorderDecks`/`setLastSession`/`bulkAddItems`/`restoreDeck` work; cross-tab `storage` invalidates cache.                          |
+| Session modes | Full pass (unchanged); low-score start disabled when no `lastSession`; low-score re-run queues only ≤3/skipped forms; letter form constraint; restart both modes from summary.                                                 |
+| Session UI    | Header shows deck name + mode chip; Exit confirms mid-session; summary shows avg + form-name chips + 3 buttons; `lastSession` written on finish only.                                                                          |
+| Deck-building | Bulk-add buttons populate correct items; "all added" disabled state; words search filters by roman/meaning/word; empty groups collapse; duplicate deck creates " copy"; deck reorder updates list + persists.                  |
+| Undo delete   | Delete → toast appears → Undo restores (stats + items); toast auto-dismisses at 6s; ✕ dismisses; second delete replaces toast; starting a session clears toast.                                                                |
+| A11y          | Roving tabindex on letter grid (arrow keys, Enter/Space toggle); focus moves to pane heading on view change; Undo button receives focus on toast appear; score chips have `aria-label`s; `role="status"`+`aria-live` on toast. |
+| Visual        | Score chips color tiers + borders; checkmark badges on selected picker tiles; deck row meta line; dark mode rendering; RTL flip (Arabic locale) for all new UI.                                                                |
+| Regression    | Existing Auto Review unchanged; existing deck CRUD unchanged; existing full-pass sessions unchanged; `arabic_progress` writes still happen; conflict guards still fire.                                                        |
 
 - **Verification command:** `npm run build` after each task group; full
   Playwright pass after group 6 (integration); final `npm run build` +
@@ -496,7 +508,7 @@ Groups 1, 2, 3, 4 run in parallel. 5 after 1+2+3. 6 after 4+5. 7 last.
    for duplicates may differ — use a locale key with the Arabic translation
    reviewed at plan time.
 3. **Date format for "last practiced":** Short local date format. `Intl.DateTime
-   Format(locale, {dateStyle:"short"})` is cleanest, but the codebase doesn't
+Format(locale, {dateStyle:"short"})` is cleanest, but the codebase doesn't
    currently use `Intl` — check availability/bundling at plan time. Fallback:
    manual `M/D` format with locale-aware separators.
 4. **Roving tabindex implementation detail:** Per-tile `tabIndex` roving

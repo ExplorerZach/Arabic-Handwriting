@@ -1,7 +1,7 @@
 import { UI } from '../locales';
 
 export default function AffiliateLinks({ locale }) {
-  const t = (key) => UI[locale][key] ?? key;
+  const t = key => UI[locale][key] ?? key;
 
   if (!navigator.onLine) return null;
 
@@ -49,10 +49,18 @@ export default function AffiliateLinks({ locale }) {
         gap: '10px',
       }}
     >
-      <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--color-text-muted)', letterSpacing: '.15em', textTransform: 'uppercase' }}>
+      <div
+        style={{
+          fontSize: '12px',
+          fontWeight: '700',
+          color: 'var(--color-text-muted)',
+          letterSpacing: '.15em',
+          textTransform: 'uppercase',
+        }}
+      >
         {t('affTitle')}
       </div>
-      {links.map((item) => (
+      {links.map(item => (
         <a
           key={item.titleKey}
           href={item.url}
@@ -74,8 +82,12 @@ export default function AffiliateLinks({ locale }) {
         >
           <span style={{ fontSize: '18px', flexShrink: 0 }}>{item.emoji}</span>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', minWidth: 0 }}>
-            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text)' }}>{t(item.titleKey)}</span>
-            <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>{t(item.descKey)}</span>
+            <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--color-text)' }}>
+              {t(item.titleKey)}
+            </span>
+            <span style={{ fontSize: '11px', color: 'var(--color-text-muted)' }}>
+              {t(item.descKey)}
+            </span>
           </div>
         </a>
       ))}

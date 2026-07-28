@@ -57,7 +57,10 @@ export const BRUSH_PACKS = {
 };
 
 function isHighContrast() {
-  return typeof document !== 'undefined' && document.documentElement.getAttribute('data-high-contrast') === 'true';
+  return (
+    typeof document !== 'undefined' &&
+    document.documentElement.getAttribute('data-high-contrast') === 'true'
+  );
 }
 
 /** Resolve a paper theme's colors for the current dark-mode state. */
@@ -115,7 +118,5 @@ export function drawPaperPattern(ctx, W, H, themeId, isDark) {
 
 /** Return a suitable glyph/ink color for the canvas, respecting high contrast. */
 export function getCanvasInkColor(isDark) {
-  return isHighContrast()
-    ? (isDark ? '#ffffff' : '#000000')
-    : (isDark ? '#c0703a' : '#8b4513');
+  return isHighContrast() ? (isDark ? '#ffffff' : '#000000') : isDark ? '#c0703a' : '#8b4513';
 }

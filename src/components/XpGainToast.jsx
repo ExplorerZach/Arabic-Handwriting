@@ -13,7 +13,7 @@ export default function XpGainToast({ gain, gainKey, position, t, reduceMotion }
   const style = position ? { left: position.left, top: position.top } : null;
   return (
     <div key={gainKey} className="xp-toast" aria-hidden="true" style={style}>
-      {t("xpEarned").replace("{n}", String(gain))}
+      {t('xpEarned').replace('{n}', String(gain))}
     </div>
   );
 }

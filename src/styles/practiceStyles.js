@@ -1,7 +1,8 @@
 const styles = {
   root: {
     minHeight: '100vh',
-    background: 'linear-gradient(160deg,var(--color-gradient-start) 0%,var(--color-gradient-mid) 50%,var(--color-gradient-end) 100%)',
+    background:
+      'linear-gradient(160deg,var(--color-gradient-start) 0%,var(--color-gradient-mid) 50%,var(--color-gradient-end) 100%)',
     fontFamily: "'Georgia','Times New Roman',serif",
     display: 'flex',
     flexDirection: 'column',
@@ -753,7 +754,6 @@ const styles = {
     letterSpacing: '.06em',
     textAlign: 'center',
   },
-
 
   /* ─── Score stars ─────────────────────────────────────── */
   scoreRow: {
