@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { calcLineWidth } from '../utils/drawing';
-import { getBrushColor, getPaperColors, drawPaperPattern } from '../styles/themes';
+import { getBrushColor, drawPaperPattern } from '../styles/themes';
 import { markDayActive } from '../utils/analytics';
 import { markPracticed } from '../utils/progress';
 import { getItem } from '../utils/storage';
@@ -72,9 +72,6 @@ export default function useDrawing({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
     const theme = paperThemeRef.current;
-    const paperColors = getPaperColors(theme, darkModeRef.current);
-    ctx.fillStyle = paperColors.bg;
-    ctx.fillRect(0, 0, W, H);
     if (theme === 'ruled' || theme === 'grid') {
       drawPaperPattern(ctx, W, H, theme, darkModeRef.current);
     }
