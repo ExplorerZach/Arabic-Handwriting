@@ -103,14 +103,17 @@ export function drawPaperPattern(ctx, W, H, themeId, isDark) {
     ctx.stroke();
   } else if (themeId === 'grid') {
     const sp = colors.spacing || 40;
-    const r = 1;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
     for (let x = sp; x < W; x += sp) {
-      for (let y = sp; y < H; y += sp) {
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
-      }
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, H);
     }
+    for (let y = sp; y < H; y += sp) {
+      ctx.moveTo(0, y);
+      ctx.lineTo(W, y);
+    }
+    ctx.stroke();
   }
 
   ctx.restore();
