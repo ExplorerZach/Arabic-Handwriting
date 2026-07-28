@@ -32,7 +32,7 @@ export default function useExport({
       (practiceMode === 'words' ? 0.25 : 0.5) * Math.min(offscreen.width, offscreen.height);
     ctx.save();
     ctx.globalAlpha = 0.15;
-    ctx.fillStyle = '#8b4513';
+    ctx.fillStyle = '#7d3f0f';
     ctx.font = `bold ${fontSize}px 'Amiri','Scheherazade New',serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -130,7 +130,7 @@ export default function useExport({
         : Math.min(offscreen.width, offscreen.height) * 0.5;
     ctx.save();
     ctx.globalAlpha = 0.15;
-    ctx.fillStyle = '#8b4513';
+    ctx.fillStyle = '#7d3f0f';
     ctx.font = `bold ${fontSize}px 'Amiri','Scheherazade New',serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
