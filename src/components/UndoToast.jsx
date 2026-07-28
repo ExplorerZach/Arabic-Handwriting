@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import styles from "../styles/practiceStyles";
+import { useEffect, useRef } from 'react';
+import styles from '../styles/practiceStyles';
 
 /**
  * Transient undo toast — accessible, interactive. Rendered by a parent
@@ -41,12 +41,7 @@ export default function UndoToast({
   };
 
   return (
-    <div
-      className="undo-toast"
-      role="status"
-      aria-live="polite"
-      style={styles.undoToast}
-    >
+    <div className="undo-toast" role="status" aria-live="polite" style={styles.undoToast}>
       <span style={styles.undoToastMessage}>{message}</span>
       <button
         ref={undoBtnRef}

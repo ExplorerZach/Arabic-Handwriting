@@ -17,6 +17,7 @@
 **Fix:** Also run the progress-saving block when `reviewSessionRef.current` is active.
 
 **Files:**
+
 - Modify: `src/components/PracticeView.jsx:1282-1296`
 
 - [ ] **Step 1: Read the current code**
@@ -26,10 +27,13 @@ Read lines 1282-1296 of `PracticeView.jsx` to confirm the exact condition.
 - [ ] **Step 2: Update the condition to include review mode**
 
 Change line 1282 from:
+
 ```js
 if (practiceMode === "letters" || isNumbersMode || isDiacriticsMode) {
 ```
+
 to:
+
 ```js
 if (practiceMode === "letters" || isNumbersMode || isDiacriticsMode || reviewSessionRef.current) {
 ```
@@ -41,6 +45,7 @@ This ensures `setScore`, `updateSR`, `addFeedbackEntry`, and `progressVersion` b
 ```bash
 npm run build
 ```
+
 Expected: exit 0.
 
 ---
@@ -52,6 +57,7 @@ Expected: exit 0.
 **Fix:** Add a Fisher-Yates shuffle to the queue in `startReviewSession`.
 
 **Files:**
+
 - Modify: `src/components/PracticeView.jsx:1074-1079`
 
 - [ ] **Step 1: Read `startReviewSession`**
@@ -81,6 +87,7 @@ const startReviewSession = useCallback(() => {
 ```bash
 npm run build
 ```
+
 Expected: exit 0.
 
 ---
@@ -92,12 +99,14 @@ Expected: exit 0.
 **Fix:** Stash `{ queue, index, summary, finished }` into `sessionStorage` (survives refresh within a tab; cleared on tab close so stale data doesn't linger). On mount or when switching to the review tab, check for a stashed session and offer to resume.
 
 **Files:**
+
 - Modify: `src/components/PracticeView.jsx` (multiple locations)
 - Modify: `src/locales/index.js`
 
 - [ ] **Step 1: Add resume prompt UI strings to both locales**
 
 In `src/locales/index.js`, add to `en` section:
+
 ```js
 reviewResume: "Resume unfinished review session?",
 reviewResumeYes: "Resume",
@@ -105,6 +114,7 @@ reviewResumeNo: "Start fresh",
 ```
 
 Add to `ar` section:
+
 ```js
 reviewResume: "استئناف جلسة المراجعة غير المكتملة؟",
 reviewResumeYes: "استئناف",
@@ -114,11 +124,13 @@ reviewResumeNo: "بدء من جديد",
 - [ ] **Step 2: Add state and storage helpers in PracticeView.jsx**
 
 After the existing `reviewSession` state (line 180), add:
+
 ```js
-const RESUME_KEY = "arabic_review_session";
+const RESUME_KEY = 'arabic_review_session';
 ```
 
 Add a `useEffect` to stash session changes into `sessionStorage`:
+
 ```js
 useEffect(() => {
   if (reviewSession) {
@@ -132,6 +144,7 @@ useEffect(() => {
 ```
 
 Add a `useEffect` to check for a stashed session on mount:
+
 ```js
 const [showResumePrompt, setShowResumePrompt] = useState(false);
 const [stashedSession, setStashedSession] = useState(null);
@@ -152,25 +165,53 @@ useEffect(() => {
 - [ ] **Step 3: Render resume prompt in review dashboard**
 
 In the review dashboard section (`practiceMode === "review" && !reviewSession`), before the existing content, add:
+
 ```js
-{showResumePrompt && stashedSession && (
-  <div style={{ padding: "12px 16px", marginBottom: 12, background: "var(--color-card-bg)", borderRadius: 12, border: "1px solid var(--color-border)" }}>
-    <p style={{ marginBottom: 8, fontSize: 14, color: "var(--color-text)" }}>{t("reviewResume")}</p>
-    <div style={{ display: "flex", gap: 8 }}>
-      <button className="btn-ai" style={{ ...styles.btn, ...styles.btnAI, flex: 1 }} onClick={() => {
-        setReviewSession(stashedSession);
-        enterReviewItem(stashedSession.queue[stashedSession.index].letterName, stashedSession.queue[stashedSession.index].formKey);
-        setShowResumePrompt(false);
-        setStashedSession(null);
-      }}>{t("reviewResumeYes")}</button>
-      <button className="btn-clear" style={{ ...styles.btn, flex: 1 }} onClick={() => {
-        sessionStorage.removeItem(RESUME_KEY);
-        setShowResumePrompt(false);
-        setStashedSession(null);
-      }}>{t("reviewResumeNo")}</button>
+{
+  showResumePrompt && stashedSession && (
+    <div
+      style={{
+        padding: '12px 16px',
+        marginBottom: 12,
+        background: 'var(--color-card-bg)',
+        borderRadius: 12,
+        border: '1px solid var(--color-border)',
+      }}
+    >
+      <p style={{ marginBottom: 8, fontSize: 14, color: 'var(--color-text)' }}>
+        {t('reviewResume')}
+      </p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button
+          className="btn-ai"
+          style={{ ...styles.btn, ...styles.btnAI, flex: 1 }}
+          onClick={() => {
+            setReviewSession(stashedSession);
+            enterReviewItem(
+              stashedSession.queue[stashedSession.index].letterName,
+              stashedSession.queue[stashedSession.index].formKey,
+            );
+            setShowResumePrompt(false);
+            setStashedSession(null);
+          }}
+        >
+          {t('reviewResumeYes')}
+        </button>
+        <button
+          className="btn-clear"
+          style={{ ...styles.btn, flex: 1 }}
+          onClick={() => {
+            sessionStorage.removeItem(RESUME_KEY);
+            setShowResumePrompt(false);
+            setStashedSession(null);
+          }}
+        >
+          {t('reviewResumeNo')}
+        </button>
+      </div>
     </div>
-  </div>
-)}
+  );
+}
 ```
 
 - [ ] **Step 4: Build and verify**
@@ -178,6 +219,7 @@ In the review dashboard section (`practiceMode === "review" && !reviewSession`),
 ```bash
 npm run build
 ```
+
 Expected: exit 0.
 
 ---
@@ -189,6 +231,7 @@ Expected: exit 0.
 **Fix:** Add an auto-advance on `handlePointerUp` when in a review session with no API key. After the user lifts their pen, wait a brief cooldown and advance. This mirrors the AI auto-advance timing.
 
 **Files:**
+
 - Modify: `src/components/PracticeView.jsx`
 
 - [ ] **Step 1: Read `handlePointerUp`**
@@ -205,7 +248,7 @@ if (
   reviewSession &&
   !reviewSessionRef.current?.finished &&
   strokesRef.current.length > 0 &&
-  apiKey === "skip"
+  apiKey === 'skip'
 ) {
   clearTimeout(autoAdvanceTimerRef.current);
   autoAdvanceTimerRef.current = setTimeout(() => {
@@ -215,11 +258,13 @@ if (
 ```
 
 Add the ref at the top of the component (near the other refs around line 183):
+
 ```js
 const autoAdvanceTimerRef = useRef(null);
 ```
 
 Add cleanup in a useEffect to clear the timer on unmount or session end:
+
 ```js
 useEffect(() => {
   return () => clearTimeout(autoAdvanceTimerRef.current);
@@ -231,6 +276,7 @@ useEffect(() => {
 ```bash
 npm run build
 ```
+
 Expected: exit 0.
 
 ---
@@ -242,15 +288,19 @@ Expected: exit 0.
 **Fix:** Track a `skipped` flag per summary entry and style it differently (dimmed, dash instead of star).
 
 **Files:**
+
 - Modify: `src/components/PracticeView.jsx`
 
 - [ ] **Step 1: Update `advanceReview` to pass a `skipped` flag**
 
 In the summary entry creation (line 1090), change:
+
 ```js
 const summary = [...sess.summary, { ...item, score }];
 ```
+
 to:
+
 ```js
 const skipped = score == null;
 const summary = [...sess.summary, { ...item, score, skipped }];
@@ -261,34 +311,36 @@ const summary = [...sess.summary, { ...item, score, skipped }];
 Replace the existing summary map (lines 1806-1831) with:
 
 ```js
-{reviewSession.summary.map((item, i) => (
-  <span
-    key={i}
-    style={{
-      display: "inline-flex",
-      alignItems: "center",
-      gap: 4,
-      padding: "4px 8px",
-      borderRadius: 6,
-      background: item.skipped
-        ? "var(--color-progress-badge-bg)"
-        : item.score >= 4
-          ? "rgba(90,158,78,0.15)"
-          : "rgba(192,112,58,0.15)",
-      color: "var(--color-text)",
-      fontSize: 13,
-      opacity: item.skipped ? 0.55 : 1,
-    }}
-    lang="ar"
-  >
-    {item.letterChar}
-    {item.skipped ? (
-      <span style={{ fontSize: 10, opacity: 0.6 }}>—</span>
-    ) : (
-      <span style={{ fontSize: 11, opacity: 0.8 }}>★{item.score}</span>
-    )}
-  </span>
-))}
+{
+  reviewSession.summary.map((item, i) => (
+    <span
+      key={i}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 4,
+        padding: '4px 8px',
+        borderRadius: 6,
+        background: item.skipped
+          ? 'var(--color-progress-badge-bg)'
+          : item.score >= 4
+            ? 'rgba(90,158,78,0.15)'
+            : 'rgba(192,112,58,0.15)',
+        color: 'var(--color-text)',
+        fontSize: 13,
+        opacity: item.skipped ? 0.55 : 1,
+      }}
+      lang="ar"
+    >
+      {item.letterChar}
+      {item.skipped ? (
+        <span style={{ fontSize: 10, opacity: 0.6 }}>—</span>
+      ) : (
+        <span style={{ fontSize: 11, opacity: 0.8 }}>★{item.score}</span>
+      )}
+    </span>
+  ));
+}
 ```
 
 - [ ] **Step 3: Build and verify**
@@ -296,4 +348,5 @@ Replace the existing summary map (lines 1806-1831) with:
 ```bash
 npm run build
 ```
+
 Expected: exit 0.

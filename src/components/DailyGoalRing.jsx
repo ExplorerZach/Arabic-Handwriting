@@ -19,13 +19,17 @@ export default function DailyGoalRing({ current, goal, label }) {
     >
       <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
         <circle
-          cx="16" cy="16" r={radius}
+          cx="16"
+          cy="16"
+          r={radius}
           fill="none"
           stroke="var(--color-progress-badge-bg)"
           strokeWidth="4"
         />
         <circle
-          cx="16" cy="16" r={radius}
+          cx="16"
+          cy="16"
+          r={radius}
           fill="none"
           stroke={complete ? 'var(--color-dot-complete)' : 'var(--color-accent)'}
           strokeWidth="4"

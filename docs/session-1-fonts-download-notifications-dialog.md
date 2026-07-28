@@ -60,10 +60,10 @@ Since this is a SPA with no router, keep it simple:
 
 ```js
 import { isTauri } from './env';
-import { getItem, setItem } from './storage';  // use localStorage for now if storage.js doesn't exist yet
+import { getItem, setItem } from './storage'; // use localStorage for now if storage.js doesn't exist yet
 
 // If storage.js doesn't exist yet, use localStorage directly:
-const getItem = (k) => localStorage.getItem(k);
+const getItem = k => localStorage.getItem(k);
 const setItem = (k, v) => localStorage.setItem(k, v);
 
 const LAST_REMINDER_KEY = 'last_daily_reminder';
@@ -108,9 +108,10 @@ export async function maybeSendReminder(t) {
 const saveDrawing = useCallback(async () => {
   if (!strokesRef.current.length) return;
   const dataURL = exportForSave();
-  const name = practiceMode === "words"
-    ? `arabic-${currentWord?.roman ?? "word"}`
-    : `arabic-${letter.name.toLowerCase()}-${activeForm}`;
+  const name =
+    practiceMode === 'words'
+      ? `arabic-${currentWord?.roman ?? 'word'}`
+      : `arabic-${letter.name.toLowerCase()}-${activeForm}`;
 
   if (isTauri) {
     const { save } = await import('@tauri-apps/plugin-dialog');
@@ -128,7 +129,7 @@ const saveDrawing = useCallback(async () => {
   }
 
   // web fallback
-  const a = document.createElement("a");
+  const a = document.createElement('a');
   a.href = dataURL;
   a.download = `${name}.png`;
   document.body.appendChild(a);

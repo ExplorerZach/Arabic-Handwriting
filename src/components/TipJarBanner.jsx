@@ -1,7 +1,7 @@
 import { UI } from '../locales';
 
 export default function TipJarBanner({ locale }) {
-  const t = (key) => UI[locale][key] ?? key;
+  const t = key => UI[locale][key] ?? key;
 
   if (!navigator.onLine) return null;
 
