@@ -39,8 +39,9 @@ Plus, outside any PR: the stale **GitHub Pages** integration was disabled via AP
 4. **Real-device LAN testing still needs a Windows Firewall allow for node.** Loopback to the machine's own
    LAN IP timed out even with `--host`; that's environmental, not the app. The CSP half of the iPad fix is
    shipped; the firewall/iPad confirmation is user-side (§4 below).
-5. **`opencode.json` stays untracked** (user decision) — it holds `"formatter": true` and the project slash
-   commands. Don't commit it without asking.
+5. **`opencode.json` is now tracked** (decided later the same day) — the session-4 objection
+   (`"formatter": true` churning unformatted files) died with the repo-wide Prettier commit +
+   the `format` CI job. Keep its slash commands in sync with AGENTS.md's Commands section.
 6. **Docs are now the source of truth for the session-4 recipes** — AGENTS.md gained a "Visual checks"
    block + rules 13 (`sw.js` bumps) & 14 (`git checkout --` reads the index); `architecture.md` gained the
    host-browser Playwright recipe (§MCP Tools), the no-interception/SW-deadlock + version-trailing notes
@@ -68,5 +69,4 @@ Plus, outside any PR: the stale **GitHub Pages** integration was disabled via AP
 - `gh pr checks N --watch` can return early when Vercel's checks complete before the Actions jobs — always
   confirm with a final plain `gh pr checks N` before merging.
 - Merge flow used throughout: `gh pr merge N --rebase --delete-branch`, then `git checkout main; git pull`.
-- Working tree at handoff: clean except untracked `opencode.json`; `main` == `origin/main` == `a2f6357`
-  (before this PR's docs commit lands).
+- Working tree at handoff: clean; `main` == `origin/main` == `1c9450b`.
