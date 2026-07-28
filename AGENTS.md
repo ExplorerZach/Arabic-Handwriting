@@ -25,6 +25,13 @@ npm run tauri:check  # cargo check in src-tauri/
 Pre-commit hook runs `eslint --fix` + `prettier --write` on staged files.
 **LSP:** `typescript-language-server` pinned to **4.3.4** — do NOT upgrade.
 
+**Visual checks:** the containerized Playwright MCP **cannot** reach this app
+(Chrome Private Network Access blocks `host.docker.internal` from a non-secure
+context; request interception deadlocks the service worker + driver — it once
+took the whole MCP gateway down). Drive the **host's own Chrome** against
+`npm run dev` / `npm run preview` with `playwright-core` — recipe in
+`docs/architecture.md` → MCP Tools.
+
 ## Architecture Map
 
 ```
@@ -88,6 +95,12 @@ src/
 10. **Every visible string goes through `t()`** from `locales/index.js` — never hardcode English.
 11. **Never log data payloads or base64** — `console.error` only metadata (error messages, not objects). No `console.log` of progress JSON, canvas snapshots, or API request bodies.
 12. **Hook naming convention:** destructured exports use prefix (`dCanvasRef`, `eSaveDrawing`, `aiFeedback`, `animAnimating`, `rsReviewSession`, `dsDeckSession`, `scConflictPromptOpen`) — avoids name collisions. New hooks must follow same pattern.
+13. **Never commit local `sw.js`/`public/sw.js` cache bumps** — `bust-sw.js`
+    increments on every build, so the committed version always trails production.
+    Discard after verification builds:
+    `git restore --source=HEAD --staged --worktree sw.js public/sw.js`.
+14. **`git checkout -- <path>` restores from the index, not HEAD** — use
+    `git restore --source=HEAD --staged --worktree <path>` to discard to HEAD.
 
 ## Deep Reference
 

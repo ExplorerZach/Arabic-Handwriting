@@ -78,6 +78,13 @@ the root `sw.js` (both stay in sync). **Don't manually edit `sw.js`** unless
 adding new files to the `ASSETS` precache list.
 SW registration is guarded with `isTauri` — it only runs in the browser.
 
+`bust-sw.js` increments on EVERY build, so the committed CACHE version always
+trails production by one or more — `sw.js` / `public/sw.js` modifications from
+local verification builds are noise; don't commit them (AGENTS.md rule 13).
+**Never use Playwright request interception on this app** — fulfilled routes plus
+the registered service worker deadlock the Playwright driver (it once crashed
+the whole MCP gateway container and took every MCP tool with it).
+
 ## localStorage Keys — Do Not Rename
 
 Keys: `openrouter_key` (API key — Stronghold vault on Tauri via `secureStorage.js`, AES-GCM encrypted storage on web), `openrouter_model` (model ID), `brushScale` (brush size), `brush_pack`, `lessonMode` (`"true"`/`"false"`), `app_locale` (`"en"`/`"ar"`), `app_darkMode` (`"true"`/`"false"`), `app_theme` (named theme from `themes.js`), `daily_goal`, `last_daily_reminder`, `arabic_progress` (SM-2 progress JSON), `arabic_feedback_history` (last 5 entries JSON), `arabic_decks` (user study decks JSON), `arabic_practice_dates` (heatmap), `arabic_xp`, `arabic_freezes` (streak freezes; `arabic_freezes_v2` is its migration flag), `sync_last_user_id` (last cloud-synced account — account-switch detection). Renaming silently loses user data. `backup.js` → `BACKUP_KEYS` is the canonical export list — update it when adding a key. Sync-internal keys (`_lastSyncTime` in localStorage, `_syncDirty` in sessionStorage) start with `_` and are never in `BACKUP_KEYS` — the App.jsx sync listener ignores anything outside `BACKUP_KEYS` (writing `_lastSyncTime` would otherwise re-arm the debounce after every push: an infinite push loop).
@@ -171,8 +178,33 @@ All UI strings in `src/locales/index.js` as `UI = { en: {...}, ar: {...} }`.
   (with a `topic`). Skip for stable APIs (canvas 2D, localStorage, basic CSS).
 - **Playwright** — manual browser verification alongside the Vitest suite. Use for canvas
   pointer behavior, animation cleanup, RTL flip, dark-mode repaint, PWA cache-
-  bust, breakpoints. Flow: `npm run dev` → `browser_navigate` → `browser_snapshot`
-  (prefer over screenshots for actions) → `browser_take_screenshot` for visuals.
+  bust, breakpoints. The **containerized** Playwright MCP cannot reach the app:
+  `localhost` is unreachable from the container, and Chrome's Private Network
+  Access blocks `host.docker.internal` from a non-secure context (no MCP-exposed
+  flag disables it; request interception deadlocks the SW — see Service Worker).
+  **Sanctioned flow: drive the host's own Chrome** with `playwright-core` (no
+  browser download; install it outside the repo, e.g. `%TEMP%\opencode`):
+
+  ```js
+  import { chromium } from 'playwright-core';
+  const browser = await chromium.launch({
+    executablePath: 'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    headless: true,
+  });
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 1000 } });
+  await ctx.addInitScript(() => {
+    localStorage.setItem('app_darkMode', 'true'); // seed state; no login gate
+  });
+  ```
+
+  Useful keys: `app_darkMode`, `high_contrast`, `reduce_motion`, `app_theme`,
+  `brush_pack`, `app_locale`, `arabic_progress`, `arabic_xp`, `arabic_streak`,
+  `arabic_daily_goal`. Tabs are `[role="tab"]`; `colorScheme: 'dark'` in
+  `newContext` exercises the `prefers-color-scheme` blocks in `download.html`.
+  Prefer accessibility snapshots for actions, screenshots for visuals. For WCAG
+  contrast checks (blend rgba tokens over their background first), see
+  `docs/completed/session-4-light-palette-handoff.md` §3.
+
 - **GitHub MCP** — PRs (`create/update/merge_pull_request`), `pull_request_read`,
   issue triage, `request_copilot_review`. Use plain `git` for local-only ops.
 
@@ -189,6 +221,9 @@ not `.vercel.app` hosts). `writearabic.app` 307-redirects to `www`. DNS at
 - **Debug a broken `main`:** `list_deployments` → `get_deployment_build_logs` →
   `get_runtime_logs` (filter `level:["error"]`/`5xx`/`production`) → roll back if
   needed. Protected previews: `get_access_to_vercel_url` / `web_fetch_vercel_url`.
+  PR previews sit behind Vercel **deployment protection** and serve a login page
+  to anonymous fetchers — until a bypass token is configured, the standard
+  pre-merge visual check is `npm run preview` + the host-browser recipe above.
 
 ## Roadmap
 
