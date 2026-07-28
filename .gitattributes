@@ -1,0 +1,4 @@
+# Default: LF in the repo, LF in the working tree (no CRLF conversion).
+# core.autocrlf=true + Prettier's LF output was producing phantom "modified"
+# files with empty diffs. Binary files are auto-detected and left alone.
+* text=auto eol=lf
