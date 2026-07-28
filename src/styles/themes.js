@@ -13,13 +13,13 @@ export const PAPER_THEMES = {
   parchment: {
     id: 'parchment',
     nameKey: 'themeParchment',
-    light: { bg: '#fdf6e8' },
+    light: { bg: '#fbf5e6' },
     dark: { bg: '#1a1008' },
   },
   aged: {
     id: 'aged',
     nameKey: 'themeAged',
-    light: { bg: '#f0e0c0' },
+    light: { bg: '#f2e6ca' },
     dark: { bg: '#241808' },
   },
   cream: {
@@ -37,13 +37,13 @@ export const PAPER_THEMES = {
   ruled: {
     id: 'ruled',
     nameKey: 'themeRuled',
-    light: { bg: '#faf8f5', lineColor: 'rgba(160,140,100,0.25)', lineHeight: 40 },
+    light: { bg: '#faf8f5', lineColor: 'rgba(160,140,100,0.30)', lineHeight: 40 },
     dark: { bg: '#1e1208', lineColor: 'rgba(192,112,58,0.15)', lineHeight: 40 },
   },
   grid: {
     id: 'grid',
     nameKey: 'themeGrid',
-    light: { bg: '#faf8f5', lineColor: 'rgba(160,140,100,0.20)', spacing: 40 },
+    light: { bg: '#faf8f5', lineColor: 'rgba(160,140,100,0.25)', spacing: 40 },
     dark: { bg: '#1e1208', lineColor: 'rgba(192,112,58,0.12)', spacing: 40 },
   },
 };
@@ -118,5 +118,5 @@ export function drawPaperPattern(ctx, W, H, themeId, isDark) {
 
 /** Return a suitable glyph/ink color for the canvas, respecting high contrast. */
 export function getCanvasInkColor(isDark) {
-  return isHighContrast() ? (isDark ? '#ffffff' : '#000000') : isDark ? '#c0703a' : '#8b4513';
+  return isHighContrast() ? (isDark ? '#ffffff' : '#000000') : isDark ? '#c0703a' : '#7d3f0f';
 }
