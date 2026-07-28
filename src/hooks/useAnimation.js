@@ -44,6 +44,9 @@ export default function useAnimation({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
     const theme = dPaperThemeRef.current;
+    const paperColors = getPaperColors(theme, dDarkModeRef.current);
+    ctx.fillStyle = paperColors.bg;
+    ctx.fillRect(0, 0, W, H);
     if (theme === 'ruled' || theme === 'grid') {
       drawPaperPattern(ctx, W, H, theme, dDarkModeRef.current);
     }
