@@ -25,7 +25,7 @@ export const PAPER_THEMES = {
   cream: {
     id: 'cream',
     nameKey: 'themeCream',
-    light: { bg: '#faf8f5' },
+    light: { bg: '#FDFBD4' },
     dark: { bg: '#1e1208' },
   },
   coolGray: {
