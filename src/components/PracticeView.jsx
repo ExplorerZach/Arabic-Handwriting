@@ -979,6 +979,8 @@ export default function PracticeView({
           handleThemeChange={handleThemeChange}
           brushPack={brushPack}
           handleBrushPackChange={handleBrushPackChange}
+          calligraphyStyle={calligraphyStyle}
+          handleCalligraphyStyleChange={handleCalligraphyStyleChange}
           apiKey={apiKey}
           onClearKey={onClearKey}
           setShowSettings={setShowSettings}

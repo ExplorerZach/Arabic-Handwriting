@@ -1,5 +1,11 @@
 import { useState } from 'react';
-import { PAPER_THEMES, BRUSH_PACKS, getPaperColors, getBrushColor } from '../styles/themes';
+import {
+  PAPER_THEMES,
+  BRUSH_PACKS,
+  SCRIPT_STYLES,
+  getPaperColors,
+  getBrushColor,
+} from '../styles/themes';
 import { getItem } from '../utils/storage';
 import AuthForm from './AuthForm';
 import styles from '../styles/practiceStyles';
@@ -26,6 +32,8 @@ export default function SettingsPanel({
   handleThemeChange,
   brushPack,
   handleBrushPackChange,
+  calligraphyStyle,
+  handleCalligraphyStyleChange,
   apiKey,
   onClearKey,
   setShowSettings,
@@ -254,6 +262,49 @@ export default function SettingsPanel({
                   aria-label={t(pack.nameKey)}
                   title={t(pack.nameKey)}
                 />
+              );
+            })}
+          </div>
+        </div>
+        <div
+          style={{
+            fontSize: '12px',
+            color: 'var(--color-text-soft)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+          }}
+        >
+          {t('settingsCalligraphyStyle')}
+          <div style={styles.themeRow}>
+            {Object.values(SCRIPT_STYLES).map(style => {
+              const isActive = calligraphyStyle === style.id;
+              return (
+                <button
+                  key={style.id}
+                  className={`btn-theme ${isActive ? 'btn-theme-active' : ''}`}
+                  style={{ ...styles.themeBtn, ...(isActive ? styles.themeBtnActive : {}) }}
+                  onClick={() => handleCalligraphyStyleChange(style.id)}
+                  aria-pressed={isActive}
+                  aria-label={t('ariaCalligraphyStyle') + ': ' + t(style.nameKey)}
+                >
+                  <span
+                    style={{
+                      ...styles.themeSwatch,
+                      fontFamily: style.family,
+                      fontSize: 16,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'transparent',
+                      direction: 'rtl',
+                    }}
+                    aria-hidden="true"
+                  >
+                    ب
+                  </span>
+                  <span>{t(style.nameKey)}</span>
+                </button>
               );
             })}
           </div>
