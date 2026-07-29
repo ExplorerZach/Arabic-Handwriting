@@ -37,7 +37,7 @@ Description of the issue, why it happens, and any suggested fix.
 ### KI-001 — Delete-deck confirm dialog is redundant with the undo toast
 
 - **Status:** Resolved
-- **Fixed:** 2026-07-29, commit pending
+- **Fixed:** 2026-07-29, commit 361dd7c
 - **Severity:** Low
 - **Area:** `src/components/DeckManager.jsx` (deck list, Delete button)
 - **Found:** 2026-07-07 (Playwright verification of the deck-polish plan)
@@ -49,7 +49,7 @@ immediate, matching the design spec. Also removed the now-unused
 ### KI-002 — `border`/`borderColor` shorthand React warning on picker tiles
 
 - **Status:** Resolved
-- **Fixed:** 2026-07-29, commit pending
+- **Fixed:** 2026-07-29, commit 361dd7c
 - **Severity:** Low
 - **Area:** `src/components/DeckManager.jsx` (letters/numbers/diacritics/words
   picker tiles), `src/styles/practiceStyles.js` (`reviewTile`,
@@ -64,7 +64,7 @@ Split the `border` shorthand in both `reviewTile` and `deckPickerWordRow` into
 ### KI-003 — `deleteBtnRef` in `UndoToast` integration is never attached to a real element
 
 - **Status:** Resolved
-- **Fixed:** 2026-07-29, commit pending
+- **Fixed:** 2026-07-29, commit 361dd7c
 - **Severity:** Low (a11y polish)
 - **Area:** `src/components/PracticeView.jsx` (`deleteBtnRef`, `<UndoToast
 dismissRef={deleteBtnRef} />`)
