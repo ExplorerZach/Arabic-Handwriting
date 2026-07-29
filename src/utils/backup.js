@@ -29,6 +29,7 @@ export const BACKUP_KEYS = [
   'app_darkMode',
   'app_theme',
   'brush_pack',
+  'calligraphy_style',
   'daily_goal',
   'ai_consent',
 ];

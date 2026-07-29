@@ -28,6 +28,7 @@ export const UI = {
     settingsLangAr: 'العربية',
     settingsTheme: 'Paper',
     settingsBrush: 'Ink color',
+    settingsCalligraphyStyle: 'Calligraphy Style',
     settingsSectionAppearance: 'Appearance',
     settingsSectionModel: 'AI Model',
     settingsSectionCanvas: 'Canvas',
@@ -42,6 +43,7 @@ export const UI = {
     importError: 'That file is not a valid progress backup.',
     ariaExportBtn: 'Export progress backup file',
     ariaImportBtn: 'Import progress backup file',
+    ariaCalligraphyStyle: 'Calligraphy style',
 
     // Mode tabs
     tabLetters: 'Letters',
@@ -267,6 +269,8 @@ export const UI = {
 
     // Brush packs
     brushClassic: 'Classic Ink',
+    styleAmiri: 'Amiri',
+    styleScheherazade: 'Scheherazade',
     brushCrimson: 'Crimson',
     brushIndigo: 'Indigo',
     brushForest: 'Forest',
@@ -431,6 +435,7 @@ export const UI = {
     settingsLangAr: 'العربية',
     settingsTheme: 'الورق',
     settingsBrush: 'لون الحبر',
+    settingsCalligraphyStyle: 'نمط الخط',
     settingsSectionAppearance: 'المظهر',
     settingsSectionModel: 'نموذج الذكاء',
     settingsSectionCanvas: 'اللوحة',
@@ -445,6 +450,7 @@ export const UI = {
     importError: 'هذا الملف ليس نسخة احتياطية صالحة.',
     ariaExportBtn: 'تصدير ملف النسخة الاحتياطية',
     ariaImportBtn: 'استيراد ملف النسخة الاحتياطية',
+    ariaCalligraphyStyle: 'نمط الخط',
 
     // Mode tabs
     tabLetters: 'الحروف',
@@ -670,6 +676,8 @@ export const UI = {
 
     // Brush packs
     brushClassic: 'حبر كلاسيكي',
+    styleAmiri: 'أميري',
+    styleScheherazade: 'شهرزاد',
     brushCrimson: 'قرمزي',
     brushIndigo: 'نيلي',
     brushForest: 'أخضر غابة',

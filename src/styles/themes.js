@@ -123,3 +123,22 @@ export function drawPaperPattern(ctx, W, H, themeId, isDark) {
 export function getCanvasInkColor(isDark) {
   return isHighContrast() ? (isDark ? '#ffffff' : '#000000') : isDark ? '#c0703a' : '#7d3f0f';
 }
+
+/** Calligraphy script styles — controls which font family renders Arabic glyphs. */
+export const SCRIPT_STYLES = {
+  amiri: {
+    id: 'amiri',
+    nameKey: 'styleAmiri',
+    family: '"Amiri","Scheherazade New","Arial Unicode MS",serif',
+  },
+  scheherazade: {
+    id: 'scheherazade',
+    nameKey: 'styleScheherazade',
+    family: '"Scheherazade New","Amiri","Arial Unicode MS",serif',
+  },
+};
+
+/** Resolve a calligraphy style ID to a CSS font-family stack. */
+export function getFontStack(styleId) {
+  return (SCRIPT_STYLES[styleId] || SCRIPT_STYLES.amiri).family;
+}
