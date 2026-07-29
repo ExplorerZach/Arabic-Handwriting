@@ -64,9 +64,7 @@ _Other types of Arabic practice beyond basic letters and words._
       practice doesn't build.
 
 - [ ] **#10 — Calligraphy script styles** 🟡
-      Practice the same letter in different scripts (Naskh vs. others). Amiri and
-      Scheherazade New are already loaded. Differentiates from generic tracing apps;
-      gives advanced learners a reason to stay.
+      _Infrastructure shipped (2026-07-29): user preference `calligraphy_style`, centralized `getFontStack()` helper, Settings picker with Amiri/Scheherazade. Multi-script support (#10b) deferred — needs new WOFF2 fonts + per-script stroke-order data + AI prompt update (fix #15 first)._
 
 - [x] **#11 — Themed vocabulary word packs** 🟢
       Expand beyond the current ~18 words into themed sets (greetings, days, food,

@@ -144,7 +144,6 @@ export default function PracticeView({
   } = useDrawing({
     darkMode,
     practiceMode,
-    calligraphyStyle,
     letter: _letter,
     activeForm: _activeForm,
     addXPRef,
@@ -159,6 +158,7 @@ export default function PracticeView({
   const {
     brushValue,
     brushPack,
+    calligraphyStyle,
     paperTheme,
     templateScale,
     soundEnabled,
@@ -178,6 +178,7 @@ export default function PracticeView({
     setHighContrast,
     handleBrushChange,
     handleBrushPackChange,
+    handleCalligraphyStyleChange,
     handleThemeChange,
     handleTemplateScaleChange,
     handleModelChange,

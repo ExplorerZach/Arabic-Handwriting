@@ -9,7 +9,6 @@ import { XP_AWARDS } from '../utils/xp';
 export default function useDrawing({
   darkMode,
   practiceMode,
-  calligraphyStyle,
   letter,
   activeForm,
   addXPRef,
@@ -94,7 +93,7 @@ export default function useDrawing({
     const ghost = ghostRef?.current;
     if (ghost && ghost.text) {
       ctx.save();
-      ctx.font = `${ghost.fontSizePx}px ${getFontStack(calligraphyStyle)}`;
+      ctx.font = `${ghost.fontSizePx}px ${getFontStack(getItem('calligraphy_style') || 'amiri')}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.direction = 'rtl';

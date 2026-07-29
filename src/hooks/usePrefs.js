@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { getItem, setItem } from '../utils/storage';
 import { setBrushScale } from '../utils/drawing';
 import { getDailyGoal, setDailyGoal } from '../utils/dailyGoal';
-import { getBrushColor, getFontStack } from '../styles/themes';
+import { getBrushColor } from '../styles/themes';
 import { useDownloadLinks } from '../utils/downloads';
 
 const DEFAULT_MODEL = 'google/gemini-3-flash-preview';
