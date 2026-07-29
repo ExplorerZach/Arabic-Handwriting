@@ -34,6 +34,24 @@ Description of the issue, why it happens, and any suggested fix.
 
 ## Open
 
+---
+
+## Resolved
+
+<!-- Move entries here when fixed. Example:
+
+### KI-000 — Example resolved entry
+
+- **Status:** Resolved
+- **Fixed:** 2026-07-07, commit 14fd437
+- **Severity:** High
+- **Area:** src/components/PracticeView.jsx
+- **Found:** 2026-07-07
+
+Description of what was wrong and how it was fixed.
+
+-->
+
 ### KI-001 — Delete-deck confirm dialog is redundant with the undo toast
 
 - **Status:** Resolved
@@ -74,21 +92,3 @@ dismissRef={deleteBtnRef} />`)
 attached to the "+ New Deck" button — a stable anchor that stays in the DOM.
 The existing `dismissRef?.current?.focus?.()` calls in `UndoToast` now
 correctly return focus there on dismiss/undo.
-
----
-
-## Resolved
-
-<!-- Move entries here when fixed. Example:
-
-### KI-000 — Example resolved entry
-
-- **Status:** Resolved
-- **Fixed:** 2026-07-07, commit 14fd437
-- **Severity:** High
-- **Area:** src/components/PracticeView.jsx
-- **Found:** 2026-07-07
-
-Description of what was wrong and how it was fixed.
-
--->
