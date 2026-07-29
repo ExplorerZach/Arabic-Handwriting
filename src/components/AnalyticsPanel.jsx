@@ -12,8 +12,16 @@ import { getXPTotal, getLevelInfo } from '../utils/xp';
 import { getFreezeStatus } from '../utils/freezes';
 import { FORM_NAMES } from '../locales';
 import styles from '../styles/practiceStyles';
+import { getFontStack } from '../styles/themes';
 
-export default function AnalyticsPanel({ locale, LETTERS, progress, progressVersion, onGoToItem }) {
+export default function AnalyticsPanel({
+  locale,
+  calligraphyStyle,
+  LETTERS,
+  progress,
+  progressVersion,
+  onGoToItem,
+}) {
   const t = key => UI[locale][key] ?? key;
 
   // All of these re-derive real data from localStorage. Cheap individually
@@ -163,6 +171,7 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
                 className="btn-alpha"
                 style={{
                   ...styles.analyticsHeatmapCell,
+                  fontFamily: getFontStack(calligraphyStyle),
                   opacity: 0.35 + intensity * 0.65,
                 }}
                 onClick={() => onGoToItem(l.name, 'isolated')}
@@ -188,7 +197,13 @@ export default function AnalyticsPanel({ locale, LETTERS, progress, progressVers
                 style={styles.analyticsWeakItem}
                 onClick={() => onGoToItem(w.letterName, w.formKey)}
               >
-                <span style={styles.analyticsWeakChar} lang="ar">
+                <span
+                  style={{
+                    ...styles.analyticsWeakChar,
+                    fontFamily: getFontStack(calligraphyStyle),
+                  }}
+                  lang="ar"
+                >
                   {w.letterChar}
                 </span>
                 <span style={styles.analyticsWeakName}>{w.letterName}</span>

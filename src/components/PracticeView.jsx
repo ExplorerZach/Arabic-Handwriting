@@ -1252,6 +1252,7 @@ export default function PracticeView({
             <DeckManager
               t={t}
               locale={locale}
+              calligraphyStyle={calligraphyStyle}
               decks={decks}
               onCreateDeck={handleCreateDeck}
               onRenameDeck={handleRenameDeck}
@@ -1272,6 +1273,7 @@ export default function PracticeView({
       {practiceMode === 'stats' && (
         <AnalyticsPanel
           locale={locale}
+          calligraphyStyle={calligraphyStyle}
           LETTERS={[...LETTERS, ...NUMBERS, ...DIACRITICS]}
           progress={getProgress()}
           progressVersion={progressVersion}

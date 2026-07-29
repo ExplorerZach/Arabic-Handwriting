@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import styles from '../styles/practiceStyles';
+import { getFontStack } from '../styles/themes';
 import { LETTERS } from '../data/letters';
 import { NUMBERS } from '../data/numbers';
 import { DIACRITICS } from '../data/diacritics';
@@ -23,6 +24,7 @@ import { WORD_GROUPS } from '../data/words';
 export default function DeckManager({
   t,
   locale,
+  calligraphyStyle,
   decks,
   onCreateDeck,
   onRenameDeck,
@@ -411,7 +413,13 @@ export default function DeckManager({
             if (!disp) return null;
             return (
               <div key={item.id} style={styles.deckEditorItem}>
-                <span style={styles.deckEditorItemChar} lang="ar">
+                <span
+                  style={{
+                    ...styles.deckEditorItemChar,
+                    fontFamily: getFontStack(calligraphyStyle),
+                  }}
+                  lang="ar"
+                >
                   {disp.char}
                 </span>
                 <span style={styles.deckEditorItemLabel}>{disp.label}</span>
@@ -525,7 +533,13 @@ export default function DeckManager({
                     tabIndex={idx === gridFocusIdx ? 0 : -1}
                     aria-pressed={selected}
                   >
-                    <span style={styles.reviewTileChar} lang="ar">
+                    <span
+                      style={{
+                        ...styles.reviewTileChar,
+                        fontFamily: getFontStack(calligraphyStyle),
+                      }}
+                      lang="ar"
+                    >
                       {l.letter}
                     </span>
                     <span style={styles.reviewTileName}>{l.name}</span>
@@ -562,7 +576,13 @@ export default function DeckManager({
                     tabIndex={idx === gridFocusIdx ? 0 : -1}
                     aria-pressed={selected}
                   >
-                    <span style={styles.reviewTileChar} lang="ar">
+                    <span
+                      style={{
+                        ...styles.reviewTileChar,
+                        fontFamily: getFontStack(calligraphyStyle),
+                      }}
+                      lang="ar"
+                    >
                       {n.letter}
                     </span>
                     <span style={styles.reviewTileName}>{n.name}</span>
@@ -599,7 +619,13 @@ export default function DeckManager({
                     tabIndex={idx === gridFocusIdx ? 0 : -1}
                     aria-pressed={selected}
                   >
-                    <span style={styles.reviewTileChar} lang="ar">
+                    <span
+                      style={{
+                        ...styles.reviewTileChar,
+                        fontFamily: getFontStack(calligraphyStyle),
+                      }}
+                      lang="ar"
+                    >
                       {d.letter}
                     </span>
                     <span style={styles.reviewTileName}>{d.name}</span>
@@ -667,7 +693,13 @@ export default function DeckManager({
                         onClick={() => toggleItem('word', w.word)}
                         aria-pressed={selected}
                       >
-                        <span style={styles.deckPickerWordChar} lang="ar">
+                        <span
+                          style={{
+                            ...styles.deckPickerWordChar,
+                            fontFamily: getFontStack(calligraphyStyle),
+                          }}
+                          lang="ar"
+                        >
                           {w.word}
                         </span>
                         <span style={styles.deckPickerWordMeta}>
