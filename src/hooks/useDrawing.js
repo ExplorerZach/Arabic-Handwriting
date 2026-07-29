@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { calcLineWidth } from '../utils/drawing';
-import { getBrushColor, getPaperColors, drawPaperPattern } from '../styles/themes';
+import { getBrushColor, getPaperColors, drawPaperPattern, getFontStack } from '../styles/themes';
 import { markDayActive } from '../utils/analytics';
 import { markPracticed } from '../utils/progress';
 import { getItem } from '../utils/storage';
@@ -9,6 +9,7 @@ import { XP_AWARDS } from '../utils/xp';
 export default function useDrawing({
   darkMode,
   practiceMode,
+  calligraphyStyle,
   letter,
   activeForm,
   addXPRef,
@@ -93,7 +94,7 @@ export default function useDrawing({
     const ghost = ghostRef?.current;
     if (ghost && ghost.text) {
       ctx.save();
-      ctx.font = `${ghost.fontSizePx}px "Amiri", "Scheherazade New", "Arial Unicode MS", serif`;
+      ctx.font = `${ghost.fontSizePx}px ${getFontStack(calligraphyStyle)}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.direction = 'rtl';

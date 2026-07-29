@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { isTauri } from '../utils/env';
-import { getPaperColors, getBrushColor, drawPaperPattern } from '../styles/themes';
+import { getPaperColors, getBrushColor, drawPaperPattern, getFontStack } from '../styles/themes';
 
 export default function useExport({
   dCanvasRef,
@@ -9,6 +9,7 @@ export default function useExport({
   paperTheme,
   brushPack,
   darkMode,
+  calligraphyStyle,
   practiceMode,
   currentWord,
   currentChar,
@@ -33,7 +34,7 @@ export default function useExport({
     ctx.save();
     ctx.globalAlpha = 0.15;
     ctx.fillStyle = '#7d3f0f';
-    ctx.font = `bold ${fontSize}px 'Amiri','Scheherazade New',serif`;
+    ctx.font = `bold ${fontSize}px ${getFontStack(calligraphyStyle)}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.direction = 'rtl';
@@ -131,7 +132,7 @@ export default function useExport({
     ctx.save();
     ctx.globalAlpha = 0.15;
     ctx.fillStyle = '#7d3f0f';
-    ctx.font = `bold ${fontSize}px 'Amiri','Scheherazade New',serif`;
+    ctx.font = `bold ${fontSize}px ${getFontStack(calligraphyStyle)}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.direction = 'rtl';

@@ -1,6 +1,11 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import STROKE_DATA from '../data/strokeOrder';
-import { getPaperColors, getCanvasInkColor, drawPaperPattern } from '../styles/themes';
+import {
+  getPaperColors,
+  getCanvasInkColor,
+  drawPaperPattern,
+  getFontStack,
+} from '../styles/themes';
 
 export default function useAnimation({
   dCanvasRef,
@@ -12,6 +17,7 @@ export default function useAnimation({
   dDarkModeRef,
   restGlyphRef,
   templateScale,
+  calligraphyStyle,
   reduceMotion,
   paperTheme,
   currentChar,
@@ -52,7 +58,7 @@ export default function useAnimation({
     }
     const fontSize = Math.min(W, H) * 0.65 * templateScale;
     ctx.save();
-    ctx.font = `${fontSize}px "Scheherazade New", "Amiri", serif`;
+    ctx.font = `${fontSize}px ${getFontStack(calligraphyStyle)}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = dDarkModeRef.current ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.25)';
@@ -116,7 +122,7 @@ export default function useAnimation({
     const gCtx = glyphCanvas.getContext('2d');
     gCtx.clearRect(0, 0, W, H);
     gCtx.save();
-    gCtx.font = `${glyphSize}px "Amiri", "Scheherazade New", serif`;
+    gCtx.font = `${glyphSize}px ${getFontStack(calligraphyStyle)}`;
     gCtx.fillStyle = getCanvasInkColor(dDarkModeRef.current);
     gCtx.textAlign = 'center';
     gCtx.textBaseline = 'middle';
