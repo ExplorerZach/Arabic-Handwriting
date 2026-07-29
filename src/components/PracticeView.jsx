@@ -80,6 +80,10 @@ export default function PracticeView({
   // re-blits this so layout reflows / ResizeObserver repaints don't wipe the
   // finished letter. Cleared on any draw / clear / navigation.
   const restGlyphRef = useRef(null);
+  // In-canvas ghost template bridge — { text, fontSizePx, color } synced by an
+  // effect below; redraw() paints it so the canvas can own an opaque paper
+  // background without covering an HTML ghost overlay.
+  const ghostRef = useRef(null);
   const alphaBtnRef = useRef([]);
   // Hidden <input type=file> used by the Settings "Import progress" button.
   const importInputRef = useRef(null);
@@ -148,6 +152,7 @@ export default function PracticeView({
     restGlyphRef,
     setRestingGlyphRef,
     redrawRef,
+    ghostRef,
   });
 
   const {
@@ -556,7 +561,6 @@ export default function PracticeView({
 
   const {
     animating: animAnimating,
-    restingGlyph: animRestingGlyph,
     setRestingGlyph: animSetRestingGlyph,
     playStrokeAnimation: animPlayStrokeAnimation,
   } = useAnimation({
@@ -581,6 +585,22 @@ export default function PracticeView({
   });
 
   setRestingGlyphRef.current = animSetRestingGlyph;
+
+  // ─── Ghost template sync → in-canvas ghost ───────────
+  // Keeps the bridge ref in step with the current letter/word, template size,
+  // and theme, then repaints. Skipped while a stroke-order animation owns the
+  // canvas (a redraw would stomp its frames).
+  useEffect(() => {
+    const isWords = practiceMode === 'words';
+    const text = isWords ? currentWord?.word : currentChar;
+    const fontSizePx = (isWords ? 100 : 200) * templateScale;
+    const color = getComputedStyle(document.documentElement)
+      .getPropertyValue('--color-ghost')
+      .trim();
+    ghostRef.current = text ? { text, fontSizePx, color } : null;
+    if (!animAnimating) dRedraw(dStrokesRef.current);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [practiceMode, currentChar, currentWord, templateScale, darkMode, highContrast]);
 
   // ─── Guided review session ─────────────────────────────
 
@@ -1723,34 +1743,6 @@ export default function PracticeView({
             }}
             className="canvas-max"
           >
-            {practiceMode !== 'words' ? (
-              // Hidden while the canvas is showing its own (aligned) glyph — during
-              // a "Show me" animation or while a revealed glyph rests on the canvas.
-              // Otherwise the centered CSS ghost wouldn't coincide with the canvas
-              // glyph and would read as a misaligned double image.
-              <div
-                style={{
-                  ...styles.ghostLetter,
-                  fontSize: `${200 * templateScale}px`,
-                  opacity:
-                    animAnimating || animRestingGlyph ? 0 : (styles.ghostLetter.opacity ?? 1),
-                }}
-                lang="ar"
-              >
-                {currentChar}
-              </div>
-            ) : (
-              <div
-                style={{
-                  ...styles.ghostWord,
-                  fontSize: `${100 * templateScale}px`,
-                }}
-                lang="ar"
-                dir="rtl"
-              >
-                {currentWord?.word}
-              </div>
-            )}
             <canvas
               ref={dCanvasRef}
               id="main-canvas"

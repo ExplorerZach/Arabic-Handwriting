@@ -44,6 +44,9 @@ export default function useAnimation({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
     const theme = dPaperThemeRef.current;
+    const paperColors = getPaperColors(theme, dDarkModeRef.current);
+    ctx.fillStyle = paperColors.bg;
+    ctx.fillRect(0, 0, W, H);
     if (theme === 'ruled' || theme === 'grid') {
       drawPaperPattern(ctx, W, H, theme, dDarkModeRef.current);
     }
@@ -79,10 +82,13 @@ export default function useAnimation({
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Fill + pattern in CSS-pixel space so grid/line spacing matches redraw()
+    // (device-pixel dims would paint a dpr-times denser grid at dpr > 1).
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const paperClear = getPaperColors(paperTheme, dDarkModeRef.current);
     ctx.fillStyle = paperClear.bg;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    drawPaperPattern(ctx, canvas.width, canvas.height, paperTheme, dDarkModeRef.current);
+    ctx.fillRect(0, 0, rect.width, rect.height);
+    drawPaperPattern(ctx, rect.width, rect.height, paperTheme, dDarkModeRef.current);
     ctx.restore();
     animatingRef.current = true;
     setAnimating(true);
@@ -226,10 +232,14 @@ export default function useAnimation({
       ctx.save();
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.clearRect(0, 0, W, H);
+      // Fill + pattern in CSS-pixel space (spacing consistency with redraw),
+      // then back to device space for the device-resolution glyph canvases.
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const paperAnim = getPaperColors(paperTheme, dDarkModeRef.current);
       ctx.fillStyle = paperAnim.bg;
-      ctx.fillRect(0, 0, W, H);
-      drawPaperPattern(ctx, W, H, paperTheme, dDarkModeRef.current);
+      ctx.fillRect(0, 0, rect.width, rect.height);
+      drawPaperPattern(ctx, rect.width, rect.height, paperTheme, dDarkModeRef.current);
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
       ctx.globalAlpha = 0.14;
       ctx.drawImage(glyphCanvas, 0, 0);
       ctx.globalAlpha = 1;

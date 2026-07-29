@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { calcLineWidth } from '../utils/drawing';
-import { getBrushColor, drawPaperPattern } from '../styles/themes';
+import { getBrushColor, getPaperColors, drawPaperPattern } from '../styles/themes';
 import { markDayActive } from '../utils/analytics';
 import { markPracticed } from '../utils/progress';
 import { getItem } from '../utils/storage';
@@ -17,6 +17,7 @@ export default function useDrawing({
   restGlyphRef,
   setRestingGlyphRef,
   redrawRef,
+  ghostRef,
 }) {
   const canvasRef = useRef(null);
   const strokesRef = useRef([]);
@@ -72,6 +73,11 @@ export default function useDrawing({
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
     const theme = paperThemeRef.current;
+    // The canvas owns the paper background — opaque fill first, pattern over
+    // it, then ghost/strokes. Single layer: no DOM background to mismatch.
+    const paperColors = getPaperColors(theme, darkModeRef.current);
+    ctx.fillStyle = paperColors.bg;
+    ctx.fillRect(0, 0, W, H);
     if (theme === 'ruled' || theme === 'grid') {
       drawPaperPattern(ctx, W, H, theme, darkModeRef.current);
     }
@@ -81,6 +87,19 @@ export default function useDrawing({
       ctx.drawImage(restGlyphRef.current, 0, 0);
       ctx.restore();
       return;
+    }
+    // In-canvas ghost template (the old HTML overlay sat under the canvas and
+    // an opaque fill would cover it). Drawn before strokes so ink sits on top.
+    const ghost = ghostRef?.current;
+    if (ghost && ghost.text) {
+      ctx.save();
+      ctx.font = `${ghost.fontSizePx}px "Amiri", "Scheherazade New", "Arial Unicode MS", serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.direction = 'rtl';
+      ctx.fillStyle = ghost.color;
+      ctx.fillText(ghost.text, W / 2, H / 2 + ghost.fontSizePx * 0.08);
+      ctx.restore();
     }
     drawStrokes(ctx, points, W, H, brushColorRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps

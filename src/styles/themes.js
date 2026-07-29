@@ -43,7 +43,7 @@ export const PAPER_THEMES = {
   grid: {
     id: 'grid',
     nameKey: 'themeGrid',
-    light: { bg: '#faf8f5', lineColor: 'rgba(160,140,100,0.25)', spacing: 40 },
+    light: { bg: '#faf8f5', lineColor: 'rgba(160,140,100,0.30)', spacing: 40 },
     dark: { bg: '#1e1208', lineColor: 'rgba(192,112,58,0.12)', spacing: 40 },
   },
 };
