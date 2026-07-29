@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { getItem, setItem } from '../utils/storage';
 import { setBrushScale } from '../utils/drawing';
 import { getDailyGoal, setDailyGoal } from '../utils/dailyGoal';
-import { getBrushColor } from '../styles/themes';
+import { getBrushColor, getFontStack } from '../styles/themes';
 import { useDownloadLinks } from '../utils/downloads';
 
 const DEFAULT_MODEL = 'google/gemini-3-flash-preview';
@@ -27,6 +27,9 @@ export default function usePrefs({
   });
   const [paperTheme, setPaperTheme] = useState(() => getItem('app_theme') || 'parchment');
   const [brushPack, setBrushPack] = useState(() => getItem('brush_pack') || 'classic');
+  const [calligraphyStyle, setCalligraphyStyle] = useState(
+    () => getItem('calligraphy_style') || 'amiri',
+  );
   const [dailyGoalState, setDailyGoalState] = useState(() => getDailyGoal());
   const [dailyGoalInput, setDailyGoalInput] = useState(() => String(getDailyGoal()));
   const [reduceMotion, setReduceMotion] = useState(() => {
@@ -129,9 +132,20 @@ export default function usePrefs({
     redrawRef.current(strokesRef.current);
   };
 
+  const handleCalligraphyStyleChange = styleId => {
+    setCalligraphyStyle(styleId);
+    setItem('calligraphy_style', styleId);
+    if (restGlyphRef.current) {
+      restGlyphRef.current = null;
+      setRestingGlyphRef.current?.(false);
+    }
+    redrawRef.current(strokesRef.current);
+  };
+
   return {
     brushValue,
     brushPack,
+    calligraphyStyle,
     paperTheme,
     templateScale,
     soundEnabled,
@@ -152,6 +166,7 @@ export default function usePrefs({
     setReduceMotion,
     handleBrushChange,
     handleBrushPackChange,
+    handleCalligraphyStyleChange,
     handleThemeChange,
     handleTemplateScaleChange,
     handleModelChange,
