@@ -1256,6 +1256,7 @@ export default function PracticeView({
               onReorderItem={handleReorderDeckItem}
               onReorderDecks={handleReorderDecks}
               onCopyDeck={handleCopyDeck}
+              restoreFocusRef={deleteBtnRef}
               onStartSession={(deck, mode) => dsStartDeckSession(deck, mode)}
             />
           )}

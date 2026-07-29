@@ -36,27 +36,20 @@ Description of the issue, why it happens, and any suggested fix.
 
 ### KI-001 — Delete-deck confirm dialog is redundant with the undo toast
 
-- **Status:** Open
+- **Status:** Resolved
+- **Fixed:** 2026-07-29, commit pending
 - **Severity:** Low
 - **Area:** `src/components/DeckManager.jsx` (deck list, Delete button)
 - **Found:** 2026-07-07 (Playwright verification of the deck-polish plan)
 
-The deck-polish spec (`docs/superpowers/specs/2026-07-04-deck-polish-design.md`)
-describes replacing the old `window.confirm("Delete this deck?...")` dialog
-with an immediate delete + 6s undo toast, so the toast _is_ the safety net.
-The implementation plan's literal code for the Delete button kept the old
-`window.confirm(...)` wrapper unchanged, so today a delete requires _both_ a
-confirm dialog **and** offers an undo toast afterward — belt-and-suspenders,
-not broken, but redundant and inconsistent with the written design intent.
-
-Suggested fix: remove the `window.confirm(t("deckDeleteConfirm"))` guard in
-`DeckManager.jsx`'s Delete button `onClick` so delete is truly immediate,
-matching the spec. Leaves `deckDeleteConfirm` locale key unused — remove it
-from `en`/`ar` too if nothing else references it.
+Removed the `window.confirm(t("deckDeleteConfirm"))` guard so delete is
+immediate, matching the design spec. Also removed the now-unused
+`deckDeleteConfirm` key from both `en` and `ar` locale entries.
 
 ### KI-002 — `border`/`borderColor` shorthand React warning on picker tiles
 
-- **Status:** Open
+- **Status:** Resolved
+- **Fixed:** 2026-07-29, commit pending
 - **Severity:** Low
 - **Area:** `src/components/DeckManager.jsx` (letters/numbers/diacritics/words
   picker tiles), `src/styles/practiceStyles.js` (`reviewTile`,
@@ -64,38 +57,23 @@ from `en`/`ar` too if nothing else references it.
 - **Found:** 2026-07-07 (Playwright console during deck-polish verification;
   pre-existing, not a regression from deck-polish)
 
-Selected picker tiles spread `{ ...styles.reviewTile, ...(selected ? {
-borderColor: ... } : {}) }`. `reviewTile` sets the shorthand `border: '1.5px
-solid var(--color-border)'`, and overriding just `borderColor` on top of a
-shorthand triggers React's dev warning: _"Removing a style property during
-rerender... don't mix shorthand and non-shorthand properties."_ Cosmetic
-(dev-console only, no visual bug), but worth cleaning up.
-
-Suggested fix: in the relevant style objects, split `border` into
-`borderWidth`/`borderStyle`/`borderColor` so the selected-state override only
-ever touches `borderColor`, never shorthand vs. non-shorthand in the same
-property.
+Split the `border` shorthand in both `reviewTile` and `deckPickerWordRow` into
+`borderWidth`/`borderStyle`/`borderColor` so the selected-state override
+(`borderColor` only) no longer mixes shorthand and non-shorthand properties.
 
 ### KI-003 — `deleteBtnRef` in `UndoToast` integration is never attached to a real element
 
-- **Status:** Open
+- **Status:** Resolved
+- **Fixed:** 2026-07-29, commit pending
 - **Severity:** Low (a11y polish)
 - **Area:** `src/components/PracticeView.jsx` (`deleteBtnRef`, `<UndoToast
 dismissRef={deleteBtnRef} />`)
 - **Found:** 2026-07-07 (spec-compliance review of Task 6, deck-polish plan)
 
-`deleteBtnRef` is declared (`useRef(null)`) and passed to `UndoToast` as
-`dismissRef`, intended so focus returns to "the deck row's Delete button" on
-dismiss/undo per the design spec. It's never actually attached via `ref={...}`
-to any button — the row that was deleted is unmounted, so there's no single
-stable element to return focus to anyway. Currently `dismissRef?.current?.focus?.()`
-is just a no-op; keyboard users don't get focus returned anywhere specific
-after the toast closes (it's not lost either — browser default focus
-handling applies).
-
-Suggested fix: either remove the unused `deleteBtnRef` plumbing, or repoint
-it at a stable anchor (e.g. the "+ New Deck" button, or the deck-list pane
-heading) so dismiss/undo has a well-defined focus target.
+`deleteBtnRef` is now passed to `DeckManager` as `restoreFocusRef` and
+attached to the "+ New Deck" button — a stable anchor that stays in the DOM.
+The existing `dismissRef?.current?.focus?.()` calls in `UndoToast` now
+correctly return focus there on dismiss/undo.
 
 ---
 

@@ -33,6 +33,7 @@ export default function DeckManager({
   onReorderDecks,
   onCopyDeck,
   onStartSession,
+  restoreFocusRef,
 }) {
   const [deckView, setDeckView] = useState('list');
   const [editingId, setEditingId] = useState(null);
@@ -191,6 +192,7 @@ export default function DeckManager({
             {t('deckListTitle')}
           </span>
           <button
+            ref={restoreFocusRef}
             className="btn-ai"
             style={{ ...styles.btn, ...styles.btnAI, fontSize: 12, padding: '4px 10px' }}
             onClick={handleNewDeck}
@@ -290,9 +292,7 @@ export default function DeckManager({
                   <button
                     className="btn-clear"
                     style={{ ...styles.btn, ...styles.deckRowActionSmall }}
-                    onClick={() => {
-                      if (window.confirm(t('deckDeleteConfirm'))) onDeleteDeck(deck.id);
-                    }}
+                    onClick={() => onDeleteDeck(deck.id)}
                   >
                     {t('deckDelete')}
                   </button>
