@@ -23,7 +23,6 @@ const styles = {
   },
   appTitle: {
     fontSize: '28px',
-    fontFamily: "'Amiri','Scheherazade New','Arial Unicode MS',serif",
     color: 'var(--color-primary)',
     textShadow: '0 1px 3px var(--color-shadow)',
   },
@@ -132,7 +131,6 @@ const styles = {
   },
   miniChar: {
     fontSize: '22px',
-    fontFamily: "'Amiri','Scheherazade New',serif",
     color: 'var(--color-primary)',
     lineHeight: 1.4,
     direction: 'rtl',
@@ -182,7 +180,6 @@ const styles = {
   },
   formBtnChar: {
     fontSize: '26px',
-    fontFamily: "'Amiri','Scheherazade New',serif",
     lineHeight: 1.4,
     direction: 'rtl',
   },
@@ -235,20 +232,6 @@ const styles = {
     boxShadow: '0 4px 24px var(--color-shadow),inset 0 1px 0 var(--color-surface-hover)',
     overflow: 'hidden',
     touchAction: 'none',
-  },
-  ghostLetter: {
-    position: 'absolute',
-    inset: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '200px',
-    fontFamily: "'Amiri','Scheherazade New','Arial Unicode MS',serif",
-    color: 'var(--color-ghost)',
-    pointerEvents: 'none',
-    lineHeight: 1.2,
-    direction: 'rtl',
-    userSelect: 'none',
   },
   canvas: {
     position: 'absolute',
@@ -363,7 +346,6 @@ const styles = {
     fontSize: '18px',
     cursor: 'pointer',
     color: 'var(--color-text)',
-    fontFamily: "'Amiri','Scheherazade New',serif",
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -534,7 +516,6 @@ const styles = {
     borderRadius: '12px',
     border: '2px solid var(--color-border)',
     fontSize: '140px',
-    fontFamily: "'Amiri','Scheherazade New','Arial Unicode MS',serif",
     color: 'var(--color-primary)',
     direction: 'rtl',
     lineHeight: 1.2,
@@ -588,23 +569,6 @@ const styles = {
     boxShadow: '0 2px 8px var(--color-shadow-deep)',
   },
 
-  /* ─── Ghost word (word practice mode) ────────────────── */
-  ghostWord: {
-    position: 'absolute',
-    inset: 0,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontSize: '100px',
-    fontFamily: "'Amiri','Scheherazade New','Arial Unicode MS',serif",
-    color: 'var(--color-ghost)',
-    pointerEvents: 'none',
-    lineHeight: 1.2,
-    direction: 'rtl',
-    userSelect: 'none',
-    padding: '0 20px',
-  },
-
   /* ─── Word buttons in bottom row ─────────────────────── */
   wordBtn: {
     minWidth: '50px',
@@ -615,7 +579,6 @@ const styles = {
     fontSize: '16px',
     cursor: 'pointer',
     color: 'var(--color-text)',
-    fontFamily: "'Amiri','Scheherazade New',serif",
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -738,7 +701,6 @@ const styles = {
   },
   reviewTileChar: {
     fontSize: '32px',
-    fontFamily: "'Amiri','Scheherazade New',serif",
     color: 'var(--color-primary)',
     lineHeight: 1.3,
     direction: 'rtl',
@@ -973,7 +935,6 @@ const styles = {
     fontSize: '18px',
     cursor: 'pointer',
     color: '#fff8ee',
-    fontFamily: "'Amiri','Scheherazade New',serif",
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -998,7 +959,6 @@ const styles = {
   },
   analyticsWeakChar: {
     fontSize: '20px',
-    fontFamily: "'Amiri','Scheherazade New',serif",
     color: 'var(--color-primary)',
     lineHeight: 1,
     direction: 'rtl',
@@ -1221,7 +1181,6 @@ const styles = {
   },
   deckEditorItemChar: {
     fontSize: '28px',
-    fontFamily: "'Amiri','Scheherazade New',serif",
     color: 'var(--color-primary)',
     lineHeight: 1.2,
     direction: 'rtl',
@@ -1254,7 +1213,6 @@ const styles = {
   },
   deckPickerWordChar: {
     fontSize: '24px',
-    fontFamily: "'Amiri','Scheherazade New',serif",
     color: 'var(--color-primary)',
     direction: 'rtl',
     minWidth: '120px',
