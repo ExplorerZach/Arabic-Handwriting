@@ -17,7 +17,7 @@ import { exportBackup, importBackupFile, wipeAllData } from '../utils/backup';
 import STROKE_DATA from '../data/strokeOrder';
 import { WORD_GROUPS } from '../data/words';
 import { UI, FORM_NAMES, FORM_SHORT, FORM_DESCRIPTIONS } from '../locales';
-import { getPaperColors, getBrushColor } from '../styles/themes';
+import { getPaperColors, getBrushColor, getFontStack } from '../styles/themes';
 import styles from '../styles/practiceStyles';
 import AnalyticsPanel from './AnalyticsPanel';
 import LoginScreen from './LoginScreen';
@@ -886,7 +886,11 @@ export default function PracticeView({
     <div style={styles.root} className="practice-root">
       {/* Header */}
       <div style={styles.header}>
-        <span ref={appTitleRef} style={styles.appTitle} lang="ar">
+        <span
+          ref={appTitleRef}
+          style={{ ...styles.appTitle, fontFamily: getFontStack(calligraphyStyle) }}
+          lang="ar"
+        >
           {t('appTitle')}
         </span>
         <span style={styles.appSubtitle}>
@@ -1208,7 +1212,13 @@ export default function PracticeView({
                           aria-label={`${letterName} ${t(FORM_NAMES[formKey] ?? formKey)}`}
                           title={`${letterName} — ${t(FORM_NAMES[formKey] ?? formKey)}`}
                         >
-                          <span style={styles.reviewTileChar} lang="ar">
+                          <span
+                            style={{
+                              ...styles.reviewTileChar,
+                              fontFamily: getFontStack(calligraphyStyle),
+                            }}
+                            lang="ar"
+                          >
                             {letterChar}
                           </span>
                           <span style={styles.reviewTileName}>{letterName}</span>
@@ -1599,7 +1609,10 @@ export default function PracticeView({
               <div style={styles.miniPreviews}>
                 {Object.entries(letter.forms).map(([key]) => (
                   <div key={key} style={styles.miniPreview}>
-                    <span style={styles.miniChar} lang="ar">
+                    <span
+                      style={{ ...styles.miniChar, fontFamily: getFontStack(calligraphyStyle) }}
+                      lang="ar"
+                    >
                       {letter.forms[key]}
                     </span>
                     <span style={styles.miniLabel}>{t(FORM_NAMES[key])}</span>
@@ -1652,6 +1665,7 @@ export default function PracticeView({
                       lang="ar"
                       style={{
                         ...styles.formBtnChar,
+                        fontFamily: getFontStack(calligraphyStyle),
                         color: isActive ? '#fff8ee' : 'var(--color-text)',
                       }}
                     >
@@ -2059,6 +2073,7 @@ export default function PracticeView({
                     <div
                       style={{
                         ...styles.comparisonRef,
+                        fontFamily: getFontStack(calligraphyStyle),
                         ...(practiceMode === 'words' ? { fontSize: '60px', direction: 'rtl' } : {}),
                       }}
                       lang="ar"
@@ -2151,6 +2166,7 @@ export default function PracticeView({
                     id={`letter-btn-${idx}`}
                     style={{
                       ...styles.alphaBtn,
+                      fontFamily: getFontStack(calligraphyStyle),
                       ...(idx === letterIndex ? styles.alphaBtnActive : {}),
                     }}
                     onClick={() => selectLetter(idx)}
@@ -2192,6 +2208,7 @@ export default function PracticeView({
                   className="btn-alpha"
                   style={{
                     ...styles.wordBtn,
+                    fontFamily: getFontStack(calligraphyStyle),
                     ...(idx === wordIndex ? styles.alphaBtnActive : {}),
                   }}
                   onClick={() => selectWord(wordGroupIndex, idx)}
