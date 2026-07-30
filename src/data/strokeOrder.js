@@ -12,7 +12,7 @@
  * They show the general direction and order a beginner should follow.
  */
 
-const STROKE_DATA = {
+const _STROKE_DATA_FORMS = {
   ا: {
     // Alef — single vertical stroke, top to bottom
     strokes: [
@@ -1038,5 +1038,45 @@ const STROKE_DATA = {
     dots: [],
   },
 };
+
+const FORM_KEYS = ['isolated', 'initial', 'medial', 'final'];
+
+const isLegacyEntry = entry => !!entry && Array.isArray(entry.strokes);
+
+/**
+ * Normalize the per-letter map to `{ isolated, initial?, medial?, final? }`.
+ * A legacy per-letter value `{ strokes, dots }` (isolated data only) is
+ * wrapped as `{ isolated: value }`.
+ */
+function normalizeEntry(entry) {
+  if (!entry) return undefined;
+  if (isLegacyEntry(entry)) return { isolated: entry };
+  return entry;
+}
+
+const STROKE_DATA = Object.fromEntries(
+  Object.entries(_STROKE_DATA_FORMS).map(([k, v]) => [k, normalizeEntry(v)]),
+);
+
+/**
+ * Return the { strokes, dots } for the given form, or undefined when the
+ * requested form is not authored. STRICT — never falls back to `isolated`,
+ * so callers (the Show Me button gate) can tell exactly which forms are safe
+ * to animate.
+ */
+export function resolveStrokeData(entry, formKey) {
+  if (!entry) return undefined;
+  if (isLegacyEntry(entry)) return entry;
+  return entry[formKey];
+}
+
+/**
+ * True when the active form has authored stroke data (i.e. the Show Me
+ * button should render and `playStrokeAnimation` is meaningful). Finds the
+ * entry by letter key.
+ */
+export function resolveShowMeAvailable(entry, formKey) {
+  return resolveStrokeData(entry, formKey) !== undefined;
+}
 
 export default STROKE_DATA;

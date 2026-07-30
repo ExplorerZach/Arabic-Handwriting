@@ -14,7 +14,7 @@ import {
 } from '../utils/progress';
 import { addFeedbackEntry, getFeedbackHistory } from '../utils/history';
 import { exportBackup, importBackupFile, wipeAllData } from '../utils/backup';
-import STROKE_DATA from '../data/strokeOrder';
+import STROKE_DATA, { resolveShowMeAvailable } from '../data/strokeOrder';
 import { WORD_GROUPS } from '../data/words';
 import { UI, FORM_NAMES, FORM_SHORT, FORM_DESCRIPTIONS } from '../locales';
 import { getPaperColors, getBrushColor, getFontStack } from '../styles/themes';
@@ -581,6 +581,7 @@ export default function PracticeView({
     paperTheme,
     currentChar,
     letterKey: letter.letter,
+    activeFormKey: activeForm,
     setShowComparison,
     setFeedbackRef,
     letterIndex,
@@ -1892,21 +1893,22 @@ export default function PracticeView({
             >
               {t('btnClear')}
             </button>
-            {practiceMode !== 'words' && STROKE_DATA[letter.letter] && (
-              <button
-                className="btn-nav"
-                style={{
-                  ...styles.btn,
-                  ...styles.btnShowMe,
-                  opacity: animAnimating ? 0.35 : 1,
-                }}
-                onClick={animPlayStrokeAnimation}
-                disabled={animAnimating}
-                aria-label={t('ariaShowMeBtn')}
-              >
-                {animAnimating ? t('btnShowMePlaying') : t('btnShowMe')}
-              </button>
-            )}
+            {practiceMode !== 'words' &&
+              resolveShowMeAvailable(STROKE_DATA[letter.letter], activeForm) && (
+                <button
+                  className="btn-nav"
+                  style={{
+                    ...styles.btn,
+                    ...styles.btnShowMe,
+                    opacity: animAnimating ? 0.35 : 1,
+                  }}
+                  onClick={animPlayStrokeAnimation}
+                  disabled={animAnimating}
+                  aria-label={t('ariaShowMeBtn')}
+                >
+                  {animAnimating ? t('btnShowMePlaying') : t('btnShowMe')}
+                </button>
+              )}
             <button
               className="btn-ai"
               style={{

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import STROKE_DATA from '../data/strokeOrder';
+import STROKE_DATA, { resolveStrokeData } from '../data/strokeOrder';
 import {
   getPaperColors,
   getCanvasInkColor,
@@ -22,6 +22,7 @@ export default function useAnimation({
   paperTheme,
   currentChar,
   letterKey,
+  activeFormKey,
   setShowComparison,
   setFeedbackRef,
   letterIndex,
@@ -68,7 +69,7 @@ export default function useAnimation({
   }, [currentChar, templateScale]);
 
   const playStrokeAnimation = useCallback(async () => {
-    const data = STROKE_DATA[letterKey];
+    const data = resolveStrokeData(STROKE_DATA[letterKey], activeFormKey);
     if (!data || animatingRef.current) return;
     if (reduceMotion) {
       drawReferenceGlyph();
@@ -362,7 +363,7 @@ export default function useAnimation({
     drawFrame();
     animFrameRef.current = requestAnimationFrame(animate);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [letterKey, currentChar, templateScale, drawReferenceGlyph]);
+  }, [letterKey, activeFormKey, currentChar, templateScale, drawReferenceGlyph]);
 
   useEffect(() => {
     return () => {

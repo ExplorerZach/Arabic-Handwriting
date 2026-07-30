@@ -60,32 +60,61 @@ def ensure_ttf() -> Path:
     return CACHED_TTF
 
 
+def _parse_block(body: str):
+    """Parse a single `{ strokes: [...], dots: [...] }` block."""
+    # rsplit: entry comments legitimately contain the literal "dots:".
+    stroke_part, dot_part = body.rsplit("dots:", 1)
+    strokes = [
+        [(float(x), float(y)) for x, y in
+         re.findall(r"\{ x: ([\d.]+), y: ([\d.]+)[^}]*\}", arr)]
+        for arr in re.findall(r"\[([^\[\]]+)\]", stroke_part)
+        if "x" in arr
+    ]
+    dots = [(float(x), float(y)) for x, y in
+            re.findall(r"\{ x: ([\d.]+), y: ([\d.]+)[^}]*\}", dot_part)]
+    return strokes, dots
+
+
 def parse_stroke_data(path: Path):
+    """Parse nested per-letter form data → { (letter, form): (strokes, dots) }.
+
+    The file nests each letter as `{ isolated, initial?, medial?, final? }`.
+    Only unquoted letter keys are gated. Numerals/diacritics (quoted keys) are
+    validated by the animation's runtime rendering, not this gate.
+    """
     text = path.read_text(encoding="utf-8")
     data = {}
-    # Unquoted letter keys only (`  X: {`) — numerals/diacritics are quoted
-    # (`  '٠': {`) and are deliberately out of scope: they're rendered as glyph
-    # logos, not guided stroke paths, so the runtime animation is their test.
     for m in re.finditer(r"^  ([^'\":\s]{1,3}): \{(.*?)\n  \},", text, re.M | re.S):
         ch = m.group(1)
         body = m.group(2)
-        # rsplit: entry comments legitimately contain the literal "dots:".
-        stroke_part, dot_part = body.rsplit("dots:", 1)
-        strokes = [
-            [(float(x), float(y)) for x, y in
-             re.findall(r"\{ x: ([\d.]+), y: ([\d.]+)[^}]*\}", arr)]
-            for arr in re.findall(r"\[([^\[\]]+)\]", stroke_part)
-            if "x" in arr
-        ]
-        dots = [(float(x), float(y)) for x, y in
-                re.findall(r"\{ x: ([\d.]+), y: ([\d.]+)[^}]*\}", dot_part)]
-        data[ch] = (strokes, dots)
+        nested = body.lstrip().startswith(("isolated:", "initial:", "medial:", "final:"))
+        if nested:
+            for fm in re.finditer(
+                r"(isolated|initial|medial|final): \{(.*?)\n    \},", body, re.S
+            ):
+                form, fbody = fm.group(1), fm.group(2)
+                data[(ch, form)] = _parse_block(fbody)
+        else:  # legacy flat single-form entry
+            data[(ch, "isolated")] = _parse_block(body)
     return data
 
 
-def coverage_for(ch, strokes, dots, font) -> float:
+TATWEEL = "ـ"
+FORM_TEXT = {
+    "isolated": lambda ch: ch,                 # ch
+    "initial": lambda ch: ch + TATWEEL,        # ch+ـ
+    "medial": lambda ch: TATWEEL + ch + TATWEEL,  # ـchـ
+    "final": lambda ch: TATWEEL + ch,          # ـch
+}
+
+
+def coverage_for(ch, form, strokes, dots, font) -> float:
     img = Image.new("L", (W, H), 0)
-    ImageDraw.Draw(img).text((W / 2, H / 2), ch, font=font, fill=255, anchor="mm")
+    # Render the exact string the app draws for the form (see PracticeView's
+    # letter.forms) so the measured shape matches runtime.
+    ImageDraw.Draw(img).text(
+        (W / 2, H / 2), FORM_TEXT[form](ch), font=font, fill=255, anchor="mm"
+    )
     alpha = np.array(img)
     ys, xs = np.where(alpha > ALPHA)
     if xs.size == 0:
@@ -144,14 +173,20 @@ def main() -> int:
         print(f"no letter entries found in {args.data}", file=sys.stderr)
         return 2
 
-    rows = sorted((coverage_for(ch, s, d, font), ch) for ch, (s, d) in data.items())
+    rows = sorted(
+        (coverage_for(ch, form, s, d, font), ch, form)
+        for (ch, form), (s, d) in data.items()
+    )
     failing = 0
-    for cov, ch in rows:
+    for cov, ch, form in rows:
         mark = "" if cov >= args.target else "  <-- FAIL"
         if cov < args.target:
             failing += 1
-        print(f"{cov:7.1f}%  {ch}{mark}", flush=True)
-    print(f"\n{failing} / {len(rows)} letters below {args.target:.0f}% coverage")
+        label = ch if form == "isolated" else f"{ch} [{form}]"
+        print(f"{cov:7.1f}%  {label}{mark}", flush=True)
+    print(
+        f"\n{failing} / {len(rows)} letter-forms below {args.target:.0f}% coverage"
+    )
     return 0 if failing == 0 else 1
 
 
