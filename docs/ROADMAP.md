@@ -89,8 +89,9 @@ _Make the learning environment more intuitive and accessible._
       A 3–4 step coachmark tour (ghost watermark, Show Me, AI Feedback, Review tab).
       Surfaces features new users currently never discover.
 
-- [ ] **#15 — Fix Stroke animation for all forms** 🔴
-      "Show Me" is supposed to draw the strokes in real time to help the student learn. Currently, when the button is pressed it only partially animates the strokes so the student does not learn anything.
+- [x] **#15 — Fix Stroke animation for all forms** 🔴→🟢
+      ~~"Show Me" is supposed to draw the strokes in real time to help the student learn. Currently, when the button is pressed it only partially animates the strokes so the student does not learn anything.~~
+      **Fixed (isolated forms):** root cause was hand-authored `strokeOrder.js` paths written against a wrong glyph metric than the shipped Amiri font (measured 12–88% ink coverage). All 28 letter paths re-authored against a measured Amiri ink-run calibration table; `DOT_RADIUS` split from `BRUSH_RADIUS`; regression locked in by `npm run test:stroke-coverage` (Python gate, 28/28 ≥95%). Host-Chrome visual smoke on ر/ص/ع confirms whole letters draw stroke-by-stroke. **Follow-up (deferred):** positional `initial`/`medial`/`final` forms re-use the isolated path against differently-shaped glyphs — re-author with the same recipe (plan: `.hermes/plans/2026-07-29_show-me-stroke-animation-fix.md`).
 
 - [x] **#16 — Audio/visual feedback on score** 🟢
       Subtle success animation + optional sound on a 4–5★ score. Makes the AI
@@ -103,6 +104,16 @@ _Make the learning environment more intuitive and accessible._
 ---
 
 ## Session log
+
+- **2026-07-29** — Implemented #15 (Show Me stroke animation): re-authored all 28
+  isolated-letter stroke paths against a measured Amiri ink-run calibration table
+  (the root cause of 12–88% coverage — shape drift, not brush size; ink-aware radius
+  and snap-to-ink explored and rolled back). Split `DOT_RADIUS` from
+  `BRUSH_RADIUS`. Added `npm run test:stroke-coverage` regression gate
+  (Python + Store-Python wrapper; jsdom can't rasterize canvas; 28/28 ≥95%).
+  Host-Chrome visual smoke via playwright-core on ر (worst case), ص (wide), ع
+  (counter) — whole letters draw stroke-by-stroke, zero page errors. Position
+  forms (initial/medial/final) deferred as a follow-up.
 
 - **2026-05-28** — Roadmap created. Implemented #7 (Arabic numerals) and #13
   (progress export/import). #2 (daily goal indicator) is next up but not yet
