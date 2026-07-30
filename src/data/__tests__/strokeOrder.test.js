@@ -53,9 +53,8 @@ describe('resolveShowMeAvailable', () => {
     expect(resolveShowMeAvailable(STROKE_DATA['ا'], 'isolated')).toBe(true);
   });
 
-  it('is true for authored positional forms (ب/ت/ث/ج/ح/خ pilots)', () => {
-    // These letters now have all four forms authored.
-    for (const key of ['ب', 'ت', 'ث', 'ج', 'ح', 'خ']) {
+  it('is true for authored positional forms (ب/ت/ث/ج/ح/خ/س/ش/ص/ض pilots)', () => {
+    for (const key of ['ب', 'ت', 'ث', 'ج', 'ح', 'خ', 'س', 'ش', 'ص', 'ض']) {
       expect(resolveShowMeAvailable(STROKE_DATA[key], 'initial')).toBe(true);
       expect(resolveShowMeAvailable(STROKE_DATA[key], 'medial')).toBe(true);
       expect(resolveShowMeAvailable(STROKE_DATA[key], 'final')).toBe(true);
@@ -63,10 +62,10 @@ describe('resolveShowMeAvailable', () => {
   });
 
   it('is false for a positional form that is still unauthored (rollout gate)', () => {
-    // س (Sin) is still legacy — only isolated strokes are authored.
-    expect(resolveShowMeAvailable(STROKE_DATA['س'], 'initial')).toBe(false);
-    expect(resolveShowMeAvailable(STROKE_DATA['س'], 'medial')).toBe(false);
-    expect(resolveShowMeAvailable(STROKE_DATA['س'], 'final')).toBe(false);
+    // ط (Tta) is still legacy — only isolated strokes are authored.
+    expect(resolveShowMeAvailable(STROKE_DATA['ط'], 'initial')).toBe(false);
+    expect(resolveShowMeAvailable(STROKE_DATA['ط'], 'medial')).toBe(false);
+    expect(resolveShowMeAvailable(STROKE_DATA['ط'], 'final')).toBe(false);
   });
 });
 
