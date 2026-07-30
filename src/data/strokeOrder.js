@@ -28,55 +28,82 @@ const STROKE_DATA = {
     dots: [],
   },
   ب: {
-    // Ba — horizontal base right-to-left, then dot below
+    // Ba — flat horizontal base, right lip curls down, left tail curls up.
+    // Trace: enter top-right (95, 30), sweep right-to-left along the hull at
+    // y≈50, ride through the left tail rising to (0, 35), then over the top
+    // edge to close the bowl, one dot below center.
     strokes: [
       [
-        { x: 80, y: 45 },
-        { x: 70, y: 48 },
-        { x: 55, y: 50 },
-        { x: 40, y: 50 },
-        { x: 28, y: 48 },
-        { x: 22, y: 42 },
-        { x: 20, y: 35 },
+        { x: 95, y: 28 },
+        { x: 88, y: 44 },
+        { x: 73, y: 50 },
+        { x: 45, y: 52 },
+        { x: 20, y: 52 },
+        { x: 8, y: 52 },
+        { x: 2, y: 46 },
+        { x: 1, y: 36 },
+      ],
+      [
+        { x: 1, y: 36 },
+        { x: 4, y: 24 },
+        { x: 14, y: 12 },
+        { x: 32, y: 6 },
+        { x: 50, y: 8 },
       ],
     ],
-    dots: [{ x: 50, y: 62, below: true }],
+    dots: [{ x: 53, y: 90 }],
   },
   ت: {
-    // Ta — same base as Ba, two dots above
+    // Ta — Ba base lifted ~15px up so the two dots sit above it.
     strokes: [
       [
-        { x: 80, y: 50 },
-        { x: 70, y: 53 },
-        { x: 55, y: 55 },
-        { x: 40, y: 55 },
-        { x: 28, y: 52 },
-        { x: 22, y: 46 },
-        { x: 20, y: 38 },
+        { x: 95, y: 52 },
+        { x: 85, y: 72 },
+        { x: 70, y: 84 },
+        { x: 48, y: 88 },
+        { x: 24, y: 88 },
+        { x: 10, y: 86 },
+        { x: 3, y: 78 },
+        { x: 2, y: 64 },
+      ],
+      [
+        { x: 2, y: 64 },
+        { x: 6, y: 48 },
+        { x: 18, y: 38 },
+        { x: 36, y: 32 },
+        { x: 50, y: 36 },
       ],
     ],
     dots: [
-      { x: 44, y: 35 },
-      { x: 56, y: 35 },
+      { x: 42, y: 12 },
+      { x: 56, y: 16 },
     ],
   },
   ث: {
-    // Tha — same base, three dots above in triangle
+    // Tha — Ta base with three dots: two shoulder + one centered above-forward.
     strokes: [
       [
-        { x: 80, y: 55 },
-        { x: 70, y: 58 },
-        { x: 55, y: 60 },
-        { x: 40, y: 60 },
-        { x: 28, y: 57 },
-        { x: 22, y: 50 },
-        { x: 20, y: 42 },
+        { x: 95, y: 60 },
+        { x: 85, y: 78 },
+        { x: 70, y: 88 },
+        { x: 48, y: 91 },
+        { x: 24, y: 91 },
+        { x: 10, y: 89 },
+        { x: 4, y: 82 },
+        { x: 2, y: 70 },
+      ],
+      [
+        { x: 2, y: 70 },
+        { x: 7, y: 56 },
+        { x: 18, y: 46 },
+        { x: 36, y: 41 },
+        { x: 50, y: 45 },
       ],
     ],
     dots: [
-      { x: 42, y: 38 },
-      { x: 58, y: 38 },
-      { x: 50, y: 28 },
+      { x: 40, y: 8 },
+      { x: 56, y: 12 },
+      { x: 48, y: 30 },
     ],
   },
   ج: {
@@ -453,18 +480,27 @@ const STROKE_DATA = {
     dots: [],
   },
   ن: {
-    // Nun — shallow bowl + dot above
+    // Nun — open bowl, deep belly, single dot above.
+    // Right neck at (90, 35), walk right wall down to (97, 65), then sweep the
+    // bottom rim right-to-left at y≈85 through (50, 87) to left wall (4, 80),
+    // up the left outer wall to (8, 55).
     strokes: [
       [
-        { x: 78, y: 50 },
-        { x: 68, y: 53 },
-        { x: 55, y: 55 },
-        { x: 42, y: 53 },
-        { x: 32, y: 48 },
-        { x: 28, y: 40 },
+        { x: 90, y: 35 },
+        { x: 95, y: 50 },
+        { x: 96, y: 62 },
+        { x: 92, y: 75 },
+        { x: 84, y: 84 },
+        { x: 68, y: 88 },
+        { x: 50, y: 88 },
+        { x: 32, y: 88 },
+        { x: 16, y: 85 },
+        { x: 5, y: 78 },
+        { x: 2, y: 66 },
+        { x: 5, y: 55 },
       ],
     ],
-    dots: [{ x: 52, y: 38 }],
+    dots: [{ x: 46, y: 9 }],
   },
   ه: {
     // Ha (haa) — figure-eight loops
@@ -506,24 +542,48 @@ const STROKE_DATA = {
     dots: [],
   },
   ي: {
-    // Ya — two humps + hook + two dots below
+    // Ya — hook crest at top (y 0-40, x 53-100) descends to a bowl, two dots below.
+    // Stroke 1 traces the hook: start at crest top-right (95, 6), arch left over
+    // the top (70, 4), down the inner left (56, 25), then out along the shoulder
+    // to the right wall (90, 42). Stroke 2: bowl from right lip (92, 48) sweeping
+    // down-left along the hull (y 55-70) to left tip (2, 52), then back along the
+    // bottom rim (y 85-92) to the center-bottom. Two dots below.
     strokes: [
       [
-        { x: 80, y: 42 },
-        { x: 72, y: 38 },
-        { x: 65, y: 42 },
-        { x: 60, y: 38 },
-        { x: 52, y: 42 },
-        { x: 44, y: 48 },
-        { x: 38, y: 58 },
-        { x: 35, y: 68 },
-        { x: 38, y: 75 },
-        { x: 45, y: 72 },
+        { x: 95, y: 6 },
+        { x: 85, y: 3 },
+        { x: 70, y: 3 },
+        { x: 60, y: 8 },
+        { x: 55, y: 18 },
+        { x: 55, y: 30 },
+        { x: 62, y: 39 },
+        { x: 76, y: 42 },
+        { x: 90, y: 42 },
+      ],
+      [
+        { x: 92, y: 50 },
+        { x: 88, y: 58 },
+        { x: 78, y: 64 },
+        { x: 64, y: 66 },
+        { x: 48, y: 66 },
+        { x: 32, y: 64 },
+        { x: 18, y: 58 },
+        { x: 8, y: 52 },
+        { x: 2, y: 46 },
+      ],
+      [
+        { x: 46, y: 70 },
+        { x: 52, y: 78 },
+        { x: 52, y: 85 },
+        { x: 44, y: 90 },
+        { x: 34, y: 90 },
+        { x: 26, y: 85 },
+        { x: 28, y: 76 },
       ],
     ],
     dots: [
-      { x: 48, y: 55, below: true },
-      { x: 58, y: 55, below: true },
+      { x: 42, y: 92 },
+      { x: 57, y: 92 },
     ],
   },
 
