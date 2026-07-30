@@ -166,6 +166,16 @@ export default function useAnimation({
 
     const buildPolyline = pts => pts.map(p => ({ x: mapX(p.x), y: mapY(p.y) }));
 
+    // The reveal mask is a `source-in` clip against the rasterized glyph. The
+    // hand-authored polylines in strokeOrder.js trace each letter's centerline,
+    // so a generous fixed-radius tube along the path covers the ink between
+    // points. Radius = 0.2*max(dim) is sufficient for the thickest strokes
+    // (measured against the actual Amiri render) while staying tight enough to
+    // read as "writing" instead of flooding.
+    // Dots are separate reveal ops. A 200px dot in Amiri spans ~12px, so
+    // 0.2*maxdim covers the glyph's own dot diamond with a little margin —
+    // matches the stroke brush so dot + stroke read as the same pen.
+    const DOT_RADIUS = Math.max(renderedW, renderedH) * 0.2;
     const BRUSH_RADIUS = Math.max(renderedW, renderedH) * 0.2;
     const PIXELS_PER_SEC = Math.max(80, Math.max(renderedW, renderedH) / 3.0);
 
@@ -334,7 +344,7 @@ export default function useAnimation({
       } else if (op.type === 'dot') {
         const dp = op.point;
         mCtx.beginPath();
-        mCtx.arc(dp.x, dp.y, BRUSH_RADIUS, 0, Math.PI * 2);
+        mCtx.arc(dp.x, dp.y, DOT_RADIUS, 0, Math.PI * 2);
         mCtx.fillStyle = '#000';
         mCtx.fill();
         drawFrame();
