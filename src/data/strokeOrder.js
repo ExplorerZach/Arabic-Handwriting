@@ -29,29 +29,112 @@ const _STROKE_DATA_FORMS = {
   },
   ب: {
     // Ba — flat horizontal base, right lip curls down, left tail curls up.
-    // Trace: enter top-right (95, 30), sweep right-to-left along the hull at
-    // y≈50, ride through the left tail rising to (0, 35), then over the top
+    // Isolated: enter top-right (95, 30), sweep right-to-left along the hull
+    // at y≈50, ride through the left tail rising to (0, 35), then over the top
     // edge to close the bowl, one dot below center.
-    strokes: [
-      [
-        { x: 95, y: 28 },
-        { x: 88, y: 44 },
-        { x: 73, y: 50 },
-        { x: 45, y: 52 },
-        { x: 20, y: 52 },
-        { x: 8, y: 52 },
-        { x: 2, y: 46 },
-        { x: 1, y: 36 },
+    isolated: {
+      strokes: [
+        [
+          { x: 95, y: 28 },
+          { x: 88, y: 44 },
+          { x: 73, y: 50 },
+          { x: 45, y: 52 },
+          { x: 20, y: 52 },
+          { x: 8, y: 52 },
+          { x: 2, y: 46 },
+          { x: 1, y: 36 },
+        ],
+        [
+          { x: 1, y: 36 },
+          { x: 4, y: 24 },
+          { x: 14, y: 12 },
+          { x: 32, y: 6 },
+          { x: 50, y: 8 },
+        ],
       ],
-      [
-        { x: 1, y: 36 },
-        { x: 4, y: 24 },
-        { x: 14, y: 12 },
-        { x: 32, y: 6 },
-        { x: 50, y: 8 },
+      dots: [{ x: 53, y: 90 }],
+    },
+    // Initial (بـ): tatweel extends the right side. Enter from the right
+    // connector tail, sweep along the baseline to the left wall, then arc
+    // over the top back toward the right.
+    initial: {
+      strokes: [
+        [
+          { x: 95, y: 50 },
+          { x: 88, y: 52 },
+          { x: 74, y: 52 },
+          { x: 50, y: 52 },
+          { x: 25, y: 52 },
+          { x: 8, y: 52 },
+          { x: 2, y: 46 },
+          { x: 1, y: 36 },
+        ],
+        [
+          { x: 1, y: 36 },
+          { x: 4, y: 24 },
+          { x: 14, y: 12 },
+          { x: 32, y: 6 },
+          { x: 50, y: 8 },
+          { x: 66, y: 12 },
+          { x: 72, y: 24 },
+        ],
       ],
-    ],
-    dots: [{ x: 53, y: 90 }],
+      dots: [{ x: 40, y: 90 }],
+    },
+    // Medial (ـبـ): tatweel on both sides. Enter from the right connector,
+    // sweep through the baseline to the left connector, up the left wall,
+    // then arc over the top back to the right.
+    medial: {
+      strokes: [
+        [
+          { x: 95, y: 50 },
+          { x: 88, y: 52 },
+          { x: 75, y: 52 },
+          { x: 50, y: 52 },
+          { x: 28, y: 52 },
+          { x: 12, y: 52 },
+          { x: 2, y: 50 },
+        ],
+        [
+          { x: 2, y: 50 },
+          { x: 4, y: 36 },
+          { x: 4, y: 24 },
+          { x: 14, y: 12 },
+          { x: 32, y: 6 },
+          { x: 50, y: 8 },
+          { x: 66, y: 12 },
+          { x: 75, y: 24 },
+        ],
+      ],
+      dots: [{ x: 52, y: 90 }],
+    },
+    // Final (ـب): tatweel extends the left side. Enter from the top-right,
+    // sweep along the baseline to the left connector tail, up the left wall,
+    // then arc over the top back toward the right.
+    final: {
+      strokes: [
+        [
+          { x: 95, y: 28 },
+          { x: 88, y: 44 },
+          { x: 75, y: 50 },
+          { x: 55, y: 52 },
+          { x: 35, y: 52 },
+          { x: 20, y: 52 },
+          { x: 8, y: 52 },
+          { x: 2, y: 50 },
+        ],
+        [
+          { x: 2, y: 50 },
+          { x: 4, y: 36 },
+          { x: 4, y: 24 },
+          { x: 14, y: 12 },
+          { x: 32, y: 6 },
+          { x: 50, y: 8 },
+          { x: 66, y: 12 },
+        ],
+      ],
+      dots: [{ x: 65, y: 90 }],
+    },
   },
   ت: {
     // Ta — Ba base lifted ~15px up so the two dots sit above it.

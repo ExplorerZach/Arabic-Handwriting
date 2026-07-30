@@ -87,7 +87,10 @@ def parse_stroke_data(path: Path):
     for m in re.finditer(r"^  ([^'\":\s]{1,3}): \{(.*?)\n  \},", text, re.M | re.S):
         ch = m.group(1)
         body = m.group(2)
-        nested = body.lstrip().startswith(("isolated:", "initial:", "medial:", "final:"))
+        # Strip leading comments (entry-level doc comments precede `isolated:`)
+        # so the nested-form check sees the first form key.
+        body_stripped = re.sub(r"^\s*//.*$", "", body, flags=re.M).lstrip()
+        nested = body_stripped.startswith(("isolated:", "initial:", "medial:", "final:"))
         if nested:
             for fm in re.finditer(
                 r"(isolated|initial|medial|final): \{(.*?)\n    \},", body, re.S

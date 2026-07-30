@@ -53,12 +53,18 @@ describe('resolveShowMeAvailable', () => {
     expect(resolveShowMeAvailable(STROKE_DATA['ا'], 'isolated')).toBe(true);
   });
 
-  it('is false while a positional form is unauthored (rollout gate)', () => {
-    // ب (Ba) offers initial/medial/final forms in the app, but only isolated
-    // strokes are authored yet — Show Me must hide for these.
-    expect(resolveShowMeAvailable(STROKE_DATA['ب'], 'initial')).toBe(false);
-    expect(resolveShowMeAvailable(STROKE_DATA['ب'], 'medial')).toBe(false);
-    expect(resolveShowMeAvailable(STROKE_DATA['ب'], 'final')).toBe(false);
+  it('is true for authored positional forms (ب pilot)', () => {
+    // ب (Ba) now has all four forms authored — Show Me should be available.
+    expect(resolveShowMeAvailable(STROKE_DATA['ب'], 'initial')).toBe(true);
+    expect(resolveShowMeAvailable(STROKE_DATA['ب'], 'medial')).toBe(true);
+    expect(resolveShowMeAvailable(STROKE_DATA['ب'], 'final')).toBe(true);
+  });
+
+  it('is false for a positional form that is still unauthored (rollout gate)', () => {
+    // ت (Ta) is still legacy — only isolated strokes are authored.
+    expect(resolveShowMeAvailable(STROKE_DATA['ت'], 'initial')).toBe(false);
+    expect(resolveShowMeAvailable(STROKE_DATA['ت'], 'medial')).toBe(false);
+    expect(resolveShowMeAvailable(STROKE_DATA['ت'], 'final')).toBe(false);
   });
 });
 
