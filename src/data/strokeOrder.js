@@ -138,56 +138,213 @@ const _STROKE_DATA_FORMS = {
   },
   ت: {
     // Ta — Ba base lifted ~15px up so the two dots sit above it.
-    strokes: [
-      [
-        { x: 95, y: 52 },
-        { x: 85, y: 72 },
-        { x: 70, y: 84 },
-        { x: 48, y: 88 },
-        { x: 24, y: 88 },
-        { x: 10, y: 86 },
-        { x: 3, y: 78 },
-        { x: 2, y: 64 },
+    // Positional forms: same bowl shape with tatweel connectors, dots above.
+    isolated: {
+      strokes: [
+        [
+          { x: 95, y: 52 },
+          { x: 85, y: 72 },
+          { x: 70, y: 84 },
+          { x: 48, y: 88 },
+          { x: 24, y: 88 },
+          { x: 10, y: 86 },
+          { x: 3, y: 78 },
+          { x: 2, y: 64 },
+        ],
+        [
+          { x: 2, y: 64 },
+          { x: 6, y: 48 },
+          { x: 18, y: 38 },
+          { x: 36, y: 32 },
+          { x: 50, y: 36 },
+        ],
       ],
-      [
-        { x: 2, y: 64 },
-        { x: 6, y: 48 },
-        { x: 18, y: 38 },
-        { x: 36, y: 32 },
-        { x: 50, y: 36 },
+      dots: [
+        { x: 42, y: 12 },
+        { x: 56, y: 16 },
       ],
-    ],
-    dots: [
-      { x: 42, y: 12 },
-      { x: 56, y: 16 },
-    ],
+    },
+    // Initial (تـ): enter from right connector, sweep baseline left, arc over top.
+    initial: {
+      strokes: [
+        [
+          { x: 95, y: 52 },
+          { x: 88, y: 64 },
+          { x: 75, y: 72 },
+          { x: 50, y: 76 },
+          { x: 25, y: 76 },
+          { x: 8, y: 76 },
+          { x: 2, y: 68 },
+          { x: 1, y: 56 },
+        ],
+        [
+          { x: 1, y: 56 },
+          { x: 3, y: 44 },
+          { x: 3, y: 32 },
+          { x: 10, y: 24 },
+          { x: 25, y: 18 },
+          { x: 45, y: 16 },
+          { x: 60, y: 18 },
+          { x: 70, y: 24 },
+        ],
+      ],
+      dots: [{ x: 42, y: 10 }],
+    },
+    // Medial (ـتـ): connectors both sides, sweep through baseline, arc over top.
+    medial: {
+      strokes: [
+        [
+          { x: 95, y: 52 },
+          { x: 88, y: 64 },
+          { x: 75, y: 72 },
+          { x: 50, y: 76 },
+          { x: 25, y: 76 },
+          { x: 12, y: 76 },
+          { x: 2, y: 68 },
+        ],
+        [
+          { x: 2, y: 68 },
+          { x: 4, y: 44 },
+          { x: 4, y: 32 },
+          { x: 12, y: 24 },
+          { x: 28, y: 18 },
+          { x: 48, y: 16 },
+          { x: 66, y: 18 },
+          { x: 75, y: 24 },
+        ],
+      ],
+      dots: [{ x: 52, y: 10 }],
+    },
+    // Final (ـت): enter top-right, sweep to left connector, arc over top.
+    final: {
+      strokes: [
+        [
+          { x: 95, y: 30 },
+          { x: 88, y: 46 },
+          { x: 75, y: 60 },
+          { x: 55, y: 72 },
+          { x: 35, y: 76 },
+          { x: 20, y: 76 },
+          { x: 8, y: 76 },
+          { x: 2, y: 68 },
+        ],
+        [
+          { x: 2, y: 68 },
+          { x: 4, y: 44 },
+          { x: 4, y: 32 },
+          { x: 12, y: 24 },
+          { x: 28, y: 18 },
+          { x: 48, y: 16 },
+          { x: 66, y: 18 },
+        ],
+      ],
+      dots: [{ x: 62, y: 10 }],
+    },
   },
   ث: {
-    // Tha — Ta base with three dots: two shoulder + one centered above-forward.
-    strokes: [
-      [
-        { x: 95, y: 60 },
-        { x: 85, y: 78 },
-        { x: 70, y: 88 },
-        { x: 48, y: 91 },
-        { x: 24, y: 91 },
-        { x: 10, y: 89 },
-        { x: 4, y: 82 },
-        { x: 2, y: 70 },
+    // Tha — Ba base lifted, three dots above in triangle. Same positional bowl shape.
+    isolated: {
+      strokes: [
+        [
+          { x: 95, y: 60 },
+          { x: 85, y: 78 },
+          { x: 70, y: 88 },
+          { x: 48, y: 91 },
+          { x: 24, y: 91 },
+          { x: 10, y: 89 },
+          { x: 4, y: 82 },
+          { x: 2, y: 70 },
+        ],
+        [
+          { x: 2, y: 70 },
+          { x: 7, y: 56 },
+          { x: 18, y: 46 },
+          { x: 36, y: 41 },
+          { x: 50, y: 45 },
+        ],
       ],
-      [
-        { x: 2, y: 70 },
-        { x: 7, y: 56 },
-        { x: 18, y: 46 },
-        { x: 36, y: 41 },
-        { x: 50, y: 45 },
+      dots: [
+        { x: 40, y: 8 },
+        { x: 56, y: 12 },
+        { x: 48, y: 30 },
       ],
-    ],
-    dots: [
-      { x: 40, y: 8 },
-      { x: 56, y: 12 },
-      { x: 48, y: 30 },
-    ],
+    },
+    // Initial (ثـ): enter from right connector, sweep baseline left, arc over top.
+    initial: {
+      strokes: [
+        [
+          { x: 95, y: 52 },
+          { x: 88, y: 64 },
+          { x: 75, y: 72 },
+          { x: 50, y: 76 },
+          { x: 25, y: 76 },
+          { x: 8, y: 76 },
+          { x: 2, y: 68 },
+          { x: 1, y: 56 },
+        ],
+        [
+          { x: 1, y: 56 },
+          { x: 3, y: 44 },
+          { x: 3, y: 32 },
+          { x: 10, y: 24 },
+          { x: 25, y: 18 },
+          { x: 45, y: 16 },
+          { x: 60, y: 18 },
+          { x: 70, y: 24 },
+        ],
+      ],
+      dots: [{ x: 35, y: 10 }],
+    },
+    // Medial (ـثـ): connectors both sides, sweep through baseline, arc over top.
+    medial: {
+      strokes: [
+        [
+          { x: 95, y: 52 },
+          { x: 88, y: 64 },
+          { x: 75, y: 72 },
+          { x: 50, y: 76 },
+          { x: 25, y: 76 },
+          { x: 12, y: 76 },
+          { x: 2, y: 68 },
+        ],
+        [
+          { x: 2, y: 68 },
+          { x: 4, y: 44 },
+          { x: 4, y: 32 },
+          { x: 12, y: 24 },
+          { x: 28, y: 18 },
+          { x: 48, y: 16 },
+          { x: 66, y: 18 },
+          { x: 75, y: 24 },
+        ],
+      ],
+      dots: [{ x: 48, y: 10 }],
+    },
+    // Final (ـث): enter top-right, sweep to left connector, arc over top.
+    final: {
+      strokes: [
+        [
+          { x: 95, y: 30 },
+          { x: 88, y: 46 },
+          { x: 75, y: 60 },
+          { x: 55, y: 72 },
+          { x: 35, y: 76 },
+          { x: 20, y: 76 },
+          { x: 8, y: 76 },
+          { x: 2, y: 68 },
+        ],
+        [
+          { x: 2, y: 68 },
+          { x: 4, y: 44 },
+          { x: 4, y: 32 },
+          { x: 12, y: 24 },
+          { x: 28, y: 18 },
+          { x: 48, y: 16 },
+          { x: 66, y: 18 },
+        ],
+      ],
+      dots: [{ x: 61, y: 10 }],
+    },
   },
   ج: {
     strokes: [

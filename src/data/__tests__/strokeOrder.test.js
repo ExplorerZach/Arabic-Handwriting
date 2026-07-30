@@ -53,18 +53,24 @@ describe('resolveShowMeAvailable', () => {
     expect(resolveShowMeAvailable(STROKE_DATA['ا'], 'isolated')).toBe(true);
   });
 
-  it('is true for authored positional forms (ب pilot)', () => {
-    // ب (Ba) now has all four forms authored — Show Me should be available.
+  it('is true for authored positional forms (ب/ت/ث pilots)', () => {
+    // ب (Ba) and ت (Ta) and ث (Tha) now have all four forms authored.
     expect(resolveShowMeAvailable(STROKE_DATA['ب'], 'initial')).toBe(true);
     expect(resolveShowMeAvailable(STROKE_DATA['ب'], 'medial')).toBe(true);
     expect(resolveShowMeAvailable(STROKE_DATA['ب'], 'final')).toBe(true);
+    expect(resolveShowMeAvailable(STROKE_DATA['ت'], 'initial')).toBe(true);
+    expect(resolveShowMeAvailable(STROKE_DATA['ت'], 'medial')).toBe(true);
+    expect(resolveShowMeAvailable(STROKE_DATA['ت'], 'final')).toBe(true);
+    expect(resolveShowMeAvailable(STROKE_DATA['ث'], 'initial')).toBe(true);
+    expect(resolveShowMeAvailable(STROKE_DATA['ث'], 'medial')).toBe(true);
+    expect(resolveShowMeAvailable(STROKE_DATA['ث'], 'final')).toBe(true);
   });
 
   it('is false for a positional form that is still unauthored (rollout gate)', () => {
-    // ت (Ta) is still legacy — only isolated strokes are authored.
-    expect(resolveShowMeAvailable(STROKE_DATA['ت'], 'initial')).toBe(false);
-    expect(resolveShowMeAvailable(STROKE_DATA['ت'], 'medial')).toBe(false);
-    expect(resolveShowMeAvailable(STROKE_DATA['ت'], 'final')).toBe(false);
+    // ج (Jim) is still legacy — only isolated strokes are authored.
+    expect(resolveShowMeAvailable(STROKE_DATA['ج'], 'initial')).toBe(false);
+    expect(resolveShowMeAvailable(STROKE_DATA['ج'], 'medial')).toBe(false);
+    expect(resolveShowMeAvailable(STROKE_DATA['ج'], 'final')).toBe(false);
   });
 });
 
