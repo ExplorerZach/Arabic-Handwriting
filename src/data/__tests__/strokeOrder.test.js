@@ -53,24 +53,20 @@ describe('resolveShowMeAvailable', () => {
     expect(resolveShowMeAvailable(STROKE_DATA['ا'], 'isolated')).toBe(true);
   });
 
-  it('is true for authored positional forms (ب/ت/ث pilots)', () => {
-    // ب (Ba) and ت (Ta) and ث (Tha) now have all four forms authored.
-    expect(resolveShowMeAvailable(STROKE_DATA['ب'], 'initial')).toBe(true);
-    expect(resolveShowMeAvailable(STROKE_DATA['ب'], 'medial')).toBe(true);
-    expect(resolveShowMeAvailable(STROKE_DATA['ب'], 'final')).toBe(true);
-    expect(resolveShowMeAvailable(STROKE_DATA['ت'], 'initial')).toBe(true);
-    expect(resolveShowMeAvailable(STROKE_DATA['ت'], 'medial')).toBe(true);
-    expect(resolveShowMeAvailable(STROKE_DATA['ت'], 'final')).toBe(true);
-    expect(resolveShowMeAvailable(STROKE_DATA['ث'], 'initial')).toBe(true);
-    expect(resolveShowMeAvailable(STROKE_DATA['ث'], 'medial')).toBe(true);
-    expect(resolveShowMeAvailable(STROKE_DATA['ث'], 'final')).toBe(true);
+  it('is true for authored positional forms (ب/ت/ث/ج/ح/خ pilots)', () => {
+    // These letters now have all four forms authored.
+    for (const key of ['ب', 'ت', 'ث', 'ج', 'ح', 'خ']) {
+      expect(resolveShowMeAvailable(STROKE_DATA[key], 'initial')).toBe(true);
+      expect(resolveShowMeAvailable(STROKE_DATA[key], 'medial')).toBe(true);
+      expect(resolveShowMeAvailable(STROKE_DATA[key], 'final')).toBe(true);
+    }
   });
 
   it('is false for a positional form that is still unauthored (rollout gate)', () => {
-    // ج (Jim) is still legacy — only isolated strokes are authored.
-    expect(resolveShowMeAvailable(STROKE_DATA['ج'], 'initial')).toBe(false);
-    expect(resolveShowMeAvailable(STROKE_DATA['ج'], 'medial')).toBe(false);
-    expect(resolveShowMeAvailable(STROKE_DATA['ج'], 'final')).toBe(false);
+    // س (Sin) is still legacy — only isolated strokes are authored.
+    expect(resolveShowMeAvailable(STROKE_DATA['س'], 'initial')).toBe(false);
+    expect(resolveShowMeAvailable(STROKE_DATA['س'], 'medial')).toBe(false);
+    expect(resolveShowMeAvailable(STROKE_DATA['س'], 'final')).toBe(false);
   });
 });
 
