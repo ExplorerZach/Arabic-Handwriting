@@ -94,6 +94,10 @@
     "tauri:check": {
       "template": "Run `npm run tauri:check` and report any Rust compile errors.",
       "description": "Cargo check for Tauri"
+    },
+    "visual": {
+      "template": "Run `npm run visual` against a running dev or preview server (start `npm run dev` in the MAIN checkout if needed). Report the PASS/FAIL summary and where the screenshots were written.",
+      "description": "Host-Chrome visual smoke (playwright-core)"
     }
   }
 }

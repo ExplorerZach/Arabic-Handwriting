@@ -16,6 +16,7 @@ npm run lint         # ESLint (`npm run lint:fix` to auto-fix)
 npm run format       # Prettier write (`format:check` for read-only)
 npm run typecheck    # tsc -p jsconfig.json --noEmit
 npm run test:run     # Vitest single run (`npm test` = watch mode)
+npm run visual       # No-MCP host-Chrome smoke (load/draw/RTL/dark + screenshots)
 npm run tauri:check  # cargo check in src-tauri/
 ```
 
@@ -30,9 +31,14 @@ slash commands mirroring these gates — keep it in sync with this section.
 **Visual checks:** the containerized Playwright MCP **cannot** reach this app
 (Chrome Private Network Access blocks `host.docker.internal` from a non-secure
 context; request interception deadlocks the service worker + driver — it once
-took the whole MCP gateway down). Drive the **host's own Chrome** against
-`npm run dev` / `npm run preview` with `playwright-core` — recipe in
-`docs/architecture.md` → MCP Tools.
+took the whole MCP gateway down). Use the packaged one-command flow:
+**`npm run visual`** (`scripts/visual-smoke.js`) drives the **host's own Chrome**
+against `npm run dev` / `npm run preview` via an absolute-path `playwright-core`
+(never a repo dependency; override with `PLAYWRIGHT_CORE_PATH`). A Kanban
+worktree has no `node_modules`, so start the dev server from the MAIN checkout
+(`C:\Users\Admin\Desktop\Coding\Arabic-Handwriting`) and let the script resolve
+playwright-core from its absolute path — never install playwright-core in a
+worktree or commit it.
 
 ## Architecture Map
 

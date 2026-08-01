@@ -17,6 +17,7 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:stroke-coverage": "node scripts/check-stroke-coverage.js --target 95",
+    "visual": "node scripts/visual-smoke.js",
     "version:bump": "node scripts/bump-version.js",
     "prepare": "npx simple-git-hooks"
   },

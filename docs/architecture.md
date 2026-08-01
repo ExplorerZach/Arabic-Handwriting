@@ -198,6 +198,10 @@ All UI strings in `src/locales/index.js` as `UI = { en: {...}, ar: {...} }`.
   });
   ```
 
+  Packaged one-command version: **`npm run visual`** (scripts/visual-smoke.js) —
+  wraps this recipe (load/draw/RTL/dark + screenshots to `%TEMP%\visual-smoke`).
+  In a worktree (no node_modules) run the dev server from the MAIN checkout.
+
   Useful keys: `app_darkMode`, `high_contrast`, `reduce_motion`, `app_theme`,
   `brush_pack`, `app_locale`, `arabic_progress`, `arabic_xp`, `arabic_streak`,
   `arabic_daily_goal`. Tabs are `[role="tab"]`; `colorScheme: 'dark'` in
