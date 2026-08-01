@@ -87,15 +87,26 @@ async function main() {
 
     page = await context.newPage();
     const problems = [];
-    page.on('pageerror', err => problems.push(`pageerror: ${err.message}`));
+    // Known dev-only noise — dev-CSP blocked third-party traffic the production
+    // build doesn't make + the browser note that a meta-delivered CSP
+    // frame-ancestors directive is ignored. Substring allowlist on the entry:
+    // keeps the no-errors check strict for every other console/page/request error.
+    const KNOWN_DEV_NOISE = ['va.vercel-scripts.com', 'api.github.com', 'frame-ancestors'];
+    const isKnownDevNoise = text => KNOWN_DEV_NOISE.some(n => text.includes(n));
+    page.on('pageerror', err => {
+      if (!isKnownDevNoise(err.message)) problems.push(`pageerror: ${err.message}`);
+    });
     page.on('console', msg => {
-      if (msg.type() === 'error') problems.push(`console.error: ${msg.text()}`);
+      if (msg.type() === 'error' && !isKnownDevNoise(msg.text())) {
+        problems.push(`console.error: ${msg.text()}`);
+      }
     });
     // NOTE: never use page.route() / request interception here — it deadlocks
     // the service worker + driver (documented). This is a pass-through page.
     page.on('requestfailed', req => {
-      if (!isFavicon(req.url())) {
-        problems.push(`requestfailed: ${req.url()} ${req.failure()?.errorText ?? ''}`);
+      const url = req.url();
+      if (!isFavicon(url) && !isKnownDevNoise(url)) {
+        problems.push(`requestfailed: ${url} ${req.failure()?.errorText ?? ''}`);
       }
     });
 
