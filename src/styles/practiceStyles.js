@@ -1027,6 +1027,72 @@ const styles = {
     whiteSpace: 'nowrap',
   },
 
+  /* ─── Achievements (Stats tab) ───────────────────────── */
+  analyticsAchTitleRow: {
+    display: 'flex',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: '8px',
+  },
+  analyticsAchCount: {
+    fontSize: '11px',
+    fontWeight: '700',
+    letterSpacing: '.1em',
+    color: 'var(--color-accent)',
+    whiteSpace: 'nowrap',
+  },
+  analyticsAchGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(auto-fill, minmax(76px, 1fr))',
+    gap: '8px',
+  },
+  analyticsAchTile: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: '3px',
+    padding: '10px 6px 8px',
+    borderRadius: '10px',
+    border: '1px solid var(--color-border)',
+    background: 'var(--color-surface)',
+    textAlign: 'center',
+    minWidth: 0,
+    minHeight: '86px',
+    boxSizing: 'border-box',
+  },
+  analyticsAchTileEarned: {
+    borderColor: 'var(--color-accent-light)',
+    background: 'var(--color-progress-badge-bg)',
+  },
+  analyticsAchTileLocked: {
+    opacity: 0.45,
+    filter: 'grayscale(1)',
+  },
+  analyticsAchIcon: {
+    fontSize: '22px',
+    lineHeight: 1,
+    color: 'var(--color-accent)',
+  },
+  analyticsAchName: {
+    fontSize: '11px',
+    fontWeight: '600',
+    color: 'var(--color-text)',
+    lineHeight: 1.25,
+  },
+  analyticsAchDesc: {
+    fontSize: '9px',
+    color: 'var(--color-text-muted)',
+    lineHeight: 1.3,
+  },
+  analyticsAchDate: {
+    fontSize: '9px',
+    fontWeight: '600',
+    color: 'var(--color-dot-complete)',
+    letterSpacing: '.03em',
+    whiteSpace: 'nowrap',
+  },
+
   /* ─── XP / level badge (header) ──────────────────────── */
   levelBadge: {
     display: 'flex',

@@ -27,6 +27,7 @@ import { getTodayProgress } from '../utils/dailyGoal';
 import { getXPTotal, awardXP, XP_AWARDS } from '../utils/xp';
 import LevelBadge from './LevelBadge';
 import XpGainToast from './XpGainToast';
+import AchievementToast from './AchievementToast';
 import UndoToast from './UndoToast';
 import DeckManager from './DeckManager';
 
@@ -39,6 +40,7 @@ import useAnimation from '../hooks/useAnimation';
 import useReviewSession from '../hooks/useReviewSession';
 import useDeckSession from '../hooks/useDeckSession';
 import useSyncConflict from '../hooks/useSyncConflict';
+import useAchievements from '../hooks/useAchievements';
 import { deleteCloudData } from '../utils/sync';
 import {
   getDecks,
@@ -202,6 +204,11 @@ export default function PracticeView({
   useEffect(() => {
     setProgressVersionRef.current = setProgressVersion;
   }, [setProgressVersion]);
+
+  // Achievement unlock detection. `achUnlocked` is null or { key, def };
+  // the hook auto-clears it after ~2.5s and AchievementToast replays its
+  // pop animation on each new key.
+  const { achUnlocked } = useAchievements({ progressVersion, LETTERS });
 
   // Controls the full-screen LoginScreen overlay that's launched from the
   // Settings panel's "Set/Change key" button.
@@ -2056,6 +2063,8 @@ export default function PracticeView({
             t={t}
             reduceMotion={reduceMotion}
           />
+
+          <AchievementToast unlock={achUnlocked} t={t} reduceMotion={reduceMotion} />
 
           {/* Comparison */}
           {}

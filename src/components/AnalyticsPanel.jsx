@@ -10,6 +10,7 @@ import {
 } from '../utils/analytics';
 import { getXPTotal, getLevelInfo } from '../utils/xp';
 import { getFreezeStatus } from '../utils/freezes';
+import { ACHIEVEMENTS, getEarnedAchievements } from '../utils/achievements';
 import { FORM_NAMES } from '../locales';
 import styles from '../styles/practiceStyles';
 import { getFontStack } from '../styles/themes';
@@ -45,6 +46,8 @@ export default function AnalyticsPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const xpTotal = useMemo(() => getXPTotal(), [progressVersion]);
   const levelInfo = useMemo(() => getLevelInfo(xpTotal), [xpTotal]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const earnedAch = useMemo(() => getEarnedAchievements(), [progressVersion]);
 
   const totalScoreCount = Object.values(scoreDist).reduce((a, b) => a + b, 0);
   const avgScore =
@@ -115,6 +118,42 @@ export default function AnalyticsPanel({
           >
             {freezeStatus.usedThisMonth} {t('freezeUsed')}
           </span>
+        </div>
+      </div>
+
+      {/* Achievements — earned tiles stay vivid, locked ones are dimmed. */}
+      <div style={styles.analyticsCard}>
+        <div style={styles.analyticsAchTitleRow}>
+          <span style={styles.analyticsCardTitle}>{t('achievementsTitle')}</span>
+          <span style={styles.analyticsAchCount}>
+            {Object.keys(earnedAch).length}/{ACHIEVEMENTS.length}
+          </span>
+        </div>
+        <div style={styles.analyticsAchGrid}>
+          {ACHIEVEMENTS.map(def => {
+            const earnedDate = earnedAch[def.id];
+            return (
+              <div
+                key={def.id}
+                style={
+                  earnedDate
+                    ? { ...styles.analyticsAchTile, ...styles.analyticsAchTileEarned }
+                    : { ...styles.analyticsAchTile, ...styles.analyticsAchTileLocked }
+                }
+              >
+                <span style={styles.analyticsAchIcon} aria-hidden="true">
+                  {def.icon}
+                </span>
+                <span style={styles.analyticsAchName}>{t(def.nameKey)}</span>
+                <span style={styles.analyticsAchDesc}>{t(def.descKey)}</span>
+                {earnedDate && (
+                  <span style={styles.analyticsAchDate}>
+                    {t('achEarnedOn').replace('{date}', earnedDate)}
+                  </span>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 

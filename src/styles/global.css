@@ -606,6 +606,59 @@ input[type='range']:focus-visible {
   white-space: nowrap;
 }
 
+@keyframes achPop {
+  0% {
+    transform: translate(-50%, -14px) scale(0.72);
+    opacity: 0;
+  }
+  15% {
+    transform: translate(-50%, 0) scale(1.06);
+    opacity: 1;
+  }
+  30% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+  82% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -6px) scale(0.96);
+    opacity: 0;
+  }
+}
+.ach-toast {
+  position: fixed;
+  top: 84px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--color-accent-light);
+  background: var(--color-surface-solid);
+  box-shadow: 0 8px 28px var(--color-shadow-deep);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+  pointer-events: none;
+  z-index: 1000;
+  max-width: min(92vw, 480px);
+  animation: achPop 2.5s ease-out forwards;
+}
+.ach-toast-icon {
+  font-size: 22px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.ach-toast-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Reduced motion: suppress all CSS animations/transitions app-wide
    when the user toggles the setting. Respect system preference as a fallback. */
 @media (prefers-reduced-motion: reduce) {
@@ -614,6 +667,10 @@ input[type='range']:focus-visible {
     opacity: 0;
   }
   .xp-toast {
+    animation: none;
+    opacity: 0;
+  }
+  .ach-toast {
     animation: none;
     opacity: 0;
   }
