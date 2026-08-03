@@ -28,10 +28,12 @@ _Make practicing more engaging and habit-forming._
       a level number + progress bar. Cheap on top of existing `practiceCount` and
       scores; provides constant forward momentum.
 
-- [ ] **#4 — Achievements / badges** 🟡
-      "First letter mastered," "7-day streak," "All 28 started," "Perfect score."
-      Most states are already detectable (`isLetterComplete`, `getStreaks`,
-      `score===5`). Converts silent milestones into visible, shareable wins.
+- [x] **#4 — Achievements / badges** 🟡
+      _Shipped (2026-08-01): 8 badges (first stroke, first mastered, perfect
+      score, 7-day streak, all started, all mastered, 30-day streak, 100
+      sessions) via `src/utils/achievements.js` + `useAchievements` hook;
+      unlock toast + Stats-tab tile grid; 13 unit tests; en+ar strings; keyed
+      into backup + cloud sync._
 
 - [x] **#5 — Streak protection ("freeze")** 🟢
       One free monthly freeze that preserves a streak through a missed day. Reduces
@@ -91,7 +93,7 @@ _Make the learning environment more intuitive and accessible._
 
 - [x] **#15 — Fix Stroke animation for all forms** 🔴→🟢
       ~~"Show Me" is supposed to draw the strokes in real time to help the student learn. Currently, when the button is pressed it only partially animates the strokes so the student does not learn anything.~~
-      **Fixed (isolated forms):** root cause was hand-authored `strokeOrder.js` paths written against a wrong glyph metric than the shipped Amiri font (measured 12–88% ink coverage). All 28 letter paths re-authored against a measured Amiri ink-run calibration table; `DOT_RADIUS` split from `BRUSH_RADIUS`; regression locked in by `npm run test:stroke-coverage` (Python gate, 28/28 ≥95%). Host-Chrome visual smoke on ر/ص/ع confirms whole letters draw stroke-by-stroke. **Follow-up (deferred):** positional `initial`/`medial`/`final` forms re-use the isolated path against differently-shaped glyphs — re-author with the same recipe (plan: `.hermes/plans/2026-07-29_show-me-stroke-animation-fix.md`).
+      **Fixed:** root cause was hand-authored `strokeOrder.js` paths written against a wrong glyph metric than the shipped Amiri font (measured 12–88% ink coverage). All 28 isolated paths and all 72 supported positional paths (initial/medial/final for joining letters; final for non-joiners) were hand-authored against measured Amiri ink-run calibration data. The strict resolver now hides Show Me for any unauthored form, and `npm run test:stroke-coverage` verifies all 100 letter-forms at ≥95% coverage. Host-Chrome visual smoke on ر/ص/ع confirms whole letters draw stroke-by-stroke.
 
 - [x] **#16 — Audio/visual feedback on score** 🟢
       Subtle success animation + optional sound on a 4–5★ score. Makes the AI
@@ -104,6 +106,16 @@ _Make the learning environment more intuitive and accessible._
 ---
 
 ## Session log
+
+- **2026-08-01** — Completed ROADMAP #15 Part 2: authored all 72 positional
+  stroke paths (initial/medial/final for the 22 joining letters ب ت ث ن ي ج ح خ
+  س ش ص ض ط ظ ع غ ف ق ك ل م ه ي, final forms for non-joiners ا د ذ ر ز و),
+  nested `STROKE_DATA` per-letter under form keys with form-aware animation
+  lookup and a strict Show Me gate hiding unauthored forms. `npm run
+test:stroke-coverage` now verifies all 100 letter-forms at ≥95% ink coverage
+  (0/100 below target). Implemented #4 (Achievements): 8 badges with unlock
+  toast + Stats card (13 tests). Branch `feat/calligraphy-style` carries the
+  full #15 + #4 + #10-infra work, pending push.
 
 - **2026-07-29** — Implemented #15 (Show Me stroke animation): re-authored all 28
   isolated-letter stroke paths against a measured Amiri ink-run calibration table
