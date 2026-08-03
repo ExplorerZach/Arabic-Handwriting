@@ -16,7 +16,7 @@ import { addFeedbackEntry, getFeedbackHistory } from '../utils/history';
 import { exportBackup, importBackupFile, wipeAllData } from '../utils/backup';
 import STROKE_DATA, { resolveShowMeAvailable } from '../data/strokeOrder';
 import { WORD_GROUPS } from '../data/words';
-import { CONNECTIONS } from '../data/connections';
+import { CONNECTIONS, CONNECTION_FORM_KEY } from '../data/connections';
 import { UI, FORM_NAMES, FORM_SHORT, FORM_DESCRIPTIONS } from '../locales';
 import { getPaperColors, getBrushColor, getFontStack } from '../styles/themes';
 import styles from '../styles/practiceStyles';
@@ -298,8 +298,7 @@ export default function PracticeView({
     () =>
       CONNECTIONS.map(c => ({
         name: c.joined,
-        letter: c.joined,
-        forms: { word: c.joined },
+        forms: { [CONNECTION_FORM_KEY]: c.joined },
         isWord: true,
       })),
     [],
@@ -574,6 +573,7 @@ export default function PracticeView({
     requestFeedback: aiRequestFeedback,
     giveConsent: aiGiveConsent,
     revokeConsent: aiRevokeConsent,
+    advancePending: aiAdvancePending,
   } = useAIFeedback({
     apiKey,
     t,
@@ -740,6 +740,7 @@ export default function PracticeView({
     setLetterIndex,
     setFormIndex,
     setPracticeMode,
+    setConnectIndex,
     setWordGroupIndex,
     setWordIndex,
     setShowComparison,
@@ -832,7 +833,7 @@ export default function PracticeView({
   const dueCount = dueItems.length;
   const history =
     practiceMode === 'connect'
-      ? getFeedbackHistory(currentConnection?.joined, 'word')
+      ? getFeedbackHistory(currentConnection?.joined, CONNECTION_FORM_KEY)
       : getFeedbackHistory(letter.name, activeForm);
 
   // ─── Render ───────────────────────────────────────
@@ -2020,8 +2021,13 @@ export default function PracticeView({
             </button>
             <button
               className="btn-nav"
-              style={{ ...styles.btn, ...styles.btnNav }}
+              style={{
+                ...styles.btn,
+                ...styles.btnNav,
+                opacity: aiAdvancePending ? 0.35 : 1,
+              }}
               onClick={() => {
+                if (aiAdvancePending) return;
                 if (dsDeckSession) {
                   if (apiKey === 'skip') {
                     const sess = deckSessionRef.current;
@@ -2029,9 +2035,15 @@ export default function PracticeView({
                       const item = sess.queue[sess.index];
                       const resolved = dsResolveDeckItem(item);
                       if (resolved) {
-                        const pName =
-                          resolved.practiceMode === 'words' ? resolved.name : resolved.obj.name;
-                        const pForm = resolved.practiceMode === 'words' ? 'word' : activeForm;
+                        const isWordLike =
+                          resolved.practiceMode === 'words' || resolved.practiceMode === 'connect';
+                        const pName = isWordLike ? resolved.name : resolved.obj.name;
+                        const pForm =
+                          resolved.practiceMode === 'connect'
+                            ? CONNECTION_FORM_KEY
+                            : resolved.practiceMode === 'words'
+                              ? 'word'
+                              : activeForm;
                         if (!dCountedDrawingRef.current) {
                           dCountedDrawingRef.current = true;
                           markPracticed(pName, pForm);

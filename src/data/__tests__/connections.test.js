@@ -7,8 +7,9 @@
  * roman/meaning/hint metadata the UI renders.
  */
 import { describe, it, expect } from 'vitest';
-import { CONNECTIONS, ALL_CONNECTIONS } from '../connections';
+import { CONNECTIONS, ALL_CONNECTIONS, CONNECTION_FORM_KEY } from '../connections';
 import { LETTERS } from '../letters';
+import { WORD_GROUPS } from '../words';
 
 const LETTER_SET = new Set(LETTERS.map(l => l.letter));
 
@@ -53,5 +54,22 @@ describe('CONNECTIONS data shape', () => {
   it('joined strings are unique (progress keys must not collide)', () => {
     const keys = CONNECTIONS.map(c => c.joined);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+
+  it('uses a progress formKey distinct from words (SM-2 namespace separation)', () => {
+    // Several joined strings (من, لا, كتب, …) are also real words. Connection
+    // progress must live under a different formKey than the word formKey
+    // ('word') or the two would clobber each other's SM-2 data and due items.
+    expect(CONNECTION_FORM_KEY).not.toBe('word');
+    expect(CONNECTION_FORM_KEY).toBe('connection');
+  });
+
+  it('documents which joined strings overlap real words (namespace collision surface)', () => {
+    const wordSet = new Set(WORD_GROUPS.flatMap(g => g.words.map(w => w.word)));
+    const overlapping = CONNECTIONS.filter(c => wordSet.has(c.joined)).map(c => c.joined);
+    // The overlap is expected and harmless ONLY because CONNECTION_FORM_KEY
+    // differs from 'word'. If this list grows unexpectedly, re-check the
+    // namespacing in PracticeView/useAIFeedback/useDeckSession.
+    expect(overlapping.length).toBeGreaterThan(0);
   });
 });

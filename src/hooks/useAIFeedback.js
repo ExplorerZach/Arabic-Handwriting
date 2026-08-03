@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { getItem, setItem, removeItem } from '../utils/storage';
 import { getAIFeedback } from '../utils/api';
 import { FORM_FULL } from '../locales';
+import { CONNECTION_FORM_KEY } from '../data/connections';
 import { markPracticed, setScore, updateSR, isReviewOnTime } from '../utils/progress';
 import { addFeedbackEntry } from '../utils/history';
 import { XP_AWARDS } from '../utils/xp';
@@ -33,6 +34,10 @@ export default function useAIFeedback({
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showConsentDialog, setShowConsentDialog] = useState(false);
+  // True while a review/deck session has a scheduled auto-advance pending.
+  // Lets the UI disable the Next button so a manual click can't double-advance
+  // (skipping a queue item) right before the 1400ms timer fires.
+  const [advancePending, setAdvancePending] = useState(false);
 
   const giveConsent = useCallback(() => {
     setItem('ai_consent', 'true');
@@ -116,7 +121,7 @@ export default function useAIFeedback({
             : letter.name;
       const progressForm =
         practiceMode === 'connect'
-          ? 'word'
+          ? CONNECTION_FORM_KEY
           : practiceMode === 'words' && inDeck
             ? 'word'
             : activeForm;
@@ -152,12 +157,16 @@ export default function useAIFeedback({
       }
       setFeedback({ text: cleanText, score });
       if (score && reviewSessionRef.current && !reviewSessionRef.current.finished) {
+        setAdvancePending(true);
         setTimeout(() => {
+          setAdvancePending(false);
           advanceReviewRef.current?.(score);
         }, 1400);
       }
       if (score && deckSessionRef.current && !deckSessionRef.current.finished) {
+        setAdvancePending(true);
         setTimeout(() => {
+          setAdvancePending(false);
           advanceDeckRef.current?.(score);
         }, 1400);
       }
@@ -190,5 +199,6 @@ export default function useAIFeedback({
     requestFeedback,
     giveConsent,
     revokeConsent,
+    advancePending,
   };
 }

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { LETTERS } from '../data/letters';
 import { NUMBERS } from '../data/numbers';
 import { DIACRITICS } from '../data/diacritics';
+import { CONNECTIONS, CONNECTION_FORM_KEY } from '../data/connections';
 import { todayLocal } from '../utils/progress';
 import { getDeck, setLastSession } from '../utils/decks';
 
@@ -19,6 +20,7 @@ export default function useDeckSession({
   setLetterIndex,
   setFormIndex,
   setPracticeMode,
+  setConnectIndex,
   setWordGroupIndex,
   setWordIndex,
   setShowComparison,
@@ -88,6 +90,18 @@ export default function useDeckSession({
           obj: w,
         };
       }
+      if (item.type === 'connection') {
+        const c = CONNECTIONS.find(x => x.joined === item.ref);
+        if (!c) return null;
+        return {
+          glyph: c.joined,
+          name: c.joined,
+          roman: c.roman,
+          formKeys: [CONNECTION_FORM_KEY],
+          practiceMode: 'connect',
+          obj: c,
+        };
+      }
       return null;
     },
     [wordLookup],
@@ -104,6 +118,9 @@ export default function useDeckSession({
       if (resolved.practiceMode === 'words') {
         setWordGroupIndex(resolved.obj.groupIndex);
         setWordIndex(resolved.obj.wordIndex);
+      } else if (resolved.practiceMode === 'connect') {
+        const connIdx = CONNECTIONS.findIndex(x => x.joined === item.ref);
+        setConnectIndex(connIdx !== -1 ? connIdx : 0);
       } else if (resolved.practiceMode === 'letters') {
         const alphIdx = LETTERS.findIndex(l => l.name === item.ref);
         if (lessonMode) {
@@ -130,6 +147,7 @@ export default function useDeckSession({
       dClearCanvas,
       deckSessionRef,
       setPracticeMode,
+      setConnectIndex,
       setWordGroupIndex,
       setWordIndex,
       setLetterIndex,

@@ -5,6 +5,7 @@ import { LETTERS } from '../data/letters';
 import { NUMBERS } from '../data/numbers';
 import { DIACRITICS } from '../data/diacritics';
 import { WORD_GROUPS } from '../data/words';
+import { CONNECTIONS } from '../data/connections';
 
 /**
  * Deck manager — presentational component for the "My Decks" sub-tab
@@ -166,6 +167,10 @@ export default function DeckManager({
         }
       }
       return found;
+    }
+    if (item.type === 'connection') {
+      const c = CONNECTIONS.find(x => x.joined === item.ref);
+      return c ? { char: c.joined, label: `${c.roman} — ${c.meaning}` } : null;
     }
     return null;
   };
@@ -397,6 +402,16 @@ export default function DeckManager({
           >
             {t('deckBulkAllDiacritics')}
           </button>
+          <button
+            className="btn-panel"
+            style={styles.deckBulkBtn}
+            onClick={() => {
+              const items = CONNECTIONS.map(c => ({ type: 'connection', ref: c.joined }));
+              onAddItem(editingDeck.id, { type: '_bulk', ref: '_bulk', _bulk: items });
+            }}
+          >
+            {t('deckBulkConnections')}
+          </button>
         </div>
         <button
           className="btn-ai"
@@ -470,6 +485,7 @@ export default function DeckManager({
       { key: 'numbers', label: t('deckPickerNumbers') },
       { key: 'diacritics', label: t('deckPickerDiacritics') },
       { key: 'words', label: t('deckPickerWords') },
+      { key: 'connections', label: t('deckPickerConnections') },
     ];
     return (
       <div style={styles.reviewDash}>
@@ -717,6 +733,53 @@ export default function DeckManager({
                     );
                   })}
                 </div>
+              );
+            })}
+          </div>
+        )}
+
+        {pickerTab === 'connections' && (
+          <div>
+            {CONNECTIONS.map(c => {
+              const selected = isInDeck('connection', c.joined);
+              return (
+                <button
+                  key={c.joined}
+                  className="btn-alpha"
+                  style={{
+                    ...styles.deckPickerWordRow,
+                    width: '100%',
+                    ...(selected
+                      ? {
+                          borderColor: 'var(--color-accent)',
+                          background: 'rgba(var(--color-accent-rgb, 192,112,58),0.12)',
+                        }
+                      : {}),
+                  }}
+                  onClick={() => toggleItem('connection', c.joined)}
+                  aria-pressed={selected}
+                >
+                  <span
+                    style={{
+                      ...styles.deckPickerWordChar,
+                      fontFamily: getFontStack(calligraphyStyle),
+                    }}
+                    lang="ar"
+                  >
+                    {c.joined}
+                  </span>
+                  <span style={styles.deckPickerWordMeta}>
+                    {c.roman} — {c.meaning}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 16,
+                      color: selected ? 'var(--color-accent)' : 'var(--color-text-muted)',
+                    }}
+                  >
+                    {selected ? '✓' : '+'}
+                  </span>
+                </button>
               );
             })}
           </div>

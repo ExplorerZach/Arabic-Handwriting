@@ -241,3 +241,11 @@ export const CONNECTIONS = [
 ];
 
 export const ALL_CONNECTIONS = CONNECTIONS;
+
+/**
+ * Progress formKey for connections. MUST stay distinct from the word
+ * formKey ('word'): several joined strings (من, لا, كتب, …) are also real
+ * words, so sharing a formKey would make connection and word practice
+ * clobber each other's SM-2 data, due-queue entries, and analytics.
+ */
+export const CONNECTION_FORM_KEY = 'connection';
