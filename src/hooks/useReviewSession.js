@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { LETTERS } from '../data/letters';
 import { NUMBERS } from '../data/numbers';
 import { DIACRITICS } from '../data/diacritics';
+import { CONNECTIONS } from '../data/connections';
 import { snoozeDue, snoozeAllDue } from '../utils/progress';
 
 const RESUME_KEY = 'arabic_review_session';
@@ -17,6 +18,7 @@ export default function useReviewSession({
   setLetterIndex,
   setFormIndex,
   setPracticeMode,
+  setConnectIndex,
   setShowComparison,
   setShowHistory,
   reviewSessionRef,
@@ -59,7 +61,12 @@ export default function useReviewSession({
 
   const enterReviewItem = useCallback(
     (letterName, formKey) => {
-      if (letterName.startsWith('Num')) {
+      // Connections are keyed by their joined string (formKey 'word').
+      const connIdx = CONNECTIONS.findIndex(c => c.joined === letterName);
+      if (connIdx !== -1) {
+        setConnectIndex(connIdx);
+        setPracticeMode('connect');
+      } else if (letterName.startsWith('Num')) {
         const numIdx = NUMBERS.findIndex(n => n.name === letterName);
         if (numIdx === -1) return;
         setLetterIndex(numIdx);
@@ -91,6 +98,8 @@ export default function useReviewSession({
       dClearCanvas,
       setLetterIndex,
       setFormIndex,
+      setConnectIndex,
+      setPracticeMode,
       setShowComparison,
       setShowHistory,
       alphaBtnRef,
@@ -162,6 +171,16 @@ export default function useReviewSession({
 
   const goToReviewItem = useCallback(
     (letterName, formKey) => {
+      const connIdx = CONNECTIONS.findIndex(c => c.joined === letterName);
+      if (connIdx !== -1) {
+        setConnectIndex(connIdx);
+        setPracticeMode('connect');
+        setShowComparison(false);
+        setShowHistory(false);
+        alphaBtnRef.current = [];
+        dClearCanvas();
+        return;
+      }
       if (letterName.startsWith('Num')) {
         const numIdx = NUMBERS.findIndex(n => n.name === letterName);
         if (numIdx === -1) return;
@@ -208,6 +227,7 @@ export default function useReviewSession({
       setLetterIndex,
       setFormIndex,
       setPracticeMode,
+      setConnectIndex,
       setShowComparison,
       setShowHistory,
       alphaBtnRef,
@@ -216,6 +236,16 @@ export default function useReviewSession({
 
   const goToAnalyticsItem = useCallback(
     (letterName, formKey) => {
+      const connIdx = CONNECTIONS.findIndex(c => c.joined === letterName);
+      if (connIdx !== -1) {
+        setConnectIndex(connIdx);
+        setPracticeMode('connect');
+        setShowComparison(false);
+        setShowHistory(false);
+        alphaBtnRef.current = [];
+        dClearCanvas();
+        return;
+      }
       let targetSet = 'letters';
       let idx = LETTERS.findIndex(l => l.name === letterName);
 
@@ -252,6 +282,7 @@ export default function useReviewSession({
       setLetterIndex,
       setFormIndex,
       setPracticeMode,
+      setConnectIndex,
       setShowComparison,
       setShowHistory,
       alphaBtnRef,

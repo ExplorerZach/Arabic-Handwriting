@@ -201,7 +201,7 @@ export default function AnalyticsPanel({
       <div style={styles.analyticsCard}>
         <div style={styles.analyticsCardTitle}>{t('statsHeatmap')}</div>
         <div style={styles.analyticsHeatmapGrid}>
-          {LETTERS.map(l => {
+          {LETTERS.filter(l => !l.isWord).map(l => {
             const count = heatmap[l.name] || 0;
             const intensity = heatMax > 0 ? count / heatMax : 0;
             return (

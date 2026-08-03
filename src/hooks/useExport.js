@@ -12,6 +12,7 @@ export default function useExport({
   calligraphyStyle,
   practiceMode,
   currentWord,
+  currentConnection,
   currentChar,
   letterName,
   activeForm,
@@ -28,9 +29,13 @@ export default function useExport({
     ctx.fillStyle = paper.bg;
     ctx.fillRect(0, 0, offscreen.width, offscreen.height);
     drawPaperPattern(ctx, offscreen.width, offscreen.height, paperTheme, darkMode);
-    const watermarkText = practiceMode === 'words' ? currentWord?.word : currentChar;
-    const fontSize =
-      (practiceMode === 'words' ? 0.25 : 0.5) * Math.min(offscreen.width, offscreen.height);
+    const isMultiChar = practiceMode === 'words' || practiceMode === 'connect';
+    const watermarkText = isMultiChar
+      ? practiceMode === 'words'
+        ? currentWord?.word
+        : currentConnection?.joined
+      : currentChar;
+    const fontSize = (isMultiChar ? 0.25 : 0.5) * Math.min(offscreen.width, offscreen.height);
     ctx.save();
     ctx.globalAlpha = 0.15;
     ctx.fillStyle = '#7d3f0f';
@@ -43,7 +48,7 @@ export default function useExport({
     ctx.drawImage(canvas, 0, 0);
     return offscreen.toDataURL('image/png');
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [darkMode, paperTheme, practiceMode, currentWord, currentChar]);
+  }, [darkMode, paperTheme, practiceMode, currentWord, currentConnection, currentChar]);
 
   const saveDrawing = useCallback(async () => {
     if (!dStrokesRef.current.length) return;
@@ -51,7 +56,9 @@ export default function useExport({
     const name =
       practiceMode === 'words'
         ? `arabic-${currentWord?.roman ?? 'word'}`
-        : `arabic-${letterName.toLowerCase()}-${activeForm}`;
+        : practiceMode === 'connect'
+          ? `arabic-${currentConnection?.roman ?? 'connection'}`
+          : `arabic-${letterName.toLowerCase()}-${activeForm}`;
 
     if (isTauri) {
       const { save } = await import('@tauri-apps/plugin-dialog');
@@ -75,7 +82,7 @@ export default function useExport({
     a.click();
     document.body.removeChild(a);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exportForSave, practiceMode, currentWord, letterName, activeForm]);
+  }, [exportForSave, practiceMode, currentWord, currentConnection, letterName, activeForm]);
 
   const shareDrawing = useCallback(async () => {
     if (!dStrokesRef.current.length) return;
@@ -87,7 +94,9 @@ export default function useExport({
     const name =
       practiceMode === 'words'
         ? `arabic-${currentWord?.roman ?? 'word'}`
-        : `arabic-${letterName.toLowerCase()}-${activeForm}`;
+        : practiceMode === 'connect'
+          ? `arabic-${currentConnection?.roman ?? 'connection'}`
+          : `arabic-${letterName.toLowerCase()}-${activeForm}`;
     if (navigator.share) {
       try {
         const res = await fetch(dataURL);
@@ -110,7 +119,15 @@ export default function useExport({
     a.click();
     document.body.removeChild(a);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exportForSave, practiceMode, currentWord, letterName, activeForm, saveDrawing]);
+  }, [
+    exportForSave,
+    practiceMode,
+    currentWord,
+    currentConnection,
+    letterName,
+    activeForm,
+    saveDrawing,
+  ]);
 
   const exportCanvas = () => {
     const canvas = dCanvasRef.current;
@@ -124,11 +141,13 @@ export default function useExport({
     ctx.fillStyle = paper.bg;
     ctx.fillRect(0, 0, offscreen.width, offscreen.height);
     drawPaperPattern(ctx, offscreen.width, offscreen.height, paperTheme, false);
-    const watermarkText = practiceMode === 'words' ? currentWord?.word : currentChar;
-    const fontSize =
-      practiceMode === 'words'
-        ? Math.min(offscreen.width, offscreen.height) * 0.25
-        : Math.min(offscreen.width, offscreen.height) * 0.5;
+    const isMultiChar = practiceMode === 'words' || practiceMode === 'connect';
+    const watermarkText = isMultiChar
+      ? practiceMode === 'words'
+        ? currentWord?.word
+        : currentConnection?.joined
+      : currentChar;
+    const fontSize = (isMultiChar ? 0.25 : 0.5) * Math.min(offscreen.width, offscreen.height);
     ctx.save();
     ctx.globalAlpha = 0.15;
     ctx.fillStyle = '#7d3f0f';

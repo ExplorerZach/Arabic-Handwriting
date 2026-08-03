@@ -16,6 +16,7 @@ import { addFeedbackEntry, getFeedbackHistory } from '../utils/history';
 import { exportBackup, importBackupFile, wipeAllData } from '../utils/backup';
 import STROKE_DATA, { resolveShowMeAvailable } from '../data/strokeOrder';
 import { WORD_GROUPS } from '../data/words';
+import { CONNECTIONS } from '../data/connections';
 import { UI, FORM_NAMES, FORM_SHORT, FORM_DESCRIPTIONS } from '../locales';
 import { getPaperColors, getBrushColor, getFontStack } from '../styles/themes';
 import styles from '../styles/practiceStyles';
@@ -109,6 +110,7 @@ export default function PracticeView({
   const [practiceMode, setPracticeMode] = useState('letters');
   const [wordGroupIndex, setWordGroupIndex] = useState(0);
   const [wordIndex, setWordIndex] = useState(0);
+  const [connectIndex, setConnectIndex] = useState(0);
 
   // Derive letter/activeForm early for the drawing hook (plain vars, not hooks).
   // These mirror the useMemo-based derivations below; the drawing hook needs
@@ -272,6 +274,7 @@ export default function PracticeView({
   // mode (which is alphabet-shape ordering) doesn't apply.
   const isNumbersMode = practiceMode === 'numbers';
   const isDiacriticsMode = practiceMode === 'diacritics';
+  const isConnectMode = practiceMode === 'connect';
   const activeSet = isNumbersMode ? NUMBERS : isDiacriticsMode ? DIACRITICS : LETTERS;
   // Lesson ordering only exists for letters; force off in numbers/diacritics mode.
   const useLessonOrder = lessonMode && practiceMode === 'letters';
@@ -280,17 +283,29 @@ export default function PracticeView({
   const letter = activeSet[Math.min(actualLetterIndex, activeSet.length - 1)];
   const formKeys = Object.keys(letter.forms);
   const activeForm = formKeys.includes(formIndex) ? formIndex : 'isolated';
-  const currentChar = letter.forms[activeForm];
+  const currentWordGroup = WORD_GROUPS[wordGroupIndex];
+  const currentWord = currentWordGroup?.words[wordIndex];
+  const currentConnection = CONNECTIONS[Math.min(connectIndex, CONNECTIONS.length - 1)];
+  const currentChar = isConnectMode ? currentConnection?.joined : letter.forms[activeForm];
   const totalCount = useLessonOrder ? LESSON_ORDER.length : activeSet.length;
   const lessonGroupInfo = useLessonOrder ? getLessonGroup(letterIndex) : null;
 
-  const currentWordGroup = WORD_GROUPS[wordGroupIndex];
-  const currentWord = currentWordGroup?.words[wordIndex];
-
   // Batched progress reads: one load() per render instead of 56+.
   // Includes NUMBERS so the numerals row shows started/complete dots too.
+  // Connections map to the same { name, forms } shape the progress helpers
+  // expect, keyed by their joined string under the 'word' formKey.
+  const connectionItems = useMemo(
+    () =>
+      CONNECTIONS.map(c => ({
+        name: c.joined,
+        letter: c.joined,
+        forms: { word: c.joined },
+        isWord: true,
+      })),
+    [],
+  );
   const progressSummary = useMemo(
-    () => getProgressSummary([...LETTERS, ...NUMBERS, ...DIACRITICS]),
+    () => getProgressSummary([...LETTERS, ...NUMBERS, ...DIACRITICS, ...connectionItems]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [progressVersion],
   );
@@ -300,7 +315,7 @@ export default function PracticeView({
     [progressVersion],
   );
   const dueItems = useMemo(
-    () => getDueLetters([...LETTERS, ...NUMBERS, ...DIACRITICS]),
+    () => getDueLetters([...LETTERS, ...NUMBERS, ...DIACRITICS, ...connectionItems]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [progressVersion],
   );
@@ -346,6 +361,7 @@ export default function PracticeView({
       // so a stale letterIndex/form could point past the smaller set.
       setLetterIndex(0);
       setFormIndex('isolated');
+      setConnectIndex(0);
       setShowComparison(false);
       setShowHistory(false);
       alphaBtnRef.current = [];
@@ -455,6 +471,21 @@ export default function PracticeView({
     [dClearCanvas],
   );
 
+  const selectConnection = useCallback(
+    index => {
+      setConnectIndex(index);
+      setShowComparison(false);
+      setShowHistory(false);
+      dClearCanvas();
+    },
+    [dClearCanvas],
+  );
+
+  const nextConnection = useCallback(
+    () => selectConnection((connectIndex + 1) % CONNECTIONS.length),
+    [connectIndex, selectConnection],
+  );
+
   const toggleLessonMode = useCallback(() => {
     setLessonMode(prev => {
       const next = !prev;
@@ -526,6 +557,7 @@ export default function PracticeView({
     calligraphyStyle,
     practiceMode,
     currentWord,
+    currentConnection,
     currentChar,
     letterName: letter.name,
     activeForm,
@@ -547,6 +579,7 @@ export default function PracticeView({
     t,
     practiceMode,
     currentWord,
+    currentConnection,
     letter,
     isNumbersMode,
     isDiacriticsMode,
@@ -604,15 +637,25 @@ export default function PracticeView({
   // canvas (a redraw would stomp its frames).
   useEffect(() => {
     const isWords = practiceMode === 'words';
-    const text = isWords ? currentWord?.word : currentChar;
-    const fontSizePx = (isWords ? 100 : 200) * templateScale;
+    const isConnect = practiceMode === 'connect';
+    const isMultiChar = isWords || isConnect;
+    const text = isWords ? currentWord?.word : isConnect ? currentConnection?.joined : currentChar;
+    const fontSizePx = (isMultiChar ? 100 : 200) * templateScale;
     const color = getComputedStyle(document.documentElement)
       .getPropertyValue('--color-ghost')
       .trim();
     ghostRef.current = text ? { text, fontSizePx, color } : null;
     if (!animAnimating) dRedraw(dStrokesRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [practiceMode, currentChar, currentWord, templateScale, darkMode, highContrast]);
+  }, [
+    practiceMode,
+    currentChar,
+    currentWord,
+    currentConnection,
+    templateScale,
+    darkMode,
+    highContrast,
+  ]);
 
   // ─── Guided review session ─────────────────────────────
 
@@ -640,6 +683,7 @@ export default function PracticeView({
     setLetterIndex,
     setFormIndex,
     setPracticeMode,
+    setConnectIndex,
     setShowComparison,
     setShowHistory,
     reviewSessionRef,
@@ -786,7 +830,10 @@ export default function PracticeView({
   );
 
   const dueCount = dueItems.length;
-  const history = getFeedbackHistory(letter.name, activeForm);
+  const history =
+    practiceMode === 'connect'
+      ? getFeedbackHistory(currentConnection?.joined, 'word')
+      : getFeedbackHistory(letter.name, activeForm);
 
   // ─── Render ───────────────────────────────────────
 
@@ -1065,6 +1112,22 @@ export default function PracticeView({
           className="btn-form"
           style={{
             ...styles.modeTab,
+            ...(practiceMode === 'connect' ? styles.modeTabActive : {}),
+            opacity: dsDeckSession || rsReviewSession ? 0.35 : 1,
+          }}
+          onClick={() => switchPracticeMode('connect')}
+          disabled={!!(dsDeckSession || rsReviewSession)}
+          role="tab"
+          aria-selected={practiceMode === 'connect'}
+          aria-label={t('ariaConnectedTab')}
+          id="tab-connect"
+        >
+          {t('tabConnected')}
+        </button>
+        <button
+          className="btn-form"
+          style={{
+            ...styles.modeTab,
             ...(practiceMode === 'diacritics' ? styles.modeTabActive : {}),
             opacity: dsDeckSession || rsReviewSession ? 0.35 : 1,
           }}
@@ -1293,7 +1356,7 @@ export default function PracticeView({
         <AnalyticsPanel
           locale={locale}
           calligraphyStyle={calligraphyStyle}
-          LETTERS={[...LETTERS, ...NUMBERS, ...DIACRITICS]}
+          LETTERS={[...LETTERS, ...NUMBERS, ...DIACRITICS, ...connectionItems]}
           progress={getProgress()}
           progressVersion={progressVersion}
           onGoToItem={rsGoToAnalyticsItem}
@@ -1604,7 +1667,21 @@ export default function PracticeView({
           )}
 
           {/* Info bar */}
-          {practiceMode !== 'words' ? (
+          {practiceMode === 'connect' ? (
+            <div style={styles.infoBar}>
+              <div style={styles.letterMeta}>
+                <span style={styles.letterNameLarge} lang="ar" dir="rtl">
+                  {currentConnection?.joined}
+                </span>
+                <span style={styles.letterRoman}>
+                  /{currentConnection?.roman}/ — {currentConnection?.meaning}
+                </span>
+              </div>
+              <span style={styles.progressBadge}>
+                {connectIndex + 1}/{CONNECTIONS.length}
+              </span>
+            </div>
+          ) : practiceMode !== 'words' ? (
             <div style={styles.infoBar}>
               <div style={styles.letterMeta}>
                 <span
@@ -1746,7 +1823,9 @@ export default function PracticeView({
           <div style={styles.hintRow}>
             <span style={styles.hintIcon}>✦</span>
             <span style={styles.hintText}>
-              {practiceMode !== 'words' ? (
+              {practiceMode === 'connect' ? (
+                <strong>{currentConnection?.hint}</strong>
+              ) : practiceMode !== 'words' ? (
                 <>
                   <strong>{letter.hint}</strong>
                   {!(isNumbersMode || isDiacriticsMode) && formKeys.length > 1 && (
@@ -1875,6 +1954,8 @@ export default function PracticeView({
                 if (practiceMode === 'words') {
                   const total = currentWordGroup.words.length;
                   selectWord(wordGroupIndex, (wordIndex - 1 + total) % total);
+                } else if (practiceMode === 'connect') {
+                  selectConnection((connectIndex - 1 + CONNECTIONS.length) % CONNECTIONS.length);
                 } else {
                   selectLetter((letterIndex - 1 + totalCount) % totalCount);
                 }
@@ -1901,6 +1982,7 @@ export default function PracticeView({
               {t('btnClear')}
             </button>
             {practiceMode !== 'words' &&
+              practiceMode !== 'connect' &&
               resolveShowMeAvailable(STROKE_DATA[letter.letter], activeForm) && (
                 <button
                   className="btn-nav"
@@ -1979,6 +2061,8 @@ export default function PracticeView({
                 } else if (practiceMode === 'words') {
                   const total = currentWordGroup.words.length;
                   selectWord(wordGroupIndex, (wordIndex + 1) % total);
+                } else if (practiceMode === 'connect') {
+                  nextConnection();
                 } else {
                   selectLetter((letterIndex + 1) % totalCount);
                 }
@@ -2086,7 +2170,9 @@ export default function PracticeView({
                       style={{
                         ...styles.comparisonRef,
                         fontFamily: getFontStack(calligraphyStyle),
-                        ...(practiceMode === 'words' ? { fontSize: '60px', direction: 'rtl' } : {}),
+                        ...(practiceMode === 'words' || practiceMode === 'connect'
+                          ? { fontSize: '60px', direction: 'rtl' }
+                          : {}),
                       }}
                       lang="ar"
                     >
@@ -2150,6 +2236,34 @@ export default function PracticeView({
               }}
             >
               {dsDeckSession ? t('deckSessionActive') : t('reviewSessionActive')}
+            </div>
+          ) : practiceMode === 'connect' ? (
+            <div
+              style={styles.alphabetRow}
+              className="alpha-row-wrap"
+              role="listbox"
+              aria-label={t('ariaSelectConnect')}
+            >
+              {CONNECTIONS.map((c, idx) => (
+                <button
+                  key={c.joined}
+                  className="btn-alpha"
+                  style={{
+                    ...styles.wordBtn,
+                    fontFamily: getFontStack(calligraphyStyle),
+                    ...(idx === connectIndex ? styles.alphaBtnActive : {}),
+                  }}
+                  onClick={() => selectConnection(idx)}
+                  title={`${c.roman} — ${c.meaning}`}
+                  lang="ar"
+                  dir="rtl"
+                  role="option"
+                  aria-selected={idx === connectIndex}
+                  aria-label={t('ariaSelectConnect') + ': ' + c.roman}
+                >
+                  {c.joined}
+                </button>
+              ))}
             </div>
           ) : practiceMode !== 'words' ? (
             <div

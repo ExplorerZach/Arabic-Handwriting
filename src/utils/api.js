@@ -9,6 +9,8 @@ import { getItem } from './storage.js';
  * @param {string} letterChar  — The Arabic character (e.g. "ب")
  * @param {string} romanName   — Romanized pronunciation (e.g. "b")
  * @param {string} formDescription — Human-friendly form label (e.g. "isolated (stand-alone)")
+ * @param {boolean} [isConnection=false] — True when grading a multi-letter connected
+ *   string; swaps the system prompt to grade the join itself.
  * @returns {Promise<string>}  — The AI feedback text
  */
 export async function getAIFeedback(
@@ -18,8 +20,13 @@ export async function getAIFeedback(
   letterChar,
   romanName,
   formDescription,
+  isConnection = false,
 ) {
   const model = getItem('openrouter_model') || 'google/gemini-3-flash-preview';
+
+  const systemPrompt = isConnection
+    ? "You are an expert Arabic calligraphy instructor teaching beginners how to CONNECT letters into joined scripts. The student's drawing is in dark ink; the faint watermark in the background is the correct connected reference they are trying to copy. When giving feedback, grade the JOIN itself, not just the shape of an isolated glyph: focus on the connection angle and stroke continuity between letters, baseline consistency across the whole string, whether each letter is in the correct positional (initial/medial/final) form, and dot placement. Arabic is written right-to-left, so the flow runs from the join's start on the right toward the left. Structure your response: (1) Start with a score tag in this exact format: [SCORE:N] where N is 1–5 (1=unrecognizable, 2=rough attempt, 3=recognizable with issues, 4=good with minor issues, 5=excellent). (2) One specific thing they did well — be concrete, e.g. 'Your baseline stays steady across the whole join'; (3) one or two specific things to improve, e.g. 'The connection between the two letters should flow with a single continuous stroke'; (4) a short encouraging close. 3–5 sentences total after the score tag, conversational not clinical, use the joined word naturally."
+    : "You are an expert Arabic calligraphy instructor teaching beginners. The student's drawing is in dark ink; the faint watermark in the background is the correct reference stroke they are trying to copy. When giving feedback, compare the student's strokes directly against the reference shape — look at proportions, stroke curvature, entry/exit angles, dot placement (if applicable), and overall shape fidelity. Arabic is written right-to-left, so stroke direction and flow matter. Structure your response: (1) Start with a score tag in this exact format: [SCORE:N] where N is 1–5 (1=unrecognizable, 2=rough attempt, 3=recognizable with issues, 4=good with minor issues, 5=excellent). (2) One specific thing they did well — be concrete, e.g. 'Your baseline is steady'; (3) one or two specific things to improve, e.g. 'The downward stroke should taper more at the tip'; (4) a short encouraging close. 3–5 sentences total after the score tag, conversational not clinical, use the letter's name naturally.";
 
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
@@ -33,8 +40,7 @@ export async function getAIFeedback(
       messages: [
         {
           role: 'system',
-          content:
-            "You are an expert Arabic calligraphy instructor teaching beginners. The student's drawing is in dark ink; the faint watermark in the background is the correct reference stroke they are trying to copy. When giving feedback, compare the student's strokes directly against the reference shape — look at proportions, stroke curvature, entry/exit angles, dot placement (if applicable), and overall shape fidelity. Arabic is written right-to-left, so stroke direction and flow matter. Structure your response: (1) Start with a score tag in this exact format: [SCORE:N] where N is 1–5 (1=unrecognizable, 2=rough attempt, 3=recognizable with issues, 4=good with minor issues, 5=excellent). (2) One specific thing they did well — be concrete, e.g. 'Your baseline is steady'; (3) one or two specific things to improve, e.g. 'The downward stroke should taper more at the tip'; (4) a short encouraging close. 3–5 sentences total after the score tag, conversational not clinical, use the letter's name naturally.",
+          content: systemPrompt,
         },
         {
           role: 'user',
@@ -47,7 +53,9 @@ export async function getAIFeedback(
             },
             {
               type: 'text',
-              text: `The student is practicing the ${formDescription} form of the Arabic letter ${letterName} (${letterChar}), romanized as "${romanName}". Their attempt is in dark ink; the faint background is the correct reference. Please compare them and give structured feedback.`,
+              text: isConnection
+                ? `The student is practicing the connected Arabic word "${letterName}" (${letterChar}), romanized as "${romanName}", meaning ${formDescription}. Their attempt is in dark ink; the faint background is the correct reference. Grade the join and give structured feedback.`
+                : `The student is practicing the ${formDescription} form of the Arabic letter ${letterName} (${letterChar}), romanized as "${romanName}". Their attempt is in dark ink; the faint background is the correct reference. Please compare them and give structured feedback.`,
             },
           ],
         },

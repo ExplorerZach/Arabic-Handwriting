@@ -49,11 +49,13 @@ export const UI = {
     tabLetters: 'Letters',
     tabNumbers: 'Numbers',
     tabWords: 'Words',
+    tabConnected: 'Connect',
     tabDiacritics: 'Diacritics',
     tabReview: 'Review',
     tabStats: 'Stats',
     ariaNumberTab: 'Practice numbers',
     ariaDiacriticTab: 'Practice diacritics',
+    ariaConnectedTab: 'Practice connected writing',
 
     // Form names
     formIsolated: 'isolated',
@@ -77,6 +79,7 @@ export const UI = {
     hintRTL: '← Write right-to-left',
     hintDrawFirst: 'Draw the letter first!',
     hintDrawWordFirst: 'Draw the word first!',
+    hintDrawConnected: 'Draw the connection first!',
     brushSize: 'Brush size',
     templateSize: 'Template size',
     nonJoinerNote: 'Non-joining — no initial or medial form',
@@ -185,6 +188,7 @@ export const UI = {
     ariaTeacherFeedback: "Teacher's feedback",
     ariaSelectLetter: 'Select a letter',
     ariaSelectWord: 'Select a word',
+    ariaSelectConnect: 'Select a connection',
 
     // Export / Share
     btnSave: 'Save',
@@ -477,11 +481,13 @@ export const UI = {
     tabLetters: 'الحروف',
     tabNumbers: 'الأرقام',
     tabWords: 'الكلمات',
+    tabConnected: 'الوصل',
     tabDiacritics: 'التشكيل',
     tabReview: 'مراجعة',
     tabStats: 'إحصائيات',
     ariaNumberTab: 'تدريب الأرقام',
     ariaDiacriticTab: 'تدريب التشكيل',
+    ariaConnectedTab: 'تدريب الوصل',
 
     // Form names
     formIsolated: 'منفرد',
@@ -505,6 +511,7 @@ export const UI = {
     hintRTL: '← اكتب من اليمين إلى اليسار',
     hintDrawFirst: 'ارسم الحرف أولاً!',
     hintDrawWordFirst: 'ارسم الكلمة أولاً!',
+    hintDrawConnected: 'ارسم الوصلة أولاً!',
     brushSize: 'حجم الفرشاة',
     templateSize: 'حجم النموذج',
     nonJoinerNote: 'غير متصل — لا يوجد شكل مبتدأ أو وسطي',
@@ -613,6 +620,7 @@ export const UI = {
     ariaTeacherFeedback: 'تعليقات المعلم',
     ariaSelectLetter: 'اختيار الحرف',
     ariaSelectWord: 'اختيار كلمة',
+    ariaSelectConnect: 'اختيار وصلة',
 
     // Export / Share
     btnSave: 'حفظ',

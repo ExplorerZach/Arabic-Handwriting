@@ -11,7 +11,7 @@
  * initialization error is thrown during render or mount effects.
  */
 import { describe, it, expect, vi, beforeAll, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import PracticeView from './PracticeView';
 
 beforeAll(() => {
@@ -88,5 +88,24 @@ describe('PracticeView mount (TDZ regression)', () => {
 
   it('mounts cleanly in dark mode with Arabic locale', () => {
     expect(() => renderPracticeView({ darkMode: true, locale: 'ar' })).not.toThrow();
+  });
+});
+
+describe('PracticeView connect mode (ROADMAP #9)', () => {
+  it('switches to Connect mode and renders the joined connection without crashing', () => {
+    renderPracticeView();
+    fireEvent.click(screen.getByRole('tab', { name: /connect/i }));
+    // The connect picker row lists every connection; the first is 'با'.
+    expect(screen.getAllByText('با').length).toBeGreaterThan(0);
+    // The canvas stays mounted (no TDZ / render crash on the connect branch).
+    expect(document.getElementById('main-canvas')).toBeInTheDocument();
+  });
+
+  it('advances to the next connection on the Next button', () => {
+    renderPracticeView();
+    fireEvent.click(screen.getByRole('tab', { name: /connect/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^next/i }));
+    // Second connection 'بي' should now be present in the picker row.
+    expect(screen.getAllByText('بي').length).toBeGreaterThan(0);
   });
 });

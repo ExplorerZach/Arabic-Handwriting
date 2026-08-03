@@ -12,6 +12,7 @@ export default function useAIFeedback({
   t,
   practiceMode,
   currentWord,
+  currentConnection,
   letter,
   isNumbersMode,
   isDiacriticsMode,
@@ -46,7 +47,12 @@ export default function useAIFeedback({
   const requestFeedback = useCallback(async () => {
     if (dStrokesRef.current.length < 5) {
       setFeedback({
-        error: practiceMode === 'words' ? t('hintDrawWordFirst') : t('hintDrawFirst'),
+        error:
+          practiceMode === 'words'
+            ? t('hintDrawWordFirst')
+            : practiceMode === 'connect'
+              ? t('hintDrawConnected')
+              : t('hintDrawFirst'),
       });
       return;
     }
@@ -60,7 +66,17 @@ export default function useAIFeedback({
       const imageBase64 = eExportCanvas();
       dCanvasSnapshotRef.current = `data:image/jpeg;base64,${imageBase64}`;
       let text;
-      if (practiceMode === 'words' && currentWord) {
+      if (practiceMode === 'connect' && currentConnection) {
+        text = await getAIFeedback(
+          apiKey,
+          imageBase64,
+          currentConnection.joined,
+          currentConnection.joined,
+          currentConnection.roman,
+          `connection "${currentConnection.meaning}"`,
+          true,
+        );
+      } else if (practiceMode === 'words' && currentWord) {
         text = await getAIFeedback(
           apiKey,
           imageBase64,
@@ -92,10 +108,21 @@ export default function useAIFeedback({
       const score = scoreMatch ? parseInt(scoreMatch[1], 10) : null;
       const cleanText = text.replace(/\[SCORE:\s*[1-5]\s*\]\s*/gi, '').trim();
       const inDeck = !!deckSessionRef.current;
-      const progressName = practiceMode === 'words' && inDeck ? currentWord.word : letter.name;
-      const progressForm = practiceMode === 'words' && inDeck ? 'word' : activeForm;
+      const progressName =
+        practiceMode === 'connect'
+          ? currentConnection.joined
+          : practiceMode === 'words' && inDeck
+            ? currentWord.word
+            : letter.name;
+      const progressForm =
+        practiceMode === 'connect'
+          ? 'word'
+          : practiceMode === 'words' && inDeck
+            ? 'word'
+            : activeForm;
       if (
         practiceMode === 'letters' ||
+        practiceMode === 'connect' ||
         isNumbersMode ||
         isDiacriticsMode ||
         reviewSessionRef.current ||
@@ -144,6 +171,7 @@ export default function useAIFeedback({
     apiKey,
     practiceMode,
     currentWord,
+    currentConnection,
     letter,
     isNumbersMode,
     isDiacriticsMode,
