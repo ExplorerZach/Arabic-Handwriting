@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { LETTERS } from '../data/letters';
 import { NUMBERS } from '../data/numbers';
 import { DIACRITICS } from '../data/diacritics';
-import { CONNECTIONS } from '../data/connections';
+import { CONNECTIONS, CONNECTION_FORM_KEY } from '../data/connections';
 import { snoozeDue, snoozeAllDue } from '../utils/progress';
 
 const RESUME_KEY = 'arabic_review_session';
@@ -61,9 +61,9 @@ export default function useReviewSession({
 
   const enterReviewItem = useCallback(
     (letterName, formKey) => {
-      // Connections are keyed by their joined string (formKey 'word').
+      // Connections are keyed by their joined string (formKey 'connection').
       const connIdx = CONNECTIONS.findIndex(c => c.joined === letterName);
-      if (connIdx !== -1) {
+      if (formKey === CONNECTION_FORM_KEY && connIdx !== -1) {
         setConnectIndex(connIdx);
         setPracticeMode('connect');
       } else if (letterName.startsWith('Num')) {
@@ -172,7 +172,7 @@ export default function useReviewSession({
   const goToReviewItem = useCallback(
     (letterName, formKey) => {
       const connIdx = CONNECTIONS.findIndex(c => c.joined === letterName);
-      if (connIdx !== -1) {
+      if (formKey === CONNECTION_FORM_KEY && connIdx !== -1) {
         setConnectIndex(connIdx);
         setPracticeMode('connect');
         setShowComparison(false);
@@ -237,7 +237,7 @@ export default function useReviewSession({
   const goToAnalyticsItem = useCallback(
     (letterName, formKey) => {
       const connIdx = CONNECTIONS.findIndex(c => c.joined === letterName);
-      if (connIdx !== -1) {
+      if (formKey === CONNECTION_FORM_KEY && connIdx !== -1) {
         setConnectIndex(connIdx);
         setPracticeMode('connect');
         setShowComparison(false);

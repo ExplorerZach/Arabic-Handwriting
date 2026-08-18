@@ -1,12 +1,19 @@
 /**
  * Play a short ascending success tone using the Web Audio API.
  * Silently no-ops if AudioContext is unavailable.
+ *
+ * A single module-level context is reused across calls (browsers cap the
+ * number of live AudioContexts ~6; creating one per tone would exhaust that
+ * limit and the tone would silently stop after a streak of 4–5★ scores).
  */
+let ctx = null;
+
 export function playSuccessTone() {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
-    const ctx = new AudioCtx();
+    if (!ctx) ctx = new AudioCtx();
+    if (ctx.state === 'suspended') ctx.resume();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.connect(gain);

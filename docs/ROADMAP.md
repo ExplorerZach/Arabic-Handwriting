@@ -60,7 +60,7 @@ _Other types of Arabic practice beyond basic letters and words._
       writing Arabic; currently absent. Could be a dedicated mode or an overlay on
       existing letters.
 
-- [ ] **#9 — Connected-writing drills** 🔴
+- [x] **#9 — Connected-writing drills** 🔴
       A dedicated "join these 2–3 letters" mode that grades the connections — the
       exact skill (joining) that learners struggle with most and that isolated-glyph
       practice doesn't build.
@@ -106,6 +106,14 @@ _Make the learning environment more intuitive and accessible._
 ---
 
 ## Session log
+
+- **2026-08-17** — Shipped ROADMAP #9 (Connected-writing drills): 31 two/three-letter
+  connections with SM-2 progress tracking, deck integration, review queue support,
+  and AI grading. Pre-ship review fixed 3 issues: i18n `formConnection` string (B1),
+  formKey guard in review routing to prevent future word-collision misrouting (B2),
+  and stale comments from the mid-flight re-namespace (B3). Also hardened
+  `backup.js` (5 missing pref keys + `WIPE_ONLY_KEYS` for sync metadata) and
+  `sound.js` (AudioContext reuse to prevent silent failure after 4–5 tones).
 
 - **2026-08-01** — Completed ROADMAP #15 Part 2: authored all 72 positional
   stroke paths (initial/medial/final for the 22 joining letters ب ت ث ن ي ج ح خ

@@ -20,11 +20,13 @@ export const BACKUP_KEYS = [
   'arabic_feedback_history',
   'arabic_practice_dates',
   'arabic_freezes',
+  'arabic_freezes_v2',
   'arabic_xp',
   'arabic_achievements',
   'arabic_decks',
   'openrouter_model',
   'brushScale',
+  'templateScale',
   'lessonMode',
   'app_locale',
   'app_darkMode',
@@ -33,7 +35,16 @@ export const BACKUP_KEYS = [
   'calligraphy_style',
   'daily_goal',
   'ai_consent',
+  'reduce_motion',
+  'high_contrast',
+  'sound_enabled',
 ];
+
+// Keys that are device/account-specific and must NOT be exported (a sync
+// timestamp or last-user-id is meaningless on another machine), but SHOULD be
+// removed by a full wipe. `_lastSyncTime`/`_syncDirty`/`sync_last_user_id`
+// come from sync.js; `last_daily_reminder` from notifications.js.
+const WIPE_ONLY_KEYS = ['_lastSyncTime', '_syncDirty', 'sync_last_user_id', 'last_daily_reminder'];
 
 const FORMAT = 'arabic-handwriting-backup';
 const VERSION = 1;
@@ -108,7 +119,7 @@ export function applyBackup(parsed) {
 /** Wipe all app data from storage (GDPR Art. 17 right to deletion). */
 export function wipeAllData() {
   let removed = 0;
-  for (const key of BACKUP_KEYS) {
+  for (const key of [...BACKUP_KEYS, ...WIPE_ONLY_KEYS]) {
     removeItem(key);
     removed++;
   }

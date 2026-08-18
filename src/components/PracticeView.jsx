@@ -293,7 +293,7 @@ export default function PracticeView({
   // Batched progress reads: one load() per render instead of 56+.
   // Includes NUMBERS so the numerals row shows started/complete dots too.
   // Connections map to the same { name, forms } shape the progress helpers
-  // expect, keyed by their joined string under the 'word' formKey.
+  // expect, keyed by their joined string under the 'connection' formKey.
   const connectionItems = useMemo(
     () =>
       CONNECTIONS.map(c => ({
