@@ -40,6 +40,18 @@ worktree has no `node_modules`, so start the dev server from the MAIN checkout
 playwright-core from its absolute path — never install playwright-core in a
 worktree or commit it.
 
+## MCP Tools
+
+| Tool        | Purpose                                    | Primary user             |
+| ----------- | ------------------------------------------ | ------------------------ |
+| `context7`  | Up-to-date library docs & API references   | @librarian               |
+| `exa`       | Web search & page fetching                 | @librarian, orchestrator |
+| `gh_grep`   | GitHub code search for real-world examples | @librarian, @fixer       |
+| `websearch` | General web search                         | @librarian, orchestrator |
+
+Orchestrator uses exa/websearch/gh_grep only for quick lookups to inform
+planning. Deep research always delegates to @librarian.
+
 ## Architecture Map
 
 ```
@@ -109,6 +121,21 @@ src/
     `git restore --source=HEAD --staged --worktree sw.js public/sw.js`.
 14. **`git checkout -- <path>` restores from the index, not HEAD** — use
     `git restore --source=HEAD --staged --worktree <path>` to discard to HEAD.
+
+## Agent Memory
+
+Curated memory bank for AI agents at `docs/agent-memory/`:
+
+- [`README.md`](docs/agent-memory/README.md) — index, authority contract, and
+  maintenance rules
+- [`decisions.md`](docs/agent-memory/decisions.md) — ADR-style architecture
+  and design decisions with rationale
+- [`gotchas.md`](docs/agent-memory/gotchas.md) — surprising behaviors,
+  footguns, and safe workarounds
+
+Agents should consult relevant entries when making design decisions or
+investigating surprising behavior, but always verify against current source
+code and tests — the codebase is authoritative over memory.
 
 ## Deep Reference
 
