@@ -400,6 +400,7 @@ export const UI = {
     authSignUp: 'Create Account',
     authEmailPlaceholder: 'Email',
     authPasswordPlaceholder: 'Password',
+    authPasswordHint: 'At least 8 characters',
     authCreateAccount: 'Create Account',
     authEmailExists: 'An account with this email already exists. Try signing in.',
     authEmailNotConfirmed:
@@ -768,6 +769,7 @@ export const UI = {
     authSignUp: 'إنشاء حساب',
     authEmailPlaceholder: 'البريد الإلكتروني',
     authPasswordPlaceholder: 'كلمة المرور',
+    authPasswordHint: '8 أحرف على الأقل',
     authCreateAccount: 'إنشاء حساب',
     authEmailExists: 'يوجد حساب بهذا البريد الإلكتروني بالفعل. حاول تسجيل الدخول.',
     authEmailNotConfirmed:

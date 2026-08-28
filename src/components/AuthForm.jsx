@@ -11,7 +11,13 @@ import loginStyles from '../styles/loginStyles';
  * - `data.session === null` after signUp = email confirmation required →
  *   show "check your inbox" instead of silently doing nothing.
  * - `email_not_confirmed` error mapped by code, not message substring.
+ * - Sign-up enforces an 8+ character password client-side (Supabase's server
+ *   default is only 6; leaked-password checking is a Pro-plan feature, so a
+ *   longer minimum is the free-plan compensating control). Sign-in keeps no
+ *   minimum so legacy shorter passwords still work.
  */
+const MIN_PASSWORD_LENGTH = 8;
+
 export default function AuthForm({ t, compact = false }) {
   const [mode, setMode] = useState('signIn'); // 'signIn' | 'signUp'
   const [email, setEmail] = useState('');
@@ -88,7 +94,8 @@ export default function AuthForm({ t, compact = false }) {
     fontFamily: 'Georgia,serif',
   });
 
-  const disabled = busy || !email || password.length < 6;
+  const minPasswordLength = mode === 'signUp' ? MIN_PASSWORD_LENGTH : 1;
+  const disabled = busy || !email || password.length < minPasswordLength;
 
   const submitStyle = compact
     ? {
@@ -165,8 +172,20 @@ export default function AuthForm({ t, compact = false }) {
         value={password}
         onChange={e => setPassword(e.target.value)}
         required
-        minLength={6}
+        minLength={mode === 'signUp' ? MIN_PASSWORD_LENGTH : undefined}
       />
+
+      {mode === 'signUp' && (
+        <p
+          style={{
+            color: 'var(--color-text-muted)',
+            fontSize: compact ? 11 : 12,
+            margin: '4px 0',
+          }}
+        >
+          {t('authPasswordHint')}
+        </p>
+      )}
 
       {error && (
         <p style={{ color: 'var(--color-error)', fontSize: compact ? 11 : 12, margin: '4px 0' }}>
