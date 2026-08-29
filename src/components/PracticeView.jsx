@@ -15,7 +15,7 @@ import {
 import { addFeedbackEntry, getFeedbackHistory } from '../utils/history';
 import { exportBackup, importBackupFile, wipeAllData } from '../utils/backup';
 import STROKE_DATA, { resolveShowMeAvailable } from '../data/strokeOrder';
-import { WORD_GROUPS } from '../data/words';
+import { WORD_GROUPS, WORD_FORM_KEY } from '../data/words';
 import { CONNECTIONS, CONNECTION_FORM_KEY } from '../data/connections';
 import { UI, FORM_NAMES, FORM_SHORT, FORM_DESCRIPTIONS } from '../locales';
 import { getPaperColors, getBrushColor, getFontStack } from '../styles/themes';
@@ -124,6 +124,7 @@ export default function PracticeView({
   const _letter = _activeSet[Math.min(_actualLetterIndex, _activeSet.length - 1)];
   const _formKeys = Object.keys(_letter.forms);
   const _activeForm = _formKeys.includes(formIndex) ? formIndex : 'isolated';
+  const _currentWord = WORD_GROUPS[wordGroupIndex]?.words[wordIndex];
 
   const {
     canvasRef: dCanvasRef,
@@ -150,6 +151,7 @@ export default function PracticeView({
     practiceMode,
     letter: _letter,
     activeForm: _activeForm,
+    currentWord: _currentWord,
     addXPRef,
     setProgressVersionRef,
     setFeedbackRef,
@@ -303,8 +305,18 @@ export default function PracticeView({
       })),
     [],
   );
+  const wordItems = useMemo(
+    () =>
+      Array.from(wordLookup.values()).map(w => ({
+        name: w.word,
+        forms: { [WORD_FORM_KEY]: w.word },
+        isWord: true,
+      })),
+    [wordLookup],
+  );
   const progressSummary = useMemo(
-    () => getProgressSummary([...LETTERS, ...NUMBERS, ...DIACRITICS, ...connectionItems]),
+    () =>
+      getProgressSummary([...LETTERS, ...NUMBERS, ...DIACRITICS, ...connectionItems, ...wordItems]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [progressVersion],
   );
@@ -314,7 +326,7 @@ export default function PracticeView({
     [progressVersion],
   );
   const dueItems = useMemo(
-    () => getDueLetters([...LETTERS, ...NUMBERS, ...DIACRITICS, ...connectionItems]),
+    () => getDueLetters([...LETTERS, ...NUMBERS, ...DIACRITICS, ...connectionItems, ...wordItems]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [progressVersion],
   );
@@ -689,6 +701,9 @@ export default function PracticeView({
     reviewSessionRef,
     advanceReviewRef,
     exitReviewSessionRef,
+    wordLookup,
+    setWordGroupIndex,
+    setWordIndex,
   });
 
   // ─── Canvas sizing (HiDPI) ─────────────────────────────
@@ -834,7 +849,9 @@ export default function PracticeView({
   const history =
     practiceMode === 'connect'
       ? getFeedbackHistory(currentConnection?.joined, CONNECTION_FORM_KEY)
-      : getFeedbackHistory(letter.name, activeForm);
+      : practiceMode === 'words'
+        ? getFeedbackHistory(currentWord?.word, WORD_FORM_KEY)
+        : getFeedbackHistory(letter.name, activeForm);
 
   // ─── Render ───────────────────────────────────────
 
@@ -1357,7 +1374,7 @@ export default function PracticeView({
         <AnalyticsPanel
           locale={locale}
           calligraphyStyle={calligraphyStyle}
-          LETTERS={[...LETTERS, ...NUMBERS, ...DIACRITICS, ...connectionItems]}
+          LETTERS={[...LETTERS, ...NUMBERS, ...DIACRITICS, ...connectionItems, ...wordItems]}
           progress={getProgress()}
           progressVersion={progressVersion}
           onGoToItem={rsGoToAnalyticsItem}

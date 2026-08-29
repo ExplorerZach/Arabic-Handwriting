@@ -3,6 +3,7 @@ import { LETTERS } from '../data/letters';
 import { NUMBERS } from '../data/numbers';
 import { DIACRITICS } from '../data/diacritics';
 import { CONNECTIONS, CONNECTION_FORM_KEY } from '../data/connections';
+import { WORD_FORM_KEY } from '../data/words';
 import { snoozeDue, snoozeAllDue } from '../utils/progress';
 
 const RESUME_KEY = 'arabic_review_session';
@@ -24,6 +25,9 @@ export default function useReviewSession({
   reviewSessionRef,
   advanceReviewRef,
   exitReviewSessionRef,
+  wordLookup,
+  setWordGroupIndex,
+  setWordIndex,
 }) {
   const [reviewSession, setReviewSession] = useState(null);
   const [showResumePrompt, setShowResumePrompt] = useState(false);
@@ -66,6 +70,17 @@ export default function useReviewSession({
       if (formKey === CONNECTION_FORM_KEY && connIdx !== -1) {
         setConnectIndex(connIdx);
         setPracticeMode('connect');
+      } else if (formKey === WORD_FORM_KEY) {
+        const w = wordLookup?.get(letterName);
+        if (!w) return;
+        setWordGroupIndex(w.groupIndex);
+        setWordIndex(w.wordIndex);
+        setPracticeMode('words');
+        setShowComparison(false);
+        setShowHistory(false);
+        alphaBtnRef.current = [];
+        dClearCanvas();
+        return;
       } else if (letterName.startsWith('Num')) {
         const numIdx = NUMBERS.findIndex(n => n.name === letterName);
         if (numIdx === -1) return;
@@ -103,6 +118,9 @@ export default function useReviewSession({
       setShowComparison,
       setShowHistory,
       alphaBtnRef,
+      wordLookup,
+      setWordGroupIndex,
+      setWordIndex,
     ],
   );
 
@@ -181,6 +199,18 @@ export default function useReviewSession({
         dClearCanvas();
         return;
       }
+      if (formKey === WORD_FORM_KEY) {
+        const w = wordLookup?.get(letterName);
+        if (!w) return;
+        setWordGroupIndex(w.groupIndex);
+        setWordIndex(w.wordIndex);
+        setPracticeMode('words');
+        setShowComparison(false);
+        setShowHistory(false);
+        alphaBtnRef.current = [];
+        dClearCanvas();
+        return;
+      }
       if (letterName.startsWith('Num')) {
         const numIdx = NUMBERS.findIndex(n => n.name === letterName);
         if (numIdx === -1) return;
@@ -231,6 +261,9 @@ export default function useReviewSession({
       setShowComparison,
       setShowHistory,
       alphaBtnRef,
+      wordLookup,
+      setWordGroupIndex,
+      setWordIndex,
     ],
   );
 
@@ -240,6 +273,18 @@ export default function useReviewSession({
       if (formKey === CONNECTION_FORM_KEY && connIdx !== -1) {
         setConnectIndex(connIdx);
         setPracticeMode('connect');
+        setShowComparison(false);
+        setShowHistory(false);
+        alphaBtnRef.current = [];
+        dClearCanvas();
+        return;
+      }
+      if (formKey === WORD_FORM_KEY) {
+        const w = wordLookup?.get(letterName);
+        if (!w) return;
+        setWordGroupIndex(w.groupIndex);
+        setWordIndex(w.wordIndex);
+        setPracticeMode('words');
         setShowComparison(false);
         setShowHistory(false);
         alphaBtnRef.current = [];
@@ -286,6 +331,9 @@ export default function useReviewSession({
       setShowComparison,
       setShowHistory,
       alphaBtnRef,
+      wordLookup,
+      setWordGroupIndex,
+      setWordIndex,
     ],
   );
 

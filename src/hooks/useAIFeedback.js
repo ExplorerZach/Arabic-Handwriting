@@ -3,6 +3,7 @@ import { getItem, setItem, removeItem } from '../utils/storage';
 import { getAIFeedback } from '../utils/api';
 import { FORM_FULL } from '../locales';
 import { CONNECTION_FORM_KEY } from '../data/connections';
+import { WORD_FORM_KEY } from '../data/words';
 import { markPracticed, setScore, updateSR, isReviewOnTime } from '../utils/progress';
 import { addFeedbackEntry } from '../utils/history';
 import { XP_AWARDS } from '../utils/xp';
@@ -116,18 +117,19 @@ export default function useAIFeedback({
       const progressName =
         practiceMode === 'connect'
           ? currentConnection.joined
-          : practiceMode === 'words' && inDeck
+          : practiceMode === 'words'
             ? currentWord.word
             : letter.name;
       const progressForm =
         practiceMode === 'connect'
           ? CONNECTION_FORM_KEY
-          : practiceMode === 'words' && inDeck
-            ? 'word'
+          : practiceMode === 'words'
+            ? WORD_FORM_KEY
             : activeForm;
       if (
         practiceMode === 'letters' ||
         practiceMode === 'connect' ||
+        practiceMode === 'words' ||
         isNumbersMode ||
         isDiacriticsMode ||
         reviewSessionRef.current ||

@@ -166,4 +166,17 @@ describe('getDueLetters', () => {
     const due = progress.getDueLetters(LETTERS);
     expect(due.length).toBeGreaterThanOrEqual(1);
   });
+
+  it('returns due for word items after practice and AI-fail SM-2 update', () => {
+    progress.markPracticed('سلام', 'word');
+    progress.updateSR('سلام', 'word', 1);
+    const wordItem = { name: 'سلام', forms: { word: 'سلام' } };
+    const due = progress.getDueLetters([wordItem]);
+    expect(due).toHaveLength(1);
+    expect(due[0]).toEqual({
+      letterName: 'سلام',
+      letterChar: 'سلام',
+      formKey: 'word',
+    });
+  });
 });

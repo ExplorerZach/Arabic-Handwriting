@@ -5,12 +5,14 @@ import { markDayActive } from '../utils/analytics';
 import { markPracticed } from '../utils/progress';
 import { getItem } from '../utils/storage';
 import { XP_AWARDS } from '../utils/xp';
+import { WORD_FORM_KEY } from '../data/words';
 
 export default function useDrawing({
   darkMode,
   practiceMode,
   letter,
   activeForm,
+  currentWord,
   addXPRef,
   setProgressVersionRef,
   setFeedbackRef,
@@ -181,14 +183,21 @@ export default function useDrawing({
     strokeResumedRef.current = false;
     let bump = markDayActive();
     if (
-      (practiceMode === 'letters' || practiceMode === 'numbers' || practiceMode === 'diacritics') &&
+      (practiceMode === 'letters' ||
+        practiceMode === 'numbers' ||
+        practiceMode === 'diacritics' ||
+        practiceMode === 'words') &&
       !countedDrawingRef.current &&
       strokesRef.current.length > 0
     ) {
       countedDrawingRef.current = true;
-      markPracticed(letter.name, activeForm);
-      addXPRef.current?.(XP_AWARDS.PRACTICE, 'practice');
-      bump = true;
+      const pName = practiceMode === 'words' ? currentWord?.word : letter.name;
+      const pForm = practiceMode === 'words' ? WORD_FORM_KEY : activeForm;
+      if (pName) {
+        markPracticed(pName, pForm);
+        addXPRef.current?.(XP_AWARDS.PRACTICE, 'practice');
+        bump = true;
+      }
     }
     if (bump) setProgressVersionRef.current?.(v => v + 1);
   };

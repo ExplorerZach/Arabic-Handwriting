@@ -255,3 +255,11 @@ export const WORD_GROUPS = [
 ];
 
 export const ALL_WORDS = WORD_GROUPS.flatMap(g => g.words.map(w => ({ ...w, group: g.name })));
+
+/**
+ * Progress formKey for words. MUST stay distinct from the connection
+ * formKey ('connection'): several joined strings (من, لا, كتب, …) are also real
+ * words, so sharing a formKey would make connection and word practice
+ * clobber each other's SM-2 data, due-queue entries, and analytics.
+ */
+export const WORD_FORM_KEY = 'word';

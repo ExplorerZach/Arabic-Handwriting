@@ -63,6 +63,7 @@ export const UI = {
     formMedial: 'medial',
     formFinal: 'final',
     formConnection: 'connection',
+    formWord: 'word',
     formIsolatedFull: 'isolated (stand-alone)',
     formInitialFull: 'initial (start of word)',
     formMedialFull: 'medial (middle of word)',
@@ -499,6 +500,7 @@ export const UI = {
     formMedial: 'وسطي',
     formFinal: 'النهائي',
     formConnection: 'وصل',
+    formWord: 'كلمة',
     formIsolatedFull: 'منفرد (مستقل)',
     formInitialFull: 'مبتدأ (أول الكلمة)',
     formMedialFull: 'وسطي (وسط الكلمة)',
@@ -880,6 +882,7 @@ export const FORM_NAMES = {
   medial: 'formMedial',
   final: 'formFinal',
   connection: 'formConnection',
+  word: 'formWord',
 };
 
 export const FORM_SHORT = {

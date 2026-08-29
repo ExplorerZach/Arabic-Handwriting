@@ -39,10 +39,16 @@ _Make practicing more engaging and habit-forming._
       One free monthly freeze that preserves a streak through a missed day. Reduces
       churn from the discouragement of breaking a long run.
 
-- [ ] **#6 — Word-level progress tracking** 🟡
-      Words mode currently tracks nothing. Extend the progress model to words so
-      they appear in stats and the review queue — makes the whole Words tab "count"
-      instead of being a dead end.
+- [x] **#6 — Word-level progress tracking** 🟡
+      _Shipped (2026-08-27): Words mode now records progress under the Arabic word
+      string with formKey `'word'` (nested in `arabic_progress`, so no backup/sync
+      change). Free words practice marks `markPracticed` on draw + `setScore`/`updateSR`
+      on AI score (feeds SM-2 due queue, daily goal, score distribution, XP); a deduped
+      `wordItems` adapter feeds the review queue, progress summary, and AnalyticsPanel;
+      word routing in all three review routers is formKey-guarded (never collides with
+      connection strings like من/لا/كتب); `formWord` i18n + `FORM_NAMES.word` label word
+      tiles; fixed words-mode history slot bug. 2 test files added (data contract + due
+      queue). Words tab now "counts" instead of being a dead end._
 
 ---
 
@@ -106,6 +112,19 @@ _Make the learning environment more intuitive and accessible._
 ---
 
 ## Session log
+
+- **2026-08-27** — Shipped ROADMAP #6 (Word-level progress tracking): Words mode now
+  records progress under the Arabic word string with formKey `'word'` (nested in
+  `arabic_progress` — no backup/sync change). Free words practice marks
+  `markPracticed` on draw + `setScore`/`updateSR` on AI score, feeding the SM-2 due
+  queue, daily goal, score distribution, and XP. A deduped `wordItems` adapter (38
+  unique keys) feeds the review queue / progress summary / AnalyticsPanel. Word
+  routing in all three review routers (`enterReviewItem`/`goToReviewItem`/
+  `goToAnalyticsItem`) is formKey-guarded so connection strings (من/لا/كتب) never
+  collide with word practice. Added `formWord` en/ar strings + `FORM_NAMES.word`;
+  fixed the words-mode feedback-history slot bug. Added `words.test.js` (data
+  contract) + a `getDueLetters` word case in `progress.test.js`. Verified: 99 tests,
+  lint (0 errors), typecheck, build all green.
 
 - **2026-08-17** — Shipped ROADMAP #9 (Connected-writing drills): 31 two/three-letter
   connections with SM-2 progress tracking, deck integration, review queue support,
