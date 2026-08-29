@@ -118,7 +118,7 @@ export default function useAIFeedback({
         practiceMode === 'connect'
           ? currentConnection.joined
           : practiceMode === 'words'
-            ? currentWord.word
+            ? currentWord?.word
             : letter.name;
       const progressForm =
         practiceMode === 'connect'

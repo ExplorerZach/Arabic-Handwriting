@@ -46,12 +46,16 @@ describe('WORD_GROUPS data shape', () => {
   it('isolates overlapping strings from connections via distinct formKeys', () => {
     const wordSet = new Set(WORD_GROUPS.flatMap(g => g.words.map(w => w.word)));
     const overlapping = CONNECTIONS.filter(c => wordSet.has(c.joined)).map(c => c.joined);
-    expect(overlapping.length).toBeGreaterThan(0);
-    // Word progress keys must always use WORD_FORM_KEY ('word') and never CONNECTION_FORM_KEY ('connection')
+    // The fixture must actually exercise the collision surface: at least one
+    // joined string exists as BOTH a connection and a vocabulary word.
+    expect(
+      overlapping.length,
+      'Expected at least one string shared between CONNECTIONS and WORD_GROUPS',
+    ).toBeGreaterThan(0);
+    // Word progress keys must always use WORD_FORM_KEY ('word') and never
+    // CONNECTION_FORM_KEY ('connection') — that distinction is the only thing
+    // keeping the two datasets' SM-2 data, due-queue entries, and analytics apart.
+    expect(WORD_FORM_KEY).toBe('word');
     expect(WORD_FORM_KEY).not.toBe(CONNECTION_FORM_KEY);
-    for (const word of overlapping) {
-      expect(WORD_FORM_KEY).toBe('word');
-      expect(word).toBeTruthy();
-    }
   });
 });

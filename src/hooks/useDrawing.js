@@ -190,10 +190,10 @@ export default function useDrawing({
       !countedDrawingRef.current &&
       strokesRef.current.length > 0
     ) {
-      countedDrawingRef.current = true;
       const pName = practiceMode === 'words' ? currentWord?.word : letter.name;
       const pForm = practiceMode === 'words' ? WORD_FORM_KEY : activeForm;
       if (pName) {
+        countedDrawingRef.current = true;
         markPracticed(pName, pForm);
         addXPRef.current?.(XP_AWARDS.PRACTICE, 'practice');
         bump = true;

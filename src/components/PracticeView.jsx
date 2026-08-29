@@ -2059,7 +2059,7 @@ export default function PracticeView({
                           resolved.practiceMode === 'connect'
                             ? CONNECTION_FORM_KEY
                             : resolved.practiceMode === 'words'
-                              ? 'word'
+                              ? WORD_FORM_KEY
                               : activeForm;
                         if (!dCountedDrawingRef.current) {
                           dCountedDrawingRef.current = true;
